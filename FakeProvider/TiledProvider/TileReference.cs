@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 using OTAPI.Tile;
 using Terraria;
 #endregion
-namespace FakeManager
+namespace FakeProvider
 {
     public sealed class TileReference : ITile
     {

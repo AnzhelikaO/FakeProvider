@@ -7,7 +7,7 @@ using System.Reflection;
 using Terraria;
 using TerrariaApi.Server;
 #endregion
-namespace FakeManager
+namespace FakeProvider
 {
     public class FakeProvider : TerrariaPlugin
     {

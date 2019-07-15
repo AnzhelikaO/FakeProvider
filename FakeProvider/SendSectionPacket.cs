@@ -6,7 +6,7 @@ using System.IO.Compression;
 using Terraria;
 using Terraria.Net.Sockets;
 #endregion
-namespace FakeManager
+namespace FakeProvider
 {
     class SendSectionPacket
     {

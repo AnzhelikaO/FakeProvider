@@ -47,13 +47,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TiledProvider\EntityCollection.cs" />
     <Compile Include="FakeCollection.cs" />
     <Compile Include="FakeProvider.cs" />
     <Compile Include="FakeTileRectangle.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TiledProvider\ITileCollection2.cs" />
     <Compile Include="TiledProvider\MainTileProvider.cs" />
-    <Compile Include="TiledProvider\ReadonlyTileProvider.cs" />
     <Compile Include="TiledProvider\StructTile.cs" />
     <Compile Include="TiledProvider\TileProvider.cs" />
     <Compile Include="TiledProvider\TileReference.cs" />

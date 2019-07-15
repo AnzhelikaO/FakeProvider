@@ -1,5 +1,5 @@
 ﻿using System.Runtime.InteropServices;
-namespace FakeManager
+namespace FakeProvider
 {
 	[StructLayout(LayoutKind.Sequential, Size = 13, Pack = 1)]
     public struct StructTile
