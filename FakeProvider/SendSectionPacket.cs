@@ -14,7 +14,7 @@ namespace FakeManager
 
         public static void Send(int Who, int IgnoreIndex,
                 int X, int Y, short Width, short Height) =>
-            Send(((Who == -1) ? FakeManager.AllPlayers : new int[] { Who }),
+            Send(((Who == -1) ? FakeProvider.AllPlayers : new int[] { Who }),
                 IgnoreIndex, X, Y, Width, Height);
 
         public static void Send(IEnumerable<int> Who, int IgnoreIndex,
@@ -135,7 +135,7 @@ namespace FakeManager
             byte[] array4 = new byte[13];
             OTAPI.Tile.ITile tile = null;
 
-            OTAPI.Tile.ITile[,] tiles = FakeManager.GetAppliedTiles(X, Y, Width, Height);
+            OTAPI.Tile.ITile[,] tiles = FakeProvider.GetAppliedTiles(X, Y, Width, Height);
             for (int i = Y; i < Y + Height; i++)
             {
                 for (int j = X; j < X + Width; j++)
@@ -325,7 +325,7 @@ namespace FakeManager
             BinaryWriter.Write(array4, num6, num5 - num6);
 
             BinaryWriter.Write((short)0); // Chests
-            Dictionary<int, Sign> signs = FakeManager.GetAppliedSigns(X, Y, Width, Height);
+            Dictionary<int, Sign> signs = FakeProvider.GetAppliedSigns(X, Y, Width, Height);
             BinaryWriter.Write((short)signs.Count);
             foreach (KeyValuePair<int, Sign> pair in signs)
             {

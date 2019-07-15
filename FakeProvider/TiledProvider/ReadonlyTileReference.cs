@@ -5,7 +5,7 @@ using Terraria;
 #endregion
 namespace FakeManager
 {
-    public sealed class TileReference : ITile
+    public sealed class ReadonlyTileReference : ITile
     {
         #region Constants
 
@@ -30,7 +30,7 @@ namespace FakeManager
         #endregion
         #region Constructor
 
-        public TileReference(StructTile[,] Data, int X, int Y)
+        public ReadonlyTileReference(StructTile[,] Data, int X, int Y)
         {
             this.Data = Data;
             this.X = X;
@@ -61,7 +61,7 @@ namespace FakeManager
         public ushort type
         {
             get => Data[X, Y].type;
-            set => Data[X, Y].type = value;
+            set { }
         }
 
         #endregion
@@ -70,7 +70,7 @@ namespace FakeManager
         public byte wall
         {
             get => Data[X, Y].wall;
-            set => Data[X, Y].wall = value;
+            set { }
         }
 
         #endregion
@@ -79,7 +79,7 @@ namespace FakeManager
         public byte liquid
         {
             get => Data[X, Y].liquid;
-            set => Data[X, Y].liquid = value;
+            set { }
         }
 
         #endregion
@@ -88,7 +88,7 @@ namespace FakeManager
         public short frameX
         {
             get => Data[X, Y].frameX;
-            set => Data[X, Y].frameX = value;
+            set { }
         }
 
         #endregion
@@ -97,7 +97,7 @@ namespace FakeManager
         public short frameY
         {
             get => Data[X, Y].frameY;
-            set => Data[X, Y].frameY = value;
+            set { }
         }
 
         #endregion
@@ -107,7 +107,7 @@ namespace FakeManager
         public short sTileHeader
         {
             get => Data[X, Y].sTileHeader;
-            set => Data[X, Y].sTileHeader = value;
+            set { }
         }
 
         #endregion
@@ -116,7 +116,7 @@ namespace FakeManager
         public byte bTileHeader
         {
             get => Data[X, Y].bTileHeader;
-            set => Data[X, Y].bTileHeader = value;
+            set { }
         }
 
         #endregion
@@ -125,7 +125,7 @@ namespace FakeManager
         public byte bTileHeader2
         {
             get => Data[X, Y].bTileHeader2;
-            set => Data[X, Y].bTileHeader2 = value;
+            set { }
         }
 
         #endregion
@@ -134,7 +134,7 @@ namespace FakeManager
         public byte bTileHeader3
         {
             get => Data[X, Y].bTileHeader3;
-            set => Data[X, Y].bTileHeader3 = value;
+            set { }
         }
 
         #endregion
@@ -160,68 +160,28 @@ namespace FakeManager
 
         #region ClearEverything
 
-        public void ClearEverything()
-        {
-            type = 0;
-            wall = 0;
-            ClearMetadata();
-        }
+        public void ClearEverything() { }
 
         #endregion
         #region ClearTile
 
-        public void ClearTile()
-        {
-            slope(0);
-            halfBrick(false);
-            active(false);
-        }
+        public void ClearTile() { }
 
         #endregion
         #region ClearMetadata
 
-        public void ClearMetadata()
-        {
-            liquid = 0;
-            sTileHeader = 0;
-            bTileHeader = 0;
-            bTileHeader2 = 0;
-            bTileHeader3 = 0;
-            frameX = 0;
-            frameY = 0;
-        }
+        public void ClearMetadata() { }
 
         #endregion
         #region ResetToType
 
-        public void ResetToType(ushort Type)
-        {
-            liquid = 0;
-            sTileHeader = 32;
-            bTileHeader = 0;
-            bTileHeader2 = 0;
-            bTileHeader3 = 0;
-            frameX = 0;
-            frameY = 0;
-            type = Type;
-        }
+        public void ResetToType(ushort Type) { }
 
         #endregion
 
         #region CopyFrom
 
-        public void CopyFrom(ITile From)
-        {
-            type = From.type;
-            wall = From.wall;
-            liquid = From.liquid;
-            sTileHeader = From.sTileHeader;
-            bTileHeader = From.bTileHeader;
-            bTileHeader2 = From.bTileHeader2;
-            bTileHeader3 = From.bTileHeader3;
-            frameX = From.frameX;
-            frameY = From.frameY;
-        }
+        public void CopyFrom(ITile From) { }
 
         #endregion
         #region isTheSameAs
@@ -276,131 +236,73 @@ namespace FakeManager
         #region lava
 
         public bool lava() => ((bTileHeader & 32) == 32);
-        public void lava(bool Lava)
-        {
-            if (Lava)
-                bTileHeader = (byte)((bTileHeader & 159) | 32);
-            else
-                bTileHeader &= 223;
-        }
+        public void lava(bool Lava) { }
 
         #endregion
         #region honey
 
         public bool honey() => ((bTileHeader & 64) == 64);
-        public void honey(bool Honey)
-        {
-            if (Honey)
-                bTileHeader = (byte)((bTileHeader & 159) | 64);
-            else
-                bTileHeader &= 191;
-        }
+        public void honey(bool Honey) { }
 
         #endregion
         #region liquidType
 
         public byte liquidType() => (byte)((bTileHeader & 96) >> 5);
-        public void liquidType(int LiquidType)
-        {
-            if (LiquidType == 0)
-                bTileHeader &= 159;
-            else if (LiquidType == 1)
-                lava(true);
-            else if (LiquidType == 2)
-                honey(true);
-        }
+        public void liquidType(int LiquidType) { }
 
         #endregion
         #region checkingLiquid
 
         public bool checkingLiquid() => ((bTileHeader3 & 8) == 8);
-        public void checkingLiquid(bool CheckingLiquid)
-        {
-            if (CheckingLiquid)
-                bTileHeader3 |= 8;
-            else
-                bTileHeader3 &= 247;
-        }
+        public void checkingLiquid(bool CheckingLiquid) { }
 
         #endregion
         #region skipLiquid
 
         public bool skipLiquid() => ((bTileHeader3 & 16) == 16);
-        public void skipLiquid(bool SkipLiquid)
-        {
-            if (SkipLiquid)
-                bTileHeader3 |= 16;
-            else
-                bTileHeader3 &= 239;
-        }
+        public void skipLiquid(bool SkipLiquid) { }
 
         #endregion
 
         #region frame
 
         public byte frameNumber() => (byte)((bTileHeader2 & 48) >> 4);
-        public void frameNumber(byte FrameNumber) =>
-            bTileHeader2 = (byte)((bTileHeader2 & 207) | ((FrameNumber & 3) << 4));
+        public void frameNumber(byte FrameNumber) { }
 
         public byte wallFrameNumber() => (byte)((bTileHeader2 & 192) >> 6);
-        public void wallFrameNumber(byte WallFrameNumber) =>
-            bTileHeader2 = (byte)((bTileHeader2 & 63) | ((WallFrameNumber & 3) << 6));
+        public void wallFrameNumber(byte WallFrameNumber) { }
 
         public int wallFrameX() => ((bTileHeader2 & 15) * 36);
-        public void wallFrameX(int WallFrameX) =>
-            bTileHeader2 = (byte)((bTileHeader2 & 240) | ((WallFrameX / 36) & 15));
+        public void wallFrameX(int WallFrameX) { }
 
         public int wallFrameY() => ((bTileHeader3 & 7) * 36);
-        public void wallFrameY(int WallFrameY) =>
-            bTileHeader3 = (byte)((bTileHeader3 & 248) | ((WallFrameY / 36) & 7));
+        public void wallFrameY(int WallFrameY) { }
 
         #endregion
 
         #region color
 
         public byte color() => (byte)(sTileHeader & 31);
-        public void color(byte Color)
-        {
-            if (Color > 30)
-                Color = 30;
-            sTileHeader = (short)((sTileHeader & 65504) | Color);
-        }
+        public void color(byte Color) { }
 
         #endregion
         #region wallColor
 
         public byte wallColor() => (byte)(bTileHeader & 31);
-        public void wallColor(byte WallColor)
-        {
-            if (WallColor > 30)
-                WallColor = 30;
-            bTileHeader = (byte)((bTileHeader & 224) | WallColor);
-        }
+        public void wallColor(byte WallColor) { }
 
         #endregion
 
         #region active
 
         public bool active() => ((sTileHeader & 32) == 32);
-        public void active(bool Active)
-        {
-            if (Active)
-                sTileHeader |= 32;
-            else
-                sTileHeader = (short)(sTileHeader & 65503);
-        }
+        public void active(bool Active) { }
 
         #endregion
         #region inActive
 
         public bool inActive() => ((sTileHeader & 64) == 64);
-        public void inActive(bool InActive)
-        {
-            if (InActive)
-                sTileHeader |= 64;
-            else
-                sTileHeader = (short)(sTileHeader & 65471);
-        }
+        public void inActive(bool InActive) { }
 
         #endregion
         public bool nactive() => ((sTileHeader & 96) == 32);
@@ -408,82 +310,45 @@ namespace FakeManager
         #region wire
 
         public bool wire() => ((sTileHeader & 128) == 128);
-        public void wire(bool Wire)
-        {
-            if (Wire)
-                sTileHeader |= 128;
-            else
-                sTileHeader = (short)(sTileHeader & 65407);
-        }
+        public void wire(bool Wire) { }
 
         #endregion
         #region wire2
 
         public bool wire2() => ((sTileHeader & 256) == 256);
-        public void wire2(bool Wire2)
-        {
-            if (Wire2)
-                sTileHeader |= 256;
-            else
-                sTileHeader = (short)(sTileHeader & 65279);
-        }
+        public void wire2(bool Wire2) { }
 
         #endregion
         #region wire3
 
         public bool wire3() => ((sTileHeader & 512) == 512);
-        public void wire3(bool Wire3)
-        {
-            if (Wire3)
-                sTileHeader |= 512;
-            else
-                sTileHeader = (short)(sTileHeader & 65023);
-        }
+        public void wire3(bool Wire3) { }
 
         #endregion
         #region wire4
 
         public bool wire4() => ((bTileHeader & 128) == 128);
 
-        public void wire4(bool Wire4)
-        {
-            if (Wire4)
-                bTileHeader |= 128;
-            else
-                bTileHeader &= 127;
-        }
+        public void wire4(bool Wire4) { }
 
         #endregion
         #region actuator
 
         public bool actuator() => ((sTileHeader & 2048) == 2048);
-        public void actuator(bool Actuator)
-        {
-            if (Actuator)
-                sTileHeader |= 2048;
-            else
-                sTileHeader = (short)(sTileHeader & 63487);
-        }
+        public void actuator(bool Actuator) { }
 
         #endregion
 
         #region halfBrick
 
         public bool halfBrick() => ((sTileHeader & 1024) == 1024);
-        public void halfBrick(bool HalfBrick)
-        {
-            if (HalfBrick)
-                sTileHeader |= 1024;
-            else
-                sTileHeader = (short)(sTileHeader & 64511);
-        }
+        public void halfBrick(bool HalfBrick) { }
 
         #endregion
         #region slope
 
         public byte slope() => (byte)((sTileHeader & 28672) >> 12);
-        public void slope(byte Slope) =>
-            sTileHeader = (short)((sTileHeader & 36863) | ((Slope & 7) << 12));
+        public void slope(byte Slope) { }
 
         #endregion
         #region topSlope

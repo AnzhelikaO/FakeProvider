@@ -12,7 +12,7 @@ namespace FakeManager
         #region Data
 
         public object Key { get; }
-        public FakeTileProvider Tile { get; protected set; }
+        public TileProvider Tile { get; protected set; }
         public int X { get; protected set; }
         public int Y { get; protected set; }
         public int Width { get; protected set; }
@@ -33,7 +33,7 @@ namespace FakeManager
         {
             this.Key = Key;
             this.Collection = Collection;
-            this.Tile = new FakeTileProvider(Width, Height);
+            this.Tile = new TileProvider(Width, Height);
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
                     if (this.Tile[i, j] == null)
@@ -105,7 +105,7 @@ namespace FakeManager
             this.Y = Y;
             if ((this.Width != Width) || (this.Height != Height))
             {
-                FakeTileProvider newTile = new FakeTileProvider(Width, Height);
+                TileProvider newTile = new TileProvider(Width, Height);
                 for (int i = 0; i < Width; i++)
                     for (int j = 0; j < Height; j++)
                         newTile[i, j] = ((i < this.Width) && (j < this.Height))

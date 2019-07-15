@@ -4,32 +4,38 @@ using System;
 #endregion
 namespace FakeManager
 {
-    public class FakeTileProvider : ITileCollection, IDisposable
+    public class ReadonlyTileProvider : ITileCollection2, IDisposable
     {
         #region Data
 
-        private StructTile[,] Data { get; set; }
+        private StructTile[,] Data;
+        public string Name { get; }
+        public int X { get; set; }
+        public int Y { get; set; }
         public int Width { get; }
         public int Height { get; }
 
         #endregion
         #region Constructor
 
-        public FakeTileProvider(int Width, int Height)
+        public ReadonlyTileProvider(string Name, int X, int Y, int Width, int Height)
         {
+            this.Name = Name;
             this.Data = new StructTile[Width, Height];
+            this.X = X;
+            this.Y = Y;
             this.Width = Width;
             this.Height = Height;
         }
-        
+
         #endregion
 
         #region operator[,]
 
         public ITile this[int X, int Y]
         {
-            get => new TileReference(Data, X, Y);
-            set => new TileReference(Data, X, Y).CopyFrom(value);
+            get => new TileReference(Data, (X - this.X), (Y - this.Y));
+            set { }
         }
 
         #endregion

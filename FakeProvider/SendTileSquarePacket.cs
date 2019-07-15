@@ -13,7 +13,7 @@ namespace FakeManager
 
         public static void Send(int Who, int IgnoreIndex,
                 int Size, int X, int Y, int Number5 = 0) =>
-            Send(((Who == -1) ? FakeManager.AllPlayers : new int[] { Who }),
+            Send(((Who == -1) ? FakeProvider.AllPlayers : new int[] { Who }),
                 IgnoreIndex, Size, X, Y, Number5);
 
         public static void Send(IEnumerable<int> Who, int IgnoreIndex,
@@ -97,7 +97,7 @@ namespace FakeManager
             }
             BinaryWriter.Write((short)X);
             BinaryWriter.Write((short)Y);
-            OTAPI.Tile.ITile[,] applied = FakeManager.GetAppliedTiles(X, Y, Size, Size);
+            OTAPI.Tile.ITile[,] applied = FakeProvider.GetAppliedTiles(X, Y, Size, Size);
             for (int num8 = X; num8 < X + Size; num8++)
             {
                 for (int num9 = Y; num9 < Y + Size; num9++)
