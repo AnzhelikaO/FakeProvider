@@ -6,7 +6,7 @@ using Terraria;
 #endregion
 namespace FakeProvider
 {
-    public sealed class TileProvider : ITileCollection2, IDisposable
+    public sealed class TileProvider : INamedTileCollection
     {
         #region Data
 
@@ -18,7 +18,6 @@ namespace FakeProvider
         public int Height { get; private set; }
         public int Layer { get; }
         public bool Enabled { get; set; } = true;
-        public EntityCollection Entities { get; }
 
         #endregion
         #region Constructor
@@ -133,43 +132,6 @@ namespace FakeProvider
         internal bool IsIntersecting(int X, int Y, int Width, int Height) =>
             ((X < (this.X + this.Width)) && (this.X < (X + Width))
             && (Y < (this.Y + this.Height)) && (this.Y < (Y + Height)));
-
-        #endregion
-
-        #region ApplyTiles
-
-        internal void ApplyTiles(ITile[,] Tiles, int AbsoluteX, int AbsoluteY)
-        {
-            Intersect(AbsoluteX, AbsoluteY, Tiles.GetLength(0), Tiles.GetLength(1),
-                out int x1, out int y1, out int w, out int h);
-            int x2 = (x1 + w), y2 = (y1 + h);
-
-            for (int i = x1; i < x2; i++)
-                for (int j = y1; j < y2; j++)
-                {
-                    ITile tile = this[i - X, j - Y];
-                    if (tile != null)
-                        Tiles[(i - AbsoluteX), (j - AbsoluteY)] = tile;
-                }
-        }
-
-        #endregion
-        #region ApplySigns
-
-        internal void ApplySigns(Dictionary<int, Sign> Signs,
-            int AbsoluteX, int AbsoluteY, int Width, int Height,
-            bool ClearIntersectingSigns = false)
-        {
-            Intersect(AbsoluteX, AbsoluteY, Width, Height,
-                out int x1, out int y1, out int w, out int h);
-            Entities.ApplySigns(Signs, x1, y1, (x1 + w), (y1 + h), ClearIntersectingSigns);
-        }
-
-        #endregion
-        #region ApplyChest
-
-        internal void ApplyChest(ref Chest Chest, int AbsoluteX, int AbsoluteY) =>
-            Entities.ApplyChest(ref Chest, AbsoluteX, AbsoluteY);
 
         #endregion
 

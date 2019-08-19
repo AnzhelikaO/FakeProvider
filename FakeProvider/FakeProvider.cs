@@ -18,16 +18,41 @@ namespace FakeProvider
         public override string Author => "Anzhelika & ASgo";
         public override string Description => "TODO";
 
-        public static FakeCollection Common { get; } = new FakeCollection();
-        //public static FakeCollection[] Personal = new FakeCollection[Main.maxPlayers];
+        public static TileProviderCollection Tile { get; }
         internal static int[] AllPlayers;
 
         #endregion
 
         #region Constructor
 
-        public FakeProvider(Main game) : base(game) =>
+        public FakeProvider(Main game) : base(game)
+        {
             Order = -1002;
+            string[] args = Environment.GetCommandLineArgs();
+            #region Offset
+
+            int requiredOffsetX = 0, requiredOffsetY = 0;
+            int argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-offsetx")));
+            if (argumentIndex > -1)
+            {
+                argumentIndex++;
+                if ((argumentIndex >= args.Length)
+                        || !int.TryParse(args[argumentIndex], out requiredOffsetX))
+                    Console.WriteLine("Please provide a offsetX integer value.");
+            }
+
+            argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-offsety")));
+            if (argumentIndex > -1)
+            {
+                argumentIndex++;
+                if ((argumentIndex >= args.Length)
+                        || !int.TryParse(args[argumentIndex], out requiredOffsetY))
+                    Console.WriteLine("Please provide a offsetY integer value.");
+            }
+
+            #endregion
+
+        }
 
         #endregion
         #region Initialize
@@ -38,12 +63,8 @@ namespace FakeProvider
             for (int i = 0; i < Main.maxPlayers; i++)
                 AllPlayers[i] = i;
 
-            ServerApi.Hooks.NetGetData.Register(this, OnGetData, 1000000);
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, 1000000);
-            /*
-            ServerApi.Hooks.ServerJoin.Register(this, OnServerJoin);
-            ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
-            */
+            ServerApi.Hooks.GamePostInitialize.Register(this, OnGamePostInitialize, int.MaxValue);
         }
 
         #endregion
@@ -52,36 +73,12 @@ namespace FakeProvider
         protected override void Dispose(bool disposing)
         {
             if (disposing)
-            {
-                ServerApi.Hooks.NetGetData.Deregister(this, OnGetData);
                 ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
-                /*
-                ServerApi.Hooks.ServerJoin.Deregister(this, OnServerJoin);
-                ServerApi.Hooks.ServerLeave.Deregister(this, OnServerLeave);
-                */
-            }
             base.Dispose(disposing);
         }
 
         #endregion
 
-        #region OnGetData
-
-        private void OnGetData(GetDataEventArgs args)
-        {
-            if (args.Handled || args.MsgID != PacketTypes.ChestGetContents)
-                return;
-            int x = args.Msg.readBuffer[args.Index] + args.Msg.readBuffer[args.Index + 1] * 256;
-            int y = args.Msg.readBuffer[args.Index + 2] + args.Msg.readBuffer[args.Index + 3] * 256;
-            Chest chest = GetAppliedChest(x, y);
-            if (chest != null)
-            {
-                SendChestItemPacket.SendMany(args.Msg.whoAmI, 999, chest.item);
-                SendChestOpenPacket.Send(args.Msg.whoAmI, 999, x, y);
-            }
-        }
-
-        #endregion
         #region OnSendData
 
         private void OnSendData(SendDataEventArgs args)
@@ -113,20 +110,37 @@ namespace FakeProvider
         }
 
         #endregion
-        #region OnServerJoin, OnServerLeave
-        /*
-        private void OnServerJoin(JoinEventArgs args) =>
-            Personal[args.Who] = new FakeCollection(true);
+        #region OnGamePostInitialize
 
-        private void OnServerLeave(LeaveEventArgs args)
+        private void OnGamePostInitialize(EventArgs args)
         {
-            FakeCollection collection = Personal[args.Who];
-            if (collection == null)
-                return;
-            collection.Clear();
-            Personal[args.Who] = null;
+            FakeTileProvider provider = new FakeTileProvider(Main.maxTilesX, Main.maxTilesY);
+            if (Netplay.IsServerRunning && (Main.tile != null))
+            {
+                int x = 0, y = 0, w = provider.Width, h = provider.Height;
+                try
+                {
+                    provider[0, 0].ClearTile();
+
+                    for (x = 0; x < w; x++)
+                        for (y = 0; y < h; y++)
+                            provider[x, y] = Main.tile[x, y];
+                }
+                catch (Exception ex)
+                {
+                    ServerApi.LogWriter.PluginWriteLine(this,
+                        $"Error @{x}x{y}\n{ex}", TraceLevel.Error);
+                    Environment.Exit(0);
+                }
+            }
+
+            IDisposable previous = Main.tile as IDisposable;
+            Main.tile = provider;
+            if (previous != null)
+                previous.Dispose();
+            GC.Collect();
         }
-        */
+
         #endregion
 
         #region GetAppliedTiles
@@ -145,80 +159,7 @@ namespace FakeProvider
                 if (fake.Enabled && fake.IsIntersecting(X, Y, Width, Height))
                     fake.ApplyTiles(tiles, X, Y);
             }
-            /*
-            for (int i = 0; i < Personal[Who].Order.Count; i++)
-            {
-                FakeTileRectangle fake = Personal[Who].Data[Personal[Who].Order[i]];
-                if (fake.Enabled && fake.IsIntersecting(X, Y, Width, Height))
-                    fake.ApplyTiles(tiles, X, Y);
-            }
-            */
             return tiles;
-        }
-
-        #endregion
-        #region GetAppliedSigns
-
-        public static Dictionary<int, Sign> GetAppliedSigns(int X, int Y, int Width, int Height)
-        {
-            Dictionary<int, Sign> signs = new Dictionary<int, Sign>();
-            int X2 = (X + Width), Y2 = (Y + Height);
-            for (int i = 0; i < Main.sign.Length; i++)
-            {
-                Sign sign = Main.sign[i];
-                if ((sign != null) && (sign.x >= X) && (sign.x < X2)
-                        && (sign.y >= Y) && (sign.y < Y2))
-                    signs.Add(i, sign);
-            }
-
-            for (int i = 0; i < Common.Order.Count; i++)
-            {
-                FakeTileRectangle fake = Common.Data[Common.Order[i]];
-                if (fake.Enabled && fake.IsIntersecting(X, Y, Width, Height))
-                    fake.ApplySigns(signs, X, Y, Width, Height);
-            }
-            /*
-            for (int i = 0; i < Personal[Who].Order.Count; i++)
-            {
-                FakeTileRectangle fake = Personal[Who].Data[Personal[Who].Order[i]];
-                if (fake.Enabled && fake.IsIntersecting(X, Y, Width, Height))
-                    fake.ApplySigns(signs, X, Y, Width, Height);
-            }
-            */
-            return signs;
-        }
-
-        #endregion
-        #region GetAppliedChest
-
-        public static Chest GetAppliedChest(int X, int Y)
-        {
-            Chest chest = null;
-            for (int i = 0; i < Main.chest.Length; i++)
-            {
-                Chest ch = Main.chest[i];
-                if ((ch != null) && (ch.x == X) && (ch.x == Y))
-                {
-                    chest = ch;
-                    break;
-                }
-            }
-
-            for (int i = 0; i < Common.Order.Count; i++)
-            {
-                FakeTileRectangle fake = Common.Data[Common.Order[i]];
-                if (fake.Enabled && fake.IsIntersecting(X, Y, 1, 1))
-                    fake.ApplyChest(ref chest, X, Y);
-            }
-            /*
-            for (int i = 0; i < Personal[PlayerIndex].Order.Count; i++)
-            {
-                FakeTileRectangle fake = Personal[PlayerIndex].Data[Personal[PlayerIndex].Order[i]];
-                if (fake.Enabled && fake.IsIntersecting(X, Y, Width, Height))
-                    fake.ApplyChests(chests, X, Y, Width, Height);
-            }
-            */
-            return chest;
         }
 
         #endregion

@@ -1,7 +1,10 @@
-﻿using OTAPI.Tile;
+﻿#region Using
+using OTAPI.Tile;
+using System;
+#endregion
 namespace FakeProvider
 {
-    public interface ITileCollection2 : ITileCollection
+    public interface INamedTileCollection : ITileCollection, IDisposable
     {
         string Name { get; }
         int X { get; set; }
