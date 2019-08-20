@@ -10,6 +10,8 @@ namespace FakeProvider
         int X { get; set; }
         int Y { get; set; }
         int Layer { get; }
-        bool Enabled { get; set; }
+        bool Enabled { get; }
+
+        void Draw(bool section);
     }
 }

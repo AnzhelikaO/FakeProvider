@@ -17,7 +17,7 @@ namespace FakeProvider
         public int Width { get; private set; }
         public int Height { get; private set; }
         public int Layer { get; }
-        public bool Enabled { get; set; } = true;
+        public bool Enabled { get; private set; } = true;
 
         #endregion
         #region Constructor
@@ -103,6 +103,51 @@ namespace FakeProvider
                 this.Width = Width;
                 this.Height = Height;
             }
+        }
+
+        #endregion
+        #region Enable
+
+        public void Enable()
+        {
+            if (!Enabled)
+            {
+                Enabled = true;
+                FakeProvider.Tile.UpdateProviderIndexes(this);
+#warning NotImplemented
+                new NotImplementedException("Draw on enable");
+            }
+        }
+
+        #endregion
+        #region Disable
+
+        public void Disable()
+        {
+            if (Enabled)
+            {
+                Enabled = false;
+                FakeProvider.Tile.UpdateProviderIndexes(X, Y, Width, Height);
+#warning NotImplemented
+                new NotImplementedException("Draw on disable");
+            }
+        }
+
+        #endregion
+
+        #region Draw
+
+        public void Draw(bool section=false)
+        {
+            if (section)
+            {
+                NetMessage.SendData((int)PacketTypes.TileSendSection, -1, -1, null, X, Y, Width, Height);
+                int sx1 = Netplay.GetSectionX(X), sy1 = Netplay.GetSectionY(Y);
+                int sx2 = Netplay.GetSectionX(X + Width - 1), sy2 = Netplay.GetSectionY(Y + Height - 1);
+                NetMessage.SendData((int)PacketTypes.TileFrameSection, -1, -1, null, sx1, sy1, sx2, sy2);
+            }
+            else
+                NetMessage.SendData((int)PacketTypes.TileSendSquare, -1, -1, null, Math.Max(Width, Height), X, Y);
         }
 
         #endregion

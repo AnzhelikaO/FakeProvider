@@ -1,4 +1,5 @@
 ﻿#region Using
+using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,12 +14,12 @@ namespace FakeProvider
         #region Send
 
         public static void Send(int Who, int IgnoreIndex,
-                int X, int Y, short Width, short Height) =>
+                int X, int Y, int Width, int Height) =>
             Send(((Who == -1) ? FakeProvider.AllPlayers : new int[] { Who }),
                 IgnoreIndex, X, Y, Width, Height);
 
         public static void Send(IEnumerable<int> Who, int IgnoreIndex,
-            int X, int Y, short Width, short Height)
+            int X, int Y, int Width, int Height)
         {
             if (Who == null)
                 return;
@@ -65,7 +66,7 @@ namespace FakeProvider
         #region CompressTileBlock
 
         private static int CompressTileBlock(int X, int Y,
-            short Width, short Height, BinaryWriter BinaryWriter)
+            int Width, int Height, BinaryWriter BinaryWriter)
         {
             if (X < 0)
             {
@@ -133,14 +134,14 @@ namespace FakeProvider
             int num6 = 0;
             byte b = 0;
             byte[] array4 = new byte[13];
-            OTAPI.Tile.ITile tile = null;
+            ITile tile = null;
 
-            OTAPI.Tile.ITile[,] tiles = FakeProvider.GetAppliedTiles(X, Y, Width, Height);
+            ITileCollection tiles = Main.tile;
             for (int i = Y; i < Y + Height; i++)
             {
                 for (int j = X; j < X + Width; j++)
                 {
-                    OTAPI.Tile.ITile tile2 = tiles[j - X, i - Y];
+                    ITile tile2 = tiles[j - X, i - Y];
                     if (tile2.isTheSameAs(tile))
                     {
                         num4 += 1;
@@ -324,6 +325,10 @@ namespace FakeProvider
             array4[num6] = b;
             BinaryWriter.Write(array4, num6, num5 - num6);
 
+            BinaryWriter.Write((short)0);
+            BinaryWriter.Write((short)0);
+            BinaryWriter.Write((short)0);
+            /*
             BinaryWriter.Write((short)0); // Chests
             Dictionary<int, Sign> signs = FakeProvider.GetAppliedSigns(X, Y, Width, Height);
             BinaryWriter.Write((short)signs.Count);
@@ -341,6 +346,7 @@ namespace FakeProvider
             {
                 Terraria.DataStructures.TileEntity.Write(BinaryWriter, Terraria.DataStructures.TileEntity.ByID[(int)array3[m]], false);
             }
+            */
         }
 
         #endregion

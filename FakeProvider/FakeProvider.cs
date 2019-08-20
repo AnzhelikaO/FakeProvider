@@ -2,6 +2,7 @@
 using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Terraria;
@@ -21,6 +22,12 @@ namespace FakeProvider
         public static TileProviderCollection Tile { get; }
         internal static int[] AllPlayers;
 
+        public int OffsetX { get; private set; }
+        public int OffsetY { get; private set; }
+        public int VisibleWidth { get; private set; }
+        public int VisibleHeight { get; private set; }
+        public bool ReadonlyWorld { get; private set; }
+
         #endregion
 
         #region Constructor
@@ -31,27 +38,62 @@ namespace FakeProvider
             string[] args = Environment.GetCommandLineArgs();
             #region Offset
 
-            int requiredOffsetX = 0, requiredOffsetY = 0;
+            int offsetX = 0;
             int argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-offsetx")));
             if (argumentIndex > -1)
             {
                 argumentIndex++;
                 if ((argumentIndex >= args.Length)
-                        || !int.TryParse(args[argumentIndex], out requiredOffsetX))
-                    Console.WriteLine("Please provide a offsetX integer value.");
+                        || !int.TryParse(args[argumentIndex], out offsetX))
+                    Console.WriteLine("Please provide a not negative offsetX integer value.");
             }
+            OffsetX = offsetX;
 
+            int offsetY = 0;
             argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-offsety")));
             if (argumentIndex > -1)
             {
                 argumentIndex++;
                 if ((argumentIndex >= args.Length)
-                        || !int.TryParse(args[argumentIndex], out requiredOffsetY))
-                    Console.WriteLine("Please provide a offsetY integer value.");
+                        || !int.TryParse(args[argumentIndex], out offsetY))
+                    Console.WriteLine("Please provide a not negative offsetY integer value.");
             }
+            OffsetY = offsetY;
+
+            #endregion
+            #region Width, Height
+
+            int visibleWidth = -1;
+            argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-visiblewidth")));
+            if (argumentIndex > -1)
+            {
+                argumentIndex++;
+                if ((argumentIndex >= args.Length)
+                        || !int.TryParse(args[argumentIndex], out visibleWidth))
+                {
+                    Console.WriteLine("Please provide a not negative visibleWidth integer value.");
+                    visibleWidth = -1;
+                }
+            }
+            VisibleWidth = visibleWidth;
+
+            int visibleHeight = -1;
+            argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-visibleheight")));
+            if (argumentIndex > -1)
+            {
+                argumentIndex++;
+                if ((argumentIndex >= args.Length)
+                        || !int.TryParse(args[argumentIndex], out visibleHeight))
+                {
+                    Console.WriteLine("Please provide a not negative visibleHeight integer value.");
+                    visibleHeight = -1;
+                }
+            }
+            VisibleHeight = visibleHeight;
 
             #endregion
 
+            ReadonlyWorld = args.Any(x => (x.ToLower() == "-readonlyworld"));
         }
 
         #endregion
@@ -90,12 +132,17 @@ namespace FakeProvider
             {
                 case PacketTypes.TileSendSection:
                     args.Handled = true;
+                    // We allow sending packet to custom list of players by specifying it in text parameter
                     if (args.text?._text == null)
                         SendSectionPacket.Send(args.remoteClient, args.ignoreClient,
                             args.number, (int)args.number2, (short)args.number3, (short)args.number4);
                     else
                         SendSectionPacket.Send(args.text._text.Select(c => (int)c), args.ignoreClient,
                             args.number, (int)args.number2, (short)args.number3, (short)args.number4);
+                    break;
+                case PacketTypes.TileFrameSection:
+#warning NotImplemented
+                    // TODO: sending to custom list of players with args.text
                     break;
                 case PacketTypes.TileSendSquare:
                     args.Handled = true;
@@ -114,52 +161,30 @@ namespace FakeProvider
 
         private void OnGamePostInitialize(EventArgs args)
         {
-            FakeTileProvider provider = new FakeTileProvider(Main.maxTilesX, Main.maxTilesY);
+            if (VisibleWidth < 0)
+                VisibleWidth = (OffsetX + Main.maxTilesX);
+            if (VisibleHeight < 0)
+                VisibleHeight = (OffsetY + Main.maxTilesY);
+            TileProviderCollection provider = new TileProviderCollection(VisibleWidth, VisibleHeight,
+                OffsetX, OffsetY);
+
             if (Netplay.IsServerRunning && (Main.tile != null))
             {
-                int x = 0, y = 0, w = provider.Width, h = provider.Height;
-                try
-                {
-                    provider[0, 0].ClearTile();
-
-                    for (x = 0; x < w; x++)
-                        for (y = 0; y < h; y++)
-                            provider[x, y] = Main.tile[x, y];
-                }
-                catch (Exception ex)
-                {
-                    ServerApi.LogWriter.PluginWriteLine(this,
-                        $"Error @{x}x{y}\n{ex}", TraceLevel.Error);
-                    Environment.Exit(0);
-                }
+                INamedTileCollection world;
+                if (ReadonlyWorld)
+                    world = new ReadonlyTileProvider();
+                else
+                    world = new TileProvider("__world__", OffsetX, OffsetY,
+                        Main.maxTilesX, Main.maxTilesY, Main.tile);
+                provider.Add(world);
             }
 
             IDisposable previous = Main.tile as IDisposable;
             Main.tile = provider;
-            if (previous != null)
-                previous.Dispose();
+            Main.maxTilesX = VisibleWidth;
+            Main.maxTilesY = VisibleHeight;
+            previous?.Dispose();
             GC.Collect();
-        }
-
-        #endregion
-
-        #region GetAppliedTiles
-
-        public static ITile[,] GetAppliedTiles(int X, int Y, int Width, int Height)
-        {
-            ITile[,] tiles = new ITile[Width, Height];
-            int X2 = (X + Width), Y2 = (Y + Height);
-            for (int i = X; i < X2; i++)
-                for (int j = Y; j < Y2; j++)
-                    tiles[i - X, j - Y] = Main.tile[i, j];
-
-            for (int i = 0; i < Common.Order.Count; i++)
-            {
-                FakeTileRectangle fake = Common.Data[Common.Order[i]];
-                if (fake.Enabled && fake.IsIntersecting(X, Y, Width, Height))
-                    fake.ApplyTiles(tiles, X, Y);
-            }
-            return tiles;
         }
 
         #endregion
