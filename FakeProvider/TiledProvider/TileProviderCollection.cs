@@ -144,12 +144,13 @@ namespace FakeProvider
         #endregion
         #region Clear
 
-        public void Clear()
+        public void Clear(INamedTileCollection except = null)
         {
             lock (Locker)
             {
                 foreach (INamedTileCollection provider in Providers.ToArray())
-                    Remove(provider.Name, false);
+                    if (provider != except)
+                        Remove(provider.Name, false);
                 GC.Collect();
             }
         }
@@ -232,8 +233,7 @@ namespace FakeProvider
                 for (int j = TileCollection.Y; j < TileCollection.Y + TileCollection.Height; j++)
                 {
                     short providerIndex = ProviderIndex[i + OffsetX, j + OffsetY];
-                    INamedTileCollection provider = Providers[providerIndex];
-                    if (providerIndex < 0 || provider.Layer <= layer || !provider.Enabled)
+                    if (providerIndex < 0 || Providers[providerIndex].Layer <= layer || !Providers[providerIndex].Enabled)
                         ProviderIndex[i + OffsetX, j + OffsetY] = index;
                 }
         }

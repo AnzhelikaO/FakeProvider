@@ -1,7 +1,6 @@
 ﻿#region Using
 using OTAPI.Tile;
 using System;
-using System.Collections.Generic;
 using Terraria;
 #endregion
 namespace FakeProvider

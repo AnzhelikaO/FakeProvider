@@ -4,7 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using Terraria;
+using Terraria.DataStructures;
+using Terraria.GameContent.Tile_Entities;
+using Terraria.ID;
 using Terraria.Net.Sockets;
 #endregion
 namespace FakeProvider
@@ -39,6 +43,17 @@ namespace FakeProvider
                 return;
 
             byte[] data;
+
+            /*data = new byte[250000];
+            int count = NetMessage.CompressTileBlock(X, Y, (short)Width, (short)Height, data, 3);
+            using (MemoryStream ms = new MemoryStream(data, 0, 3))
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                bw.Write((short)(3 + count));
+                bw.Write((byte)10);
+            }
+            data = data.Take(3 + count).ToArray();*/
+
             using (MemoryStream ms = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(ms))
             {
@@ -90,9 +105,11 @@ namespace FakeProvider
             {
                 bw.Write(X);
                 bw.Write(Y);
-                bw.Write(Width);
-                bw.Write(Height);
-                CompressTileBlock_Inner(bw, X, Y, Width, Height);
+                bw.Write((short)Width);
+                bw.Write((short)Height);
+                //NetMessage.CompressTileBlock_Inner(bw, X, Y, Width, Height);
+                //CompressTileBlock_Inner(bw, X, Y, Width, Height);
+                CompressTileBlock_Inner2(bw, X, Y, Width, Height);
                 ms.Position = 0L;
                 using (MemoryStream ms2 = new MemoryStream())
                 {
@@ -347,6 +364,208 @@ namespace FakeProvider
                 Terraria.DataStructures.TileEntity.Write(BinaryWriter, Terraria.DataStructures.TileEntity.ByID[(int)array3[m]], false);
             }
             */
+        }
+
+        private static void CompressTileBlock_Inner2(BinaryWriter BinaryWriter,
+            int X, int Y, int Width, int Height)
+        {
+            short num4 = 0;
+            int num5 = 0;
+            int num6 = 0;
+            byte b = 0;
+            byte[] array4 = new byte[13];
+            ITile tile = null;
+            for (int i = Y; i < Y + Height; i++)
+            {
+                for (int j = X; j < X + Width; j++)
+                {
+                    ITile tile2 = Main.tile[j, i];
+                    if (tile2.isTheSameAs(tile))
+                    {
+                        num4 += 1;
+                    }
+                    else
+                    {
+                        if (tile != null)
+                        {
+                            if (num4 > 0)
+                            {
+                                array4[num5] = (byte)(num4 & 255);
+                                num5++;
+                                if (num4 > 255)
+                                {
+                                    b |= 128;
+                                    array4[num5] = (byte)(((int)num4 & 65280) >> 8);
+                                    num5++;
+                                }
+                                else
+                                {
+                                    b |= 64;
+                                }
+                            }
+                            array4[num6] = b;
+                            BinaryWriter.Write(array4, num6, num5 - num6);
+                            num4 = 0;
+                        }
+                        num5 = 3;
+                        byte b3;
+                        byte b2 = b = (b3 = 0);
+                        if (tile2.active())
+                        {
+                            b |= 2;
+                            array4[num5] = (byte)tile2.type;
+                            num5++;
+                            if (tile2.type > 255)
+                            {
+                                array4[num5] = (byte)(tile2.type >> 8);
+                                num5++;
+                                b |= 32;
+                            }
+                            if (Main.tileFrameImportant[(int)tile2.type])
+                            {
+                                array4[num5] = (byte)(tile2.frameX & 255);
+                                num5++;
+                                array4[num5] = (byte)(((int)tile2.frameX & 65280) >> 8);
+                                num5++;
+                                array4[num5] = (byte)(tile2.frameY & 255);
+                                num5++;
+                                array4[num5] = (byte)(((int)tile2.frameY & 65280) >> 8);
+                                num5++;
+                            }
+                            if (tile2.color() != 0)
+                            {
+                                b3 |= 8;
+                                array4[num5] = tile2.color();
+                                num5++;
+                            }
+                        }
+                        if (tile2.wall != 0)
+                        {
+                            b |= 4;
+                            array4[num5] = tile2.wall;
+                            num5++;
+                            if (tile2.wallColor() != 0)
+                            {
+                                b3 |= 16;
+                                array4[num5] = tile2.wallColor();
+                                num5++;
+                            }
+                        }
+                        if (tile2.liquid != 0)
+                        {
+                            if (tile2.lava())
+                            {
+                                b |= 16;
+                            }
+                            else if (tile2.honey())
+                            {
+                                b |= 24;
+                            }
+                            else
+                            {
+                                b |= 8;
+                            }
+                            array4[num5] = tile2.liquid;
+                            num5++;
+                        }
+                        if (tile2.wire())
+                        {
+                            b2 |= 2;
+                        }
+                        if (tile2.wire2())
+                        {
+                            b2 |= 4;
+                        }
+                        if (tile2.wire3())
+                        {
+                            b2 |= 8;
+                        }
+                        int num19;
+                        if (tile2.halfBrick())
+                        {
+                            num19 = 16;
+                        }
+                        else if (tile2.slope() != 0)
+                        {
+                            num19 = (int)(tile2.slope() + 1) << 4;
+                        }
+                        else
+                        {
+                            num19 = 0;
+                        }
+                        b2 |= (byte)num19;
+                        if (tile2.actuator())
+                        {
+                            b3 |= 2;
+                        }
+                        if (tile2.inActive())
+                        {
+                            b3 |= 4;
+                        }
+                        if (tile2.wire4())
+                        {
+                            b3 |= 32;
+                        }
+                        num6 = 2;
+                        if (b3 != 0)
+                        {
+                            b2 |= 1;
+                            array4[num6] = b3;
+                            num6--;
+                        }
+                        if (b2 != 0)
+                        {
+                            b |= 1;
+                            array4[num6] = b2;
+                            num6--;
+                        }
+                        tile = tile2;
+                    }
+                }
+            }
+            if (num4 > 0)
+            {
+                array4[num5] = (byte)(num4 & 255);
+                num5++;
+                if (num4 > 255)
+                {
+                    b |= 128;
+                    array4[num5] = (byte)(((int)num4 & 65280) >> 8);
+                    num5++;
+                }
+                else
+                {
+                    b |= 64;
+                }
+            }
+            array4[num6] = b;
+            BinaryWriter.Write(array4, num6, num5 - num6);
+            /*BinaryWriter.Write(num);
+            for (int k = 0; k < (int)num; k++)
+            {
+                Chest chest = Main.chest[(int)array[k]];
+                BinaryWriter.Write(array[k]);
+                BinaryWriter.Write((short)chest.x);
+                BinaryWriter.Write((short)chest.y);
+                BinaryWriter.Write(chest.name);
+            }
+            BinaryWriter.Write(num2);
+            for (int l = 0; l < (int)num2; l++)
+            {
+                Sign sign = Main.sign[(int)array2[l]];
+                BinaryWriter.Write(array2[l]);
+                BinaryWriter.Write((short)sign.x);
+                BinaryWriter.Write((short)sign.y);
+                BinaryWriter.Write(sign.text);
+            }
+            BinaryWriter.Write(num3);
+            for (int m = 0; m < (int)num3; m++)
+            {
+                TileEntity.Write(BinaryWriter, TileEntity.ByID[(int)array3[m]], false);
+            }*/
+            BinaryWriter.Write((short)0);
+            BinaryWriter.Write((short)0);
+            BinaryWriter.Write((short)0);
         }
 
         #endregion

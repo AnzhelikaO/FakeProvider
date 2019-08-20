@@ -1,15 +1,18 @@
 ﻿#region Using
+using OTAPI;
 using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Terraria;
 using TerrariaApi.Server;
 #endregion
 namespace FakeProvider
 {
+    [ApiVersion(2, 1)]
     public class FakeProvider : TerrariaPlugin
     {
         #region Data
@@ -19,14 +22,15 @@ namespace FakeProvider
         public override string Author => "Anzhelika & ASgo";
         public override string Description => "TODO";
 
-        public static TileProviderCollection Tile { get; }
+        public static TileProviderCollection Tile { get; private set; }
+        public static INamedTileCollection World { get; private set; }
         internal static int[] AllPlayers;
 
-        public int OffsetX { get; private set; }
-        public int OffsetY { get; private set; }
-        public int VisibleWidth { get; private set; }
-        public int VisibleHeight { get; private set; }
-        public bool ReadonlyWorld { get; private set; }
+        public static int OffsetX { get; private set; }
+        public static int OffsetY { get; private set; }
+        public static int VisibleWidth { get; private set; }
+        public static int VisibleHeight { get; private set; }
+        public static bool ReadonlyWorld { get; private set; }
 
         #endregion
 
@@ -93,6 +97,8 @@ namespace FakeProvider
 
             #endregion
 
+#warning TODO: rockLevel, surfaceLevel, cavernLevel or whatever
+
             ReadonlyWorld = args.Any(x => (x.ToLower() == "-readonlyworld"));
         }
 
@@ -106,17 +112,24 @@ namespace FakeProvider
                 AllPlayers[i] = i;
 
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, 1000000);
-            ServerApi.Hooks.GamePostInitialize.Register(this, OnGamePostInitialize, int.MaxValue);
+            OTAPI.Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
+            OTAPI.Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
+            OTAPI.Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
         }
 
         #endregion
         #region Dispose
 
-        protected override void Dispose(bool disposing)
+        protected override void Dispose(bool Disposing)
         {
-            if (disposing)
+            if (Disposing)
+            {
                 ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
-            base.Dispose(disposing);
+                OTAPI.Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
+                OTAPI.Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
+                OTAPI.Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
+            }
+            base.Dispose(Disposing);
         }
 
         #endregion
@@ -157,34 +170,64 @@ namespace FakeProvider
         }
 
         #endregion
-        #region OnGamePostInitialize
+        #region OnPostLoadWorld
 
-        private void OnGamePostInitialize(EventArgs args)
+        private void OnPostLoadWorld(bool FromCloud)
         {
+            Console.WriteLine($"REAL maxTilesX, maxTilesY: {Main.maxTilesX}, {Main.maxTilesY}");
+
             if (VisibleWidth < 0)
                 VisibleWidth = (OffsetX + Main.maxTilesX);
             if (VisibleHeight < 0)
                 VisibleHeight = (OffsetY + Main.maxTilesY);
-            TileProviderCollection provider = new TileProviderCollection(VisibleWidth, VisibleHeight,
+            Tile = new TileProviderCollection(VisibleWidth, VisibleHeight,
                 OffsetX, OffsetY);
 
-            if (Netplay.IsServerRunning && (Main.tile != null))
-            {
-                INamedTileCollection world;
-                if (ReadonlyWorld)
-                    world = new ReadonlyTileProvider();
-                else
-                    world = new TileProvider("__world__", OffsetX, OffsetY,
-                        Main.maxTilesX, Main.maxTilesY, Main.tile);
-                provider.Add(world);
-            }
+            if (ReadonlyWorld)
+                World = new ReadonlyTileProvider("__world__", 0, 0,
+                    Main.maxTilesX, Main.maxTilesY, Main.tile);
+            else
+                World = new TileProvider("__world__", 0, 0,
+                    Main.maxTilesX, Main.maxTilesY, Main.tile);
+            Tile.Add(World);
 
             IDisposable previous = Main.tile as IDisposable;
-            Main.tile = provider;
             Main.maxTilesX = VisibleWidth;
             Main.maxTilesY = VisibleHeight;
+            Main.worldSurface += OffsetY;
+            Main.rockLayer += OffsetY;
+            Main.tile = Tile;
             previous?.Dispose();
             GC.Collect();
+
+            WorldGen.setWorldSize();
+            Console.WriteLine($"NEW maxTilesX, maxTilesY: {Main.maxTilesX}, {Main.maxTilesY}");
+            Console.ReadKey();
+        }
+
+        #endregion
+        #region OnPreSaveWorld
+
+        private HookResult OnPreSaveWorld(ref bool Cloud, ref bool ResetTime)
+        {
+            Main.maxTilesX = World.Width;
+            Main.maxTilesY = World.Height;
+            Main.worldSurface -= OffsetY;
+            Main.rockLayer -= OffsetY;
+            Main.tile = World;
+            return HookResult.Continue;
+        }
+
+        #endregion
+        #region OnPostSaveWorld
+
+        private void OnPostSaveWorld(bool Cloud, bool ResetTime)
+        {
+            Main.maxTilesX = VisibleWidth;
+            Main.maxTilesY = VisibleHeight;
+            Main.worldSurface += OffsetY;
+            Main.rockLayer += OffsetY;
+            Main.tile = Tile;
         }
 
         #endregion
