@@ -9,7 +9,9 @@ namespace FakeProvider
     {
         #region Data
 
-        private StructTile[,] Data;
+        public TileProviderCollection Parent { get; private set; }
+        private IProviderTile[,] Tiles;
+        public short Index { get; internal set; }
         public string Name { get; }
         public int X { get; set; }
         public int Y { get; set; }
@@ -24,12 +26,12 @@ namespace FakeProvider
         public TileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
         {
             this.Name = Name;
-            this.Data = new StructTile[Width, Height];
             this.X = X;
             this.Y = Y;
             this.Width = Width;
             this.Height = Height;
             this.Layer = Layer;
+            this.Tiles = new IProviderTile[Width, Height];
         }
 
         #region ITileCollection
@@ -38,14 +40,17 @@ namespace FakeProvider
                 ITileCollection CopyFrom, int Layer = 0)
             : this(Name, X, Y, Width, Height, Layer)
         {
+            int copyWidth = CopyFrom.Width;
+            int copyHeight = CopyFrom.Height;
             if (CopyFrom != null)
-                for (int i = X; i < X + Width; i++)
-                    for (int j = Y; j < Y + Height; j++)
-                    {
-                        ITile t = CopyFrom[i, j];
-                        if (t != null)
-                            this[i - X, j - Y].CopyFrom(t);
-                    }
+                for (int i = 0; i < Width; i++)
+                    for (int j = 0; j < Height; j++)
+                        if (i < copyWidth && j < copyHeight)
+                        {
+                            ITile t = CopyFrom[i, j];
+                            if (t != null)
+                                this[i, j] = t;
+                        }
         }
 
         #endregion
@@ -55,14 +60,17 @@ namespace FakeProvider
                 ITile[,] CopyFrom, int Layer = 0)
             : this(Name, X, Y, Width, Height, Layer)
         {
+            int copyWidth = CopyFrom.GetLength(0);
+            int copyHeight = CopyFrom.GetLength(1);
             if (CopyFrom != null)
-                for (int i = X; i < X + Width; i++)
-                    for (int j = Y; j < Y + Height; j++)
-                    {
-                        ITile t = CopyFrom[i, j];
-                        if (t != null)
-                            this[i - X, j - Y].CopyFrom(t);
-                    }
+                for (int i = 0; i < Width; i++)
+                    for (int j = 0; j < Height; j++)
+                        if (i < copyWidth && j < copyHeight)
+                        {
+                            ITile t = CopyFrom[i, j];
+                            if (t != null)
+                                this[i, j] = t;
+                        }
         }
 
         #endregion
@@ -71,14 +79,35 @@ namespace FakeProvider
 
         #region operator[,]
 
+        /// <summary>
+        /// Get/set tile relative to provider position
+        /// </summary>
         public ITile this[int X, int Y]
         {
-            get => new TileReference(Data, (X - this.X), (Y - this.Y));
-            set => new TileReference(Data, (X - this.X), (Y - this.Y)).CopyFrom(value);
+            get => Tiles[X, Y];
+            set
+            {
+                if (Tiles[X, Y] == null)
+                    Tiles[X, Y] = new FakeTile(Index);
+                Tiles[X, Y]?.CopyFrom(value);
+            }
         }
 
         #endregion
 
+        #region SetupParent
+
+        public void SetupParent(TileProviderCollection Parent, short Index)
+        {
+            Console.WriteLine("SetupParent for: " + Name);
+            Console.WriteLine("Parent value: " + Parent);
+            if (this.Parent != null)
+                throw new InvalidOperationException();
+            this.Parent = Parent;
+            this.Index = Index;
+        }
+
+        #endregion
         #region XYWH
 
         public (int X, int Y, int Width, int Height) XYWH() =>
@@ -93,12 +122,14 @@ namespace FakeProvider
             this.Y = Y;
             if ((this.Width != Width) || (this.Height != Height))
             {
-                StructTile[,] newData = new StructTile[Width, Height];
+                int oldWidth = this.Width;
+                int oldHeight = this.Height;
+                IProviderTile[,] Tiles = new IProviderTile[Width, Height];
                 for (int i = 0; i < Width; i++)
                     for (int j = 0; j < Height; j++)
-                        if ((i < this.Width) && (j < this.Height))
-                            newData[i, j] = Data[i, j];
-                this.Data = newData;
+                        if ((i < oldWidth) && (j < oldHeight))
+                            Tiles[i, j] = this.Tiles[i, j];
+                this.Tiles = Tiles;
                 this.Width = Width;
                 this.Height = Height;
             }
@@ -112,7 +143,7 @@ namespace FakeProvider
             if (!Enabled)
             {
                 Enabled = true;
-                FakeProvider.Tile.UpdateProviderIndexes(this);
+                Apply();
 #warning NotImplemented
                 new NotImplementedException("Draw on enable");
             }
@@ -126,7 +157,7 @@ namespace FakeProvider
             if (Enabled)
             {
                 Enabled = false;
-                FakeProvider.Tile.UpdateProviderIndexes(X, Y, Width, Height);
+                FakeProvider.Tile.UpdateTiles(X, Y, Width, Height);
 #warning NotImplemented
                 new NotImplementedException("Draw on disable");
             }
@@ -134,19 +165,41 @@ namespace FakeProvider
 
         #endregion
 
+        #region Apply
+
+        public void Apply()
+        {
+            if (!Enabled)
+                return;
+            int offsetX = Parent.OffsetX;
+            int offsetY = Parent.OffsetY;
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
+                {
+                    IProviderTile tile = Parent.Tiles[X + i + offsetX, Y + j + offsetY];
+                    IProviderTile providerTile = Tiles[i, j];
+                    if ((tile == null || tile.Layer <= Layer)
+                            && providerTile != null)
+                        Parent.Tiles[i + offsetX, j + offsetY] = providerTile;
+                }
+        }
+
+        #endregion
         #region Draw
 
         public void Draw(bool section=false)
         {
+            int x = Parent.OffsetX + X;
+            int y = Parent.OffsetY + Y;
             if (section)
             {
-                NetMessage.SendData((int)PacketTypes.TileSendSection, -1, -1, null, X, Y, Width, Height);
-                int sx1 = Netplay.GetSectionX(X), sy1 = Netplay.GetSectionY(Y);
-                int sx2 = Netplay.GetSectionX(X + Width - 1), sy2 = Netplay.GetSectionY(Y + Height - 1);
+                NetMessage.SendData((int)PacketTypes.TileSendSection, -1, -1, null, x, y, Width, Height);
+                int sx1 = Netplay.GetSectionX(x), sy1 = Netplay.GetSectionY(y);
+                int sx2 = Netplay.GetSectionX(x + Width - 1), sy2 = Netplay.GetSectionY(y + Height - 1);
                 NetMessage.SendData((int)PacketTypes.TileFrameSection, -1, -1, null, sx1, sy1, sx2, sy2);
             }
             else
-                NetMessage.SendData((int)PacketTypes.TileSendSquare, -1, -1, null, Math.Max(Width, Height), X, Y);
+                NetMessage.SendData((int)PacketTypes.TileSendSquare, -1, -1, null, Math.Max(Width, Height), x, y);
         }
 
         #endregion
@@ -183,22 +236,7 @@ namespace FakeProvider
 
         public void Dispose()
         {
-            if (Data == null)
-                return;
-            int w = Data.GetLength(0), h = Data.GetLength(1);
-            for (int x = 0; x < w; x++)
-                for (int y = 0; y < h; y++)
-                {
-                    Data[x, y].bTileHeader = 0;
-                    Data[x, y].bTileHeader2 = 0;
-                    Data[x, y].bTileHeader3 = 0;
-                    Data[x, y].frameX = 0;
-                    Data[x, y].frameY = 0;
-                    Data[x, y].liquid = 0;
-                    Data[x, y].type = 0;
-                    Data[x, y].wall = 0;
-                }
-            Data = null;
+            Tiles = null;
         }
 
         #endregion

@@ -98,7 +98,6 @@ namespace FakeProvider
             }
             BinaryWriter.Write((short)X);
             BinaryWriter.Write((short)Y);
-            ITileCollection tiles = Main.tile;
             for (int num8 = X; num8 < X + Size; num8++)
             {
                 for (int num9 = Y; num9 < Y + Size; num9++)
@@ -107,7 +106,7 @@ namespace FakeProvider
                     BitsByte bb12 = 0;
                     byte value = 0;
                     byte value2 = 0;
-                    ITile tile = tiles[num8 - X, num9 - Y];
+                    ITile tile = Main.tile[num8 - X, num9 - Y];
                     bb11[0] = tile.active();
                     bb11[2] = (tile.wall > 0);
                     bb11[3] = (tile.liquid > 0 && Main.netMode == 2);

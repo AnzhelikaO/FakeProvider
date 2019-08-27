@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Terraria;
 using TerrariaApi.Server;
 #endregion
@@ -112,6 +113,7 @@ namespace FakeProvider
                 AllPlayers[i] = i;
 
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, 1000000);
+            ServerApi.Hooks.GamePostInitialize.Register(this, OnGamePostInitialize, int.MinValue);
             OTAPI.Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
             OTAPI.Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
             OTAPI.Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
@@ -125,6 +127,7 @@ namespace FakeProvider
             if (Disposing)
             {
                 ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
+                ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGamePostInitialize);
                 OTAPI.Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
                 OTAPI.Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
                 OTAPI.Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
@@ -158,6 +161,7 @@ namespace FakeProvider
                     // TODO: sending to custom list of players with args.text
                     break;
                 case PacketTypes.TileSendSquare:
+                    return;
                     args.Handled = true;
                     if (args.text?._text == null)
                         SendTileSquarePacket.Send(args.remoteClient, args.ignoreClient,
@@ -167,6 +171,14 @@ namespace FakeProvider
                             args.number, (int)args.number2, (int)args.number3, args.number5);
                     break;
             }
+        }
+
+        #endregion
+        #region OnGamePostInitialize
+
+        private void OnGamePostInitialize(EventArgs args)
+        {
+            Task.Delay(1000).ContinueWith(_ => GC.Collect());
         }
 
         #endregion
@@ -180,13 +192,12 @@ namespace FakeProvider
                 VisibleWidth = (OffsetX + Main.maxTilesX);
             if (VisibleHeight < 0)
                 VisibleHeight = (OffsetY + Main.maxTilesY);
-            Tile = new TileProviderCollection(VisibleWidth, VisibleHeight,
-                OffsetX, OffsetY);
+            Tile = new TileProviderCollection(VisibleWidth, VisibleHeight, OffsetX, OffsetY);
 
-            if (ReadonlyWorld)
-                World = new ReadonlyTileProvider("__world__", 0, 0,
-                    Main.maxTilesX, Main.maxTilesY, Main.tile);
-            else
+            //if (ReadonlyWorld)
+            //    World = new ReadonlyTileProvider("__world__", 0, 0,
+            //        Main.maxTilesX, Main.maxTilesY, Main.tile);
+            //else
                 World = new TileProvider("__world__", 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile);
             Tile.Add(World);
@@ -213,6 +224,8 @@ namespace FakeProvider
         {
             Main.maxTilesX = World.Width;
             Main.maxTilesY = World.Height;
+            Main.spawnTileX -= OffsetX;
+            Main.spawnTileY -= OffsetY;
             Main.worldSurface -= OffsetY;
             Main.rockLayer -= OffsetY;
             Main.tile = World;
@@ -226,6 +239,8 @@ namespace FakeProvider
         {
             Main.maxTilesX = VisibleWidth;
             Main.maxTilesY = VisibleHeight;
+            Main.spawnTileX += OffsetX;
+            Main.spawnTileY += OffsetY;
             Main.worldSurface += OffsetY;
             Main.rockLayer += OffsetY;
             Main.tile = Tile;
