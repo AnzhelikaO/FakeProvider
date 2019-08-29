@@ -194,10 +194,10 @@ namespace FakeProvider
                 VisibleHeight = (OffsetY + Main.maxTilesY);
             Tile = new TileProviderCollection(VisibleWidth, VisibleHeight, OffsetX, OffsetY);
 
-            //if (ReadonlyWorld)
-            //    World = new ReadonlyTileProvider("__world__", 0, 0,
-            //        Main.maxTilesX, Main.maxTilesY, Main.tile);
-            //else
+            if (ReadonlyWorld)
+                World = new ReadonlyTileProvider("__world__", 0, 0,
+                    Main.maxTilesX, Main.maxTilesY, Main.tile);
+            else
                 World = new TileProvider("__world__", 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile);
             Tile.Add(World);

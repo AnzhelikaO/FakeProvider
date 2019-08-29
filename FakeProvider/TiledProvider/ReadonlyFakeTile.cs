@@ -54,6 +54,21 @@ namespace FakeProvider
             this.ProviderIndex = ProviderIndex;
         }
 
+        public ReadonlyFakeTile(short ProviderIndex, ITile Tile)
+        {
+            this.ProviderIndex = ProviderIndex;
+
+            _type = Tile.type;
+            _wall = Tile.wall;
+            _liquid = Tile.liquid;
+            _sTileHeader = Tile.sTileHeader;
+            _bTileHeader = Tile.bTileHeader;
+            _bTileHeader2 = Tile.bTileHeader2;
+            _bTileHeader3 = Tile.bTileHeader3;
+            _frameX = Tile.frameX;
+            _frameY = Tile.frameY;
+        }
+
         #endregion
 
         #region Initialise
@@ -215,7 +230,7 @@ namespace FakeProvider
         #endregion
         #region checkingLiquid
 
-        public bool checkingLiquid() => ((bTileHeader3 & 8) == 8);
+        public bool checkingLiquid() => true;// ((bTileHeader3 & 8) == 8);
         public void checkingLiquid(bool CheckingLiquid)
         {
         }
@@ -279,7 +294,7 @@ namespace FakeProvider
         }
 
         #endregion
-        public bool nactive() => ((sTileHeader & 96) == 32);
+        public bool nactive() => false;// ((sTileHeader & 96) == 32);
 
         #region wire
 

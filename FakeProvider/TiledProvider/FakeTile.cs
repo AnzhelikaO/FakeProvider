@@ -2,10 +2,12 @@
 using Microsoft.Xna.Framework;
 using OTAPI.Tile;
 using System;
+using System.Runtime.InteropServices;
 using Terraria;
 #endregion
 namespace FakeProvider
 {
+    [StructLayout(LayoutKind.Sequential, Size = 15, Pack = 1)]
     public sealed class FakeTile : IProviderTile
     {
         #region Constants
