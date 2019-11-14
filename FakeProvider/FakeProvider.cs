@@ -191,13 +191,14 @@ namespace FakeProvider
                     Main.maxTilesX, Main.maxTilesY, Main.tile);
             Tile.Add(World);
 
-            IDisposable previous = Main.tile as IDisposable;
-            Main.maxTilesX = VisibleWidth;
-            Main.maxTilesY = VisibleHeight;
-            Main.worldSurface += OffsetY;
-            Main.rockLayer += OffsetY;
-            Main.tile = Tile;
-            previous?.Dispose();
+            using (IDisposable previous = Main.tile as IDisposable)
+            {
+                Main.maxTilesX = VisibleWidth;
+                Main.maxTilesY = VisibleHeight;
+                Main.worldSurface += OffsetY;
+                Main.rockLayer += OffsetY;
+                Main.tile = Tile;
+            }
             GC.Collect();
 
             WorldGen.setWorldSize();
