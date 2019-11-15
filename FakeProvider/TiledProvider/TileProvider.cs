@@ -72,7 +72,13 @@ namespace FakeProvider
 
         #region operator[,]
 
-        public ITile this[int X, int Y]
+        ITile ITileCollection.this[int X, int Y]
+        {
+            get => new TileReference<T>(Data, (X - this.X), (Y - this.Y));
+            set => new TileReference<T>(Data, (X - this.X), (Y - this.Y)).CopyFrom(value);
+        }
+
+        public IProviderTile this[int X, int Y]
         {
             get => new TileReference<T>(Data, (X - this.X), (Y - this.Y));
             set => new TileReference<T>(Data, (X - this.X), (Y - this.Y)).CopyFrom(value);
@@ -113,7 +119,7 @@ namespace FakeProvider
             if (!Enabled)
             {
                 Enabled = true;
-                FakeProvider.Tile.UpdateProviderIndexes(this);
+                FakeProvider.Tile.UpdateProviderReferences(this);
 #warning NotImplemented
                 new NotImplementedException("Draw on enable");
             }
@@ -127,7 +133,7 @@ namespace FakeProvider
             if (Enabled)
             {
                 Enabled = false;
-                FakeProvider.Tile.UpdateProviderIndexes(X, Y, Width, Height);
+                FakeProvider.Tile.UpdateProviderReferences(X, Y, Width, Height);
 #warning NotImplemented
                 new NotImplementedException("Draw on disable");
             }

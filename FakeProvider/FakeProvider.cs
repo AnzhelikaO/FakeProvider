@@ -24,6 +24,7 @@ namespace FakeProvider
         public override string Description => "TODO";
 
         public static TileProviderCollection Tile { get; private set; }
+        public static INamedTileCollection Void { get; private set; }
         public static INamedTileCollection World { get; private set; }
         internal static TypeBuilder TypeBuilder { get; private set; }
         internal static int[] AllPlayers;
@@ -103,9 +104,10 @@ namespace FakeProvider
 
             ReadonlyWorld = args.Any(x => (x.ToLower() == "-readonlyworld"));
 
-            AssemblyName assemblyName = new AssemblyName("TileProvider");
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+            AssemblyName assemblyName = new AssemblyName("FakeProviderRuntimeAssembly");
+            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain
+                .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("FakeProviderRuntimeModule");
             TypeBuilder = moduleBuilder.DefineType(assemblyName.FullName
                                 , TypeAttributes.Public |
                                 TypeAttributes.Class |
@@ -113,6 +115,10 @@ namespace FakeProvider
                                 TypeAttributes.AnsiClass |
                                 TypeAttributes.BeforeFieldInit |
                                 TypeAttributes.AutoLayout);
+
+            ITile[,] voidTiles = new ITile[1, 1];
+            voidTiles[0, 0] = new Tile();
+            Void = CreateReadonlyTileProvider("FakeProviderVoid", 0, 0, 1, 1, voidTiles, 0);
         }
 
         #endregion

@@ -16,7 +16,7 @@ namespace FakeProvider
         // ??????????????????????????????????????????????????????????????????????????????????????????????????
         // ????????????????????????????????????????????????
         private static List<INamedTileCollection> Providers = new List<INamedTileCollection>();
-        private static short[,] ProviderIndex;
+        private static IProviderTile[,] Tiles;
 
         /// <summary> World width visible by client. </summary>
         public int Width { get; }
@@ -42,10 +42,7 @@ namespace FakeProvider
             this.OffsetY = OffsetY;
             this.VoidTile = new StructTile[1, 1] { { VoidTile ?? new StructTile() } };
 
-            ProviderIndex = new short[this.Width, this.Height];
-            for (int i = 0; i < this.Width; i++)
-                for (int j = 0; j < this.Height; j++)
-                    ProviderIndex[i, j] = -1;
+            Tiles = new IProviderTile[this.Width, this.Height];
         }
 
         #endregion
@@ -56,17 +53,17 @@ namespace FakeProvider
         {
             get
             {
-                if (X < 0 || X >= Width || Y < 0 || Y >= Height || ProviderIndex[X, Y] < 0)
-                    return new ReadonlyTileReference(VoidTile, 0, 0);
-                INamedTileCollection provider = Providers[ProviderIndex[X, Y]];
-                return provider[(X - OffsetX), (Y - OffsetY)];
+                if (X < 0 || X >= Width || Y < 0 || Y >= Height)
+                    return FakeProvider.Void[0, 0];
+                return Tiles[X, Y] ?? FakeProvider.Void[0, 0];
             }
             set
             {
-                if (X < 0 || X >= Width || Y < 0 || Y >= Height || ProviderIndex[X, Y] < 0)
+                if (X < 0 || X >= Width || Y < 0 || Y >= Height)
                     return;
-                INamedTileCollection provider = Providers[ProviderIndex[X, Y]];
-                provider[(X - OffsetX), (Y - OffsetY)] = value;
+                IProviderTile tile = Tiles[X, Y];
+                if (tile != null)
+                    tile.CopyFrom(value);
             }
         }
 
@@ -105,7 +102,7 @@ namespace FakeProvider
                 if (index == -1)
                     index = (short)Providers.Count;
                 Providers.Insert(index, TileCollection);
-                UpdateProviderIndexes(TileCollection);
+                UpdateProviderReferences(TileCollection);
             }
         }
 
@@ -124,7 +121,7 @@ namespace FakeProvider
                 // Removing provider from ProviderIndexes array.
                 int x = provider.X, y = provider.Y;
                 int w = provider.Width, h = provider.Height;
-                UpdateProviderIndexes(x, y, w, h);
+                UpdateProviderReferences(x, y, w, h);
 
                 // Sending removed and updated area of tiles.
                 NetMessage.SendData((int)PacketTypes.TileSendSection, -1, -1, null, x, y, w, h);
@@ -205,9 +202,9 @@ namespace FakeProvider
             && (Provider.Y < (Y + Height)) && (Y < (Provider.Y + Provider.Height)));
 
         #endregion
-        #region UpdateProviderIndexes
+        #region UpdateProviderReferences
 
-        public void UpdateProviderIndexes(int X, int Y, int Width, int Height)
+        public void UpdateProviderReferences(int X, int Y, int Width, int Height)
         {
             lock (Locker)
                 for (short providerIndex = 0; providerIndex < Providers.Count; providerIndex++)
@@ -218,12 +215,13 @@ namespace FakeProvider
                         Intersect(provider, X, Y, Width, Height, out int x, out int y, out int w, out int h);
                         for (int i = x; i < x + w; i++)
                             for (int j = y; j < y + h; j++)
-                                ProviderIndex[i + OffsetX, j + OffsetY] = providerIndex;
+                                Tiles[i + OffsetX, j + OffsetY] = provider[i, j];
                     }
                 }
         }
 
-        public void UpdateProviderIndexes(INamedTileCollection TileCollection)
+        // LOCK???
+        public void UpdateProviderReferences(INamedTileCollection TileCollection)
         {
             if (!TileCollection.Enabled)
                 return;
@@ -232,9 +230,9 @@ namespace FakeProvider
             for (int i = TileCollection.X; i < TileCollection.X + TileCollection.Width; i++)
                 for (int j = TileCollection.Y; j < TileCollection.Y + TileCollection.Height; j++)
                 {
-                    short providerIndex = ProviderIndex[i + OffsetX, j + OffsetY];
-                    if (providerIndex < 0 || Providers[providerIndex].Layer <= layer || !Providers[providerIndex].Enabled)
-                        ProviderIndex[i + OffsetX, j + OffsetY] = index;
+                    IProviderTile tile = Tiles[i + OffsetX, j + OffsetY];
+                    if (tile == null || tile.Provider.Layer <= layer || !tile.Provider.Enabled)
+                        Tiles[i + OffsetX, j + OffsetY] = TileCollection[i, j];
                 }
         }
 
