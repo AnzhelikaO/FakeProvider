@@ -16,6 +16,8 @@ namespace test
         {
             Name = name;
         }
+
+        public override string ToString() => Name;
     }
 
     [StructLayout(LayoutKind.Sequential, Size = 13, Pack = 1)]
@@ -116,10 +118,54 @@ namespace test
         }
     }
 
+    public interface ITile
+    {
+        Provider Provider { get; }
+        byte wall { get; set; }
+    }
+
+    public struct StructTile<T> : ITile
+    {
+        private static Provider _Provider;
+        public Provider Provider => _Provider;
+
+        public byte wall { get; set; }
+
+        public override string ToString() => $"tile[{typeof(T)}] {wall}: {Provider}";
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
+            List<ITile> tiles = new List<ITile>();
+            for (int i = 0; i < 10; i++)
+            {
+                Provider provider = new Provider($"Custom Provider {i}");
+                AssemblyName assemblyName = new AssemblyName($"kek{i}");
+                AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+                ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+                TypeBuilder typeBuilder = moduleBuilder.DefineType(assemblyName.FullName
+                                    , TypeAttributes.Public |
+                                    TypeAttributes.Class |
+                                    TypeAttributes.AutoClass |
+                                    TypeAttributes.AnsiClass |
+                                    TypeAttributes.BeforeFieldInit |
+                                    TypeAttributes.AutoLayout);
+                Type type = typeBuilder.CreateType();
+                Type tileType = typeof(StructTile<>).MakeGenericType(type);
+                tileType.GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, provider);
+                ITile tile = (ITile)Activator.CreateInstance(tileType);
+                tiles.Add(tile);
+                ITile tile2 = (ITile)Activator.CreateInstance(tileType);
+                tile2.wall = 10;
+                tiles.Add(tile2);
+            }
+
+            for (int i = 0; i < tiles.Count; i++)
+                Console.WriteLine(tiles[i]);
+
+            /*
             Provider provider = new Provider("Custom Provider");
             Type tileType = typeof(Tile);
             AssemblyName assemblyName = new AssemblyName("kek");
@@ -154,6 +200,7 @@ namespace test
             Type customTileType = typeBuilder.CreateType();
             Tile customTile = (Tile)Activator.CreateInstance(customTileType);
             Console.WriteLine(customTile);
+            */
         }
     }
 }
