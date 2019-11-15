@@ -5,7 +5,7 @@ using Terraria;
 #endregion
 namespace FakeProvider
 {
-    public sealed class ReadonlyTileProvider : INamedTileCollection
+    public sealed class ReadonlyTileProvider<T> : INamedTileCollection
     {
         #region Data
 
@@ -44,7 +44,7 @@ namespace FakeProvider
                     {
                         ITile t = CopyFrom[i, j];
                         if (t != null)
-                            new TileReference(Data, (i - X - this.X), (j - Y - this.Y)).CopyFrom(t);
+                            new ReadonlyTileReference<T>(Data, (i - X - this.X), (j - Y - this.Y)).ForceCopyFrom(t);
                     }
         }
 
@@ -61,7 +61,7 @@ namespace FakeProvider
                     {
                         ITile t = CopyFrom[i, j];
                         if (t != null)
-                            new TileReference(Data, (i - X - this.X), (j - Y - this.Y)).CopyFrom(t);
+                            new ReadonlyTileReference<T>(Data, (i - X - this.X), (j - Y - this.Y)).ForceCopyFrom(t);
                     }
         }
 
@@ -73,7 +73,7 @@ namespace FakeProvider
 
         public ITile this[int X, int Y]
         {
-            get => new ReadonlyTileReference(Data, (X - this.X), (Y - this.Y));
+            get => new ReadonlyTileReference<T>(Data, (X - this.X), (Y - this.Y));
             set { }
         }
 

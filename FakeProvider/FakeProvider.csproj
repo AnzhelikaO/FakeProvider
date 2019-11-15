@@ -50,6 +50,7 @@
     <Compile Include="FakeProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TiledProvider\INamedTileCollection.cs" />
+    <Compile Include="TiledProvider\IProviderTile.cs" />
     <Compile Include="TiledProvider\ReadonlyTileProvider.cs" />
     <Compile Include="TiledProvider\TileProviderCollection.cs" />
     <Compile Include="TiledProvider\StructTile.cs" />

@@ -1,11 +1,12 @@
 ﻿#region Using
 using OTAPI.Tile;
 using System;
+using System.Reflection;
 using Terraria;
 #endregion
 namespace FakeProvider
 {
-    public sealed class TileProvider : INamedTileCollection
+    public sealed class TileProvider<T> : INamedTileCollection
     {
         #region Data
 
@@ -73,8 +74,8 @@ namespace FakeProvider
 
         public ITile this[int X, int Y]
         {
-            get => new TileReference(Data, (X - this.X), (Y - this.Y));
-            set => new TileReference(Data, (X - this.X), (Y - this.Y)).CopyFrom(value);
+            get => new TileReference<T>(Data, (X - this.X), (Y - this.Y));
+            set => new TileReference<T>(Data, (X - this.X), (Y - this.Y)).CopyFrom(value);
         }
 
         #endregion

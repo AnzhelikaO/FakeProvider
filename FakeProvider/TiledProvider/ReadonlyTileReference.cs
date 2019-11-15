@@ -5,7 +5,7 @@ using Terraria;
 #endregion
 namespace FakeProvider
 {
-    public sealed class ReadonlyTileReference : ITile
+    public sealed class ReadonlyTileReference<T> : IProviderTile
     {
         #region Constants
 
@@ -24,6 +24,8 @@ namespace FakeProvider
         #region Data
 
         private StructTile[,] Data;
+        private static INamedTileCollection _Provider;
+        public INamedTileCollection Provider => _Provider;
         public int X { get; }
         public int Y { get; }
 
@@ -182,6 +184,22 @@ namespace FakeProvider
         #region CopyFrom
 
         public void CopyFrom(ITile From) { }
+
+        #endregion
+        #region ForceCopyFrom
+
+        public void ForceCopyFrom(ITile From)
+        {
+            type = From.type;
+            wall = From.wall;
+            liquid = From.liquid;
+            sTileHeader = From.sTileHeader;
+            bTileHeader = From.bTileHeader;
+            bTileHeader2 = From.bTileHeader2;
+            bTileHeader3 = From.bTileHeader3;
+            frameX = From.frameX;
+            frameY = From.frameY;
+        }
 
         #endregion
         #region isTheSameAs
