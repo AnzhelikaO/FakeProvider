@@ -56,16 +56,18 @@ namespace FakeProvider
         {
             get
             {
-                if (X < 0 || X >= Width || Y < 0 || Y >= Height || ProviderIndex[X, Y] < 0)
+                short providerIndex;
+                if (X < 0 || X >= Width || Y < 0 || Y >= Height || (providerIndex = ProviderIndex[X, Y]) < 0)
                     return new ReadonlyTileReference(VoidTile, 0, 0);
-                INamedTileCollection provider = Providers[ProviderIndex[X, Y]];
+                INamedTileCollection provider = Providers[providerIndex];
                 return provider[(X - OffsetX), (Y - OffsetY)];
             }
             set
             {
-                if (X < 0 || X >= Width || Y < 0 || Y >= Height || ProviderIndex[X, Y] < 0)
+                short providerIndex;
+                if (X < 0 || X >= Width || Y < 0 || Y >= Height || (providerIndex = ProviderIndex[X, Y]) < 0)
                     return;
-                INamedTileCollection provider = Providers[ProviderIndex[X, Y]];
+                INamedTileCollection provider = Providers[providerIndex];
                 provider[(X - OffsetX), (Y - OffsetY)] = value;
             }
         }

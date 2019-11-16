@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using Terraria;
 using TerrariaApi.Server;
@@ -25,6 +26,7 @@ namespace FakeProvider
         public static TileProviderCollection Tile { get; private set; }
         public static INamedTileCollection World { get; private set; }
         internal static int[] AllPlayers;
+        internal static Func<RemoteClient, byte[], int, int, bool> NetSendBytes;
 
         public static int OffsetX { get; private set; }
         public static int OffsetY { get; private set; }
@@ -107,11 +109,16 @@ namespace FakeProvider
 
         public override void Initialize()
         {
+            NetSendBytes = (Func<RemoteClient, byte[], int, int, bool>)Delegate.CreateDelegate(
+                typeof(Func<RemoteClient, byte[], int, int, bool>),
+                ServerApi.Hooks,
+                ServerApi.Hooks.GetType().GetMethod("InvokeNetSendBytes", BindingFlags.NonPublic | BindingFlags.Instance));
+
             AllPlayers = new int[Main.maxPlayers];
             for (int i = 0; i < Main.maxPlayers; i++)
                 AllPlayers[i] = i;
 
-            ServerApi.Hooks.NetSendData.Register(this, OnSendData, 1000000);
+            ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
             OTAPI.Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
             OTAPI.Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
             OTAPI.Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
