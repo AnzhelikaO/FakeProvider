@@ -190,15 +190,15 @@ namespace FakeProvider
 
         public void ForceCopyFrom(ITile From)
         {
-            type = From.type;
-            wall = From.wall;
-            liquid = From.liquid;
-            sTileHeader = From.sTileHeader;
-            bTileHeader = From.bTileHeader;
-            bTileHeader2 = From.bTileHeader2;
-            bTileHeader3 = From.bTileHeader3;
-            frameX = From.frameX;
-            frameY = From.frameY;
+            Data[X, Y].type = From.type;
+            Data[X, Y].wall = From.wall;
+            Data[X, Y].liquid = From.liquid;
+            Data[X, Y].sTileHeader = From.sTileHeader;
+            Data[X, Y].bTileHeader = From.bTileHeader;
+            Data[X, Y].bTileHeader2 = From.bTileHeader2;
+            Data[X, Y].bTileHeader3 = From.bTileHeader3;
+            Data[X, Y].frameX = From.frameX;
+            Data[X, Y].frameY = From.frameY;
         }
 
         #endregion
