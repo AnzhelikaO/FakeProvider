@@ -13,12 +13,12 @@ namespace FakeProvider
         #region Send
 
         public static void Send(int Who, int IgnoreIndex,
-                int Size, int X, int Y, int Number5 = 0) =>
+                int Size, int X, int Y, int TileChangeType = 0) =>
             Send(((Who == -1) ? FakeProvider.AllPlayers : new int[] { Who }),
-                IgnoreIndex, Size, X, Y, Number5);
+                IgnoreIndex, Size, X, Y, TileChangeType);
 
         public static void Send(IEnumerable<int> Who, int IgnoreIndex,
-            int Size, int X, int Y, int Number5 = 0)
+            int Size, int X, int Y, int TileChangeType = 0)
         {
             if (Who == null)
                 return;
@@ -31,7 +31,7 @@ namespace FakeProvider
                 if ((i < 0) || (i >= Main.maxPlayers))
                     throw new ArgumentOutOfRangeException(nameof(Who));
                 RemoteClient client = Netplay.Clients[i];
-                if (client?.IsActive == true)
+                if (NetMessage.buffer[i].broadcast && client.IsConnected() && client.SectionRange(Size, X, Y))
                     clients.Add(client);
             }
             if (clients.Count == 0)
@@ -43,7 +43,7 @@ namespace FakeProvider
             {
                 bw.BaseStream.Position = 2L;
                 bw.Write((byte)PacketTypes.TileSendSquare);
-                WriteTiles(bw, Size, X, Y, Number5);
+                WriteTiles(bw, Size, X, Y, TileChangeType);
                 long position = bw.BaseStream.Position;
                 bw.BaseStream.Position = 0L;
                 bw.Write((short)position);
@@ -54,18 +54,22 @@ namespace FakeProvider
             foreach (RemoteClient client in clients)
                 try
                 {
+                    if (FakeProvider.NetSendBytes(client, data, 0, data.Length))
+                        continue;
+
                     client.Socket.AsyncSend(data, 0, data.Length,
                         new SocketSendCallback(client.ServerWriteCallBack), null);
                 }
                 catch (IOException) { }
                 catch (ObjectDisposedException) { }
+                catch (InvalidOperationException) { }
         }
 
         #endregion
         #region WriteTiles
 
         private static void WriteTiles(BinaryWriter BinaryWriter,
-            int Size, int X, int Y, int Number5 = 0)
+            int Size, int X, int Y, int TileChangeType = 0)
         {
             if (Size < 0)
             {
@@ -87,18 +91,17 @@ namespace FakeProvider
             {
                 Y = Main.maxTilesY - Size - 1;
             }
-            if (Number5 == 0)
+            if (TileChangeType == 0)
             {
                 BinaryWriter.Write((ushort)(Size & 32767));
             }
             else
             {
                 BinaryWriter.Write((ushort)((Size & 32767) | 32768));
-                BinaryWriter.Write((byte)Number5);
+                BinaryWriter.Write((byte)TileChangeType);
             }
             BinaryWriter.Write((short)X);
             BinaryWriter.Write((short)Y);
-            ITileCollection tiles = Main.tile;
             for (int num8 = X; num8 < X + Size; num8++)
             {
                 for (int num9 = Y; num9 < Y + Size; num9++)
@@ -107,7 +110,7 @@ namespace FakeProvider
                     BitsByte bb12 = 0;
                     byte value = 0;
                     byte value2 = 0;
-                    ITile tile = tiles[num8 - X, num9 - Y];
+                    ITile tile = Main.tile[num8, num9];
                     bb11[0] = tile.active();
                     bb11[2] = (tile.wall > 0);
                     bb11[3] = (tile.liquid > 0 && Main.netMode == 2);

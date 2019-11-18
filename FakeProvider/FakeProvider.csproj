@@ -31,6 +31,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="OTAPI">
@@ -55,10 +56,9 @@
     <Compile Include="TiledProvider\IProviderTile.cs" />
     <Compile Include="TiledProvider\ReadonlyTileProvider.cs" />
     <Compile Include="TiledProvider\TileProviderCollection.cs" />
-    <Compile Include="TiledProvider\StructTile.cs" />
     <Compile Include="TiledProvider\TileProvider.cs" />
-    <Compile Include="TiledProvider\TileReference.cs" />
-    <Compile Include="TiledProvider\ReadonlyTileReference.cs" />
+    <Compile Include="TiledProvider\Tile.cs" />
+    <Compile Include="TiledProvider\ReadonlyTile.cs" />
     <Compile Include="SendSectionPacket.cs" />
     <Compile Include="SendTileSquarePacket.cs" />
   </ItemGroup>
