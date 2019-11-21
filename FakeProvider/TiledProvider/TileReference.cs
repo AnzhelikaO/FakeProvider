@@ -23,35 +23,14 @@ namespace FakeProvider
 
         #region Data
 
-        private StructTile[,] Data;
-        public int X { get; }
-        public int Y { get; }
+        private unsafe TileStruct* Pointer;
 
         #endregion
         #region Constructor
 
-        public TileReference(StructTile[,] Data, int X, int Y)
+        public unsafe TileReference(TileStruct* pointer)
         {
-            this.Data = Data;
-            this.X = X;
-            this.Y = Y;
-        }
-
-        #endregion
-
-        #region Initialise
-
-        public void Initialise()
-        {
-            type = 0;
-            wall = 0;
-            liquid = 0;
-            sTileHeader = 0;
-            bTileHeader = 0;
-            bTileHeader2 = 0;
-            bTileHeader3 = 0;
-            frameX = 0;
-            frameY = 0;
+            Pointer = pointer;
         }
 
         #endregion
@@ -60,8 +39,8 @@ namespace FakeProvider
 
         public ushort type
         {
-            get => Data[X, Y].type;
-            set => Data[X, Y].type = value;
+            get { unsafe { return Pointer->type; } }
+            set { unsafe { Pointer->type = value; } }
         }
 
         #endregion
@@ -69,8 +48,8 @@ namespace FakeProvider
 
         public byte wall
         {
-            get => Data[X, Y].wall;
-            set => Data[X, Y].wall = value;
+            get { unsafe { return Pointer->wall; } }
+            set { unsafe { Pointer->wall = value; } }
         }
 
         #endregion
@@ -78,8 +57,8 @@ namespace FakeProvider
 
         public byte liquid
         {
-            get => Data[X, Y].liquid;
-            set => Data[X, Y].liquid = value;
+            get { unsafe { return Pointer->liquid; } }
+            set { unsafe { Pointer->liquid = value; } }
         }
 
         #endregion
@@ -87,8 +66,8 @@ namespace FakeProvider
 
         public short frameX
         {
-            get => Data[X, Y].frameX;
-            set => Data[X, Y].frameX = value;
+            get { unsafe { return Pointer->frameX; } }
+            set { unsafe { Pointer->frameX = value; } }
         }
 
         #endregion
@@ -96,8 +75,8 @@ namespace FakeProvider
 
         public short frameY
         {
-            get => Data[X, Y].frameY;
-            set => Data[X, Y].frameY = value;
+            get { unsafe { return Pointer->frameY; } }
+            set { unsafe { Pointer->frameY = value; } }
         }
 
         #endregion
@@ -106,8 +85,8 @@ namespace FakeProvider
 
         public short sTileHeader
         {
-            get => Data[X, Y].sTileHeader;
-            set => Data[X, Y].sTileHeader = value;
+            get { unsafe { return Pointer->sTileHeader; } }
+            set { unsafe { Pointer->sTileHeader = value; } }
         }
 
         #endregion
@@ -115,8 +94,8 @@ namespace FakeProvider
 
         public byte bTileHeader
         {
-            get => Data[X, Y].bTileHeader;
-            set => Data[X, Y].bTileHeader = value;
+            get { unsafe { return Pointer->bTileHeader; } }
+            set { unsafe { Pointer->bTileHeader = value; } }
         }
 
         #endregion
@@ -124,8 +103,8 @@ namespace FakeProvider
 
         public byte bTileHeader2
         {
-            get => Data[X, Y].bTileHeader2;
-            set => Data[X, Y].bTileHeader2 = value;
+            get { unsafe { return Pointer->bTileHeader2; } }
+            set { unsafe { Pointer->bTileHeader2 = value; } }
         }
 
         #endregion
@@ -133,8 +112,8 @@ namespace FakeProvider
 
         public byte bTileHeader3
         {
-            get => Data[X, Y].bTileHeader3;
-            set => Data[X, Y].bTileHeader3 = value;
+            get { unsafe { return Pointer->bTileHeader3; } }
+            set { unsafe { Pointer->bTileHeader3 = value; } }
         }
 
         #endregion

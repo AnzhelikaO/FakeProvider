@@ -9,7 +9,7 @@ namespace FakeProvider
     {
         #region Data
 
-        private StructTile[,] Data;
+        private TileStruct[,] Data;
         public string Name { get; }
         public int X { get; set; }
         public int Y { get; set; }
@@ -24,7 +24,7 @@ namespace FakeProvider
         public ReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
         {
             this.Name = Name;
-            this.Data = new StructTile[Width, Height];
+            this.Data = new TileStruct[Width, Height];
             this.X = X;
             this.Y = Y;
             this.Width = Width;
@@ -93,7 +93,7 @@ namespace FakeProvider
             this.Y = Y;
             if ((this.Width != Width) || (this.Height != Height))
             {
-                StructTile[,] newData = new StructTile[Width, Height];
+                TileStruct[,] newData = new TileStruct[Width, Height];
                 for (int i = 0; i < Width; i++)
                     for (int j = 0; j < Height; j++)
                         if ((i < this.Width) && (j < this.Height))

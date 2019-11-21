@@ -2,7 +2,7 @@
 namespace FakeProvider
 {
 	[StructLayout(LayoutKind.Sequential, Size = 13, Pack = 1)]
-    public struct StructTile
+    public struct TileStruct
     {
         public byte wall;
         public byte liquid;

@@ -27,20 +27,20 @@ namespace FakeProvider
         /// <summary> Vertical offset of the loaded world. </summary>
         public int OffsetY { get; }
         /// <summary> Tile to be visible outside of all providers. </summary>
-        public StructTile[,] VoidTile { get; }
+        public TileStruct[,] VoidTile { get; }
         private object Locker { get; } = new object();
 
         #endregion
         #region Constructor
 
         public TileProviderCollection(int Width, int Height,
-            int OffsetX, int OffsetY, StructTile? VoidTile = null)
+            int OffsetX, int OffsetY, TileStruct? VoidTile = null)
         {
             this.Width = Width;
             this.Height = Height;
             this.OffsetX = OffsetX;
             this.OffsetY = OffsetY;
-            this.VoidTile = new StructTile[1, 1] { { VoidTile ?? new StructTile() } };
+            this.VoidTile = new TileStruct[1, 1] { { VoidTile ?? new TileStruct() } };
 
             ProviderIndex = new short[this.Width, this.Height];
             for (int i = 0; i < this.Width; i++)

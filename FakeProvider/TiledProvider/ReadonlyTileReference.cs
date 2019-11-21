@@ -23,14 +23,14 @@ namespace FakeProvider
 
         #region Data
 
-        private StructTile[,] Data;
+        private TileStruct[,] Data;
         public int X { get; }
         public int Y { get; }
 
         #endregion
         #region Constructor
 
-        public ReadonlyTileReference(StructTile[,] Data, int X, int Y)
+        public ReadonlyTileReference(TileStruct[,] Data, int X, int Y)
         {
             this.Data = Data;
             this.X = X;

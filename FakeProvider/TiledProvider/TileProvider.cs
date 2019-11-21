@@ -1,6 +1,7 @@
 ﻿#region Using
 using OTAPI.Tile;
 using System;
+using System.Runtime.InteropServices;
 using Terraria;
 #endregion
 namespace FakeProvider
@@ -9,7 +10,7 @@ namespace FakeProvider
     {
         #region Data
 
-        private StructTile[,] Data;
+        private unsafe TileStruct* Tiles;
         public string Name { get; }
         public int X { get; set; }
         public int Y { get; set; }
@@ -21,10 +22,13 @@ namespace FakeProvider
         #endregion
         #region Constructor
 
-        public TileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
+        public unsafe TileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
         {
             this.Name = Name;
-            this.Data = new StructTile[Width, Height];
+            unsafe
+            {
+                this.Tiles = (TileStruct*)Marshal.AllocHGlobal(Width * Height * sizeof(TileStruct));
+            }
             this.X = X;
             this.Y = Y;
             this.Width = Width;
@@ -73,8 +77,21 @@ namespace FakeProvider
 
         public ITile this[int X, int Y]
         {
-            get => new TileReference(Data, (X - this.X), (Y - this.Y));
-            set => new TileReference(Data, (X - this.X), (Y - this.Y)).CopyFrom(value);
+            get
+            {
+                unsafe
+                {
+                    int x = X - this.X;
+                    int y = Y - this.Y;
+                    if (x >= 0 && y >= 0 && x < Width && y < Height)
+                        return new TileReference(Tiles + X * Height + Y);
+                    return FakeProvider.VoidTile;
+                }
+            }
+            set
+            {
+
+            }
         }
 
         #endregion
@@ -93,12 +110,12 @@ namespace FakeProvider
             this.Y = Y;
             if ((this.Width != Width) || (this.Height != Height))
             {
-                StructTile[,] newData = new StructTile[Width, Height];
+                TileStruct[,] newData = new TileStruct[Width, Height];
                 for (int i = 0; i < Width; i++)
                     for (int j = 0; j < Height; j++)
                         if ((i < this.Width) && (j < this.Height))
-                            newData[i, j] = Data[i, j];
-                this.Data = newData;
+                            newData[i, j] = Tiles[i, j];
+                this.Tiles = newData;
                 this.Width = Width;
                 this.Height = Height;
             }
@@ -183,22 +200,22 @@ namespace FakeProvider
 
         public void Dispose()
         {
-            if (Data == null)
+            if (Tiles == null)
                 return;
-            int w = Data.GetLength(0), h = Data.GetLength(1);
+            int w = Tiles.GetLength(0), h = Tiles.GetLength(1);
             for (int x = 0; x < w; x++)
                 for (int y = 0; y < h; y++)
                 {
-                    Data[x, y].bTileHeader = 0;
-                    Data[x, y].bTileHeader2 = 0;
-                    Data[x, y].bTileHeader3 = 0;
-                    Data[x, y].frameX = 0;
-                    Data[x, y].frameY = 0;
-                    Data[x, y].liquid = 0;
-                    Data[x, y].type = 0;
-                    Data[x, y].wall = 0;
+                    Tiles[x, y].bTileHeader = 0;
+                    Tiles[x, y].bTileHeader2 = 0;
+                    Tiles[x, y].bTileHeader3 = 0;
+                    Tiles[x, y].frameX = 0;
+                    Tiles[x, y].frameY = 0;
+                    Tiles[x, y].liquid = 0;
+                    Tiles[x, y].type = 0;
+                    Tiles[x, y].wall = 0;
                 }
-            Data = null;
+            Tiles = null;
         }
 
         #endregion
