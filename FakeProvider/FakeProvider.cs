@@ -207,16 +207,20 @@ namespace FakeProvider
                 VisibleWidth = (OffsetX + Main.maxTilesX);
             if (VisibleHeight < 0)
                 VisibleHeight = (OffsetY + Main.maxTilesY);
+            long mem1 = GC.GetTotalMemory(true) / (1024 * 1024);
             Tile = new TileProviderCollection(VisibleWidth, VisibleHeight,
                 OffsetX, OffsetY);
 
+            long mem2 = GC.GetTotalMemory(true) / (1024 * 1024);
             if (ReadonlyWorld)
                 World = CreateReadonlyTileProvider("__world__", 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile);
             else
                 World = CreateTileProvider("__world__", 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile);
+            long mem3 = GC.GetTotalMemory(true) / (1024 * 1024);
             Tile.Add(World);
+            long mem4 = GC.GetTotalMemory(true) / (1024 * 1024);
 
             using (IDisposable previous = Main.tile as IDisposable)
             {
@@ -226,10 +230,11 @@ namespace FakeProvider
                 Main.rockLayer += OffsetY;
                 Main.tile = Tile;
             }
-            GC.Collect();
+            long mem5 = GC.GetTotalMemory(true) / (1024 * 1024);
 
             WorldGen.setWorldSize();
             Console.WriteLine($"NEW maxTilesX, maxTilesY: {Main.maxTilesX}, {Main.maxTilesY}");
+            Console.WriteLine($"{mem1} {mem2} {mem3} {mem4} {mem5}");
             Console.ReadKey();
         }
 
