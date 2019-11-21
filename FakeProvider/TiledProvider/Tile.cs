@@ -26,47 +26,100 @@ namespace FakeProvider
         private static INamedTileCollection _Provider;
         public INamedTileCollection Provider => _Provider;
 
-        public ushort type { get; set; }
-        public byte wall { get; set; }
-        public byte liquid { get; set; }
-        public byte bTileHeader { get; set; }
-        public byte bTileHeader2 { get; set; }
-        public byte bTileHeader3 { get; set; }
-        public short sTileHeader { get; set; }
-        public short frameX { get; set; }
-        public short frameY { get; set; }
+        private unsafe readonly TileStruct* Pointer;
 
         #endregion
         #region Constructor
 
-        public Tile()
+        public unsafe Tile(TileStruct* pointer)
         {
-        }
-
-        public Tile(ITile tile)
-        {
-            CopyFrom(tile);
+            Pointer = pointer;
         }
 
         #endregion
 
-        #region Initialise
+        #region type
 
-        public void Initialise()
+        public ushort type
         {
-            type = 0;
-            wall = 0;
-            liquid = 0;
-            sTileHeader = 0;
-            bTileHeader = 0;
-            bTileHeader2 = 0;
-            bTileHeader3 = 0;
-            frameX = 0;
-            frameY = 0;
+            get { unsafe { return Pointer->type; } }
+            set { unsafe { Pointer->type = value; } }
+        }
+
+        #endregion
+        #region wall
+
+        public byte wall
+        {
+            get { unsafe { return Pointer->wall; } }
+            set { unsafe { Pointer->wall = value; } }
+        }
+
+        #endregion
+        #region liquid
+
+        public byte liquid
+        {
+            get { unsafe { return Pointer->liquid; } }
+            set { unsafe { Pointer->liquid = value; } }
+        }
+
+        #endregion
+        #region frameX
+
+        public short frameX
+        {
+            get { unsafe { return Pointer->frameX; } }
+            set { unsafe { Pointer->frameX = value; } }
+        }
+
+        #endregion
+        #region frameY
+
+        public short frameY
+        {
+            get { unsafe { return Pointer->frameY; } }
+            set { unsafe { Pointer->frameY = value; } }
         }
 
         #endregion
 
+        #region sTileHeader
+
+        public short sTileHeader
+        {
+            get { unsafe { return Pointer->sTileHeader; } }
+            set { unsafe { Pointer->sTileHeader = value; } }
+        }
+
+        #endregion
+        #region bTileHeader
+
+        public byte bTileHeader
+        {
+            get { unsafe { return Pointer->bTileHeader; } }
+            set { unsafe { Pointer->bTileHeader = value; } }
+        }
+
+        #endregion
+        #region bTileHeader2
+
+        public byte bTileHeader2
+        {
+            get { unsafe { return Pointer->bTileHeader2; } }
+            set { unsafe { Pointer->bTileHeader2 = value; } }
+        }
+
+        #endregion
+        #region bTileHeader3
+
+        public byte bTileHeader3
+        {
+            get { unsafe { return Pointer->bTileHeader3; } }
+            set { unsafe { Pointer->bTileHeader3 = value; } }
+        }
+
+        #endregion
         #region collisionType
 
         public int collisionType

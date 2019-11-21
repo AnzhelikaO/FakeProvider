@@ -2,6 +2,7 @@
 using OTAPI.Tile;
 using System;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Terraria;
 #endregion
 namespace FakeProvider
@@ -10,7 +11,7 @@ namespace FakeProvider
     {
         #region Data
 
-        private Tile<T>[,] Data;
+        private unsafe TileStruct* Tiles;
         public string Name { get; }
         public int X { get; set; }
         public int Y { get; set; }
@@ -25,16 +26,17 @@ namespace FakeProvider
         public TileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
         {
             this.Name = Name;
-            this.Data = new Tile<T>[Width, Height];
+            unsafe
+            {
+                int size = Width * Height * sizeof(TileStruct);
+                Tiles = (TileStruct*)Marshal.AllocHGlobal(size);
+                Marshal.Copy(new byte[size], 0, (IntPtr)Tiles, size);
+            }
             this.X = X;
             this.Y = Y;
             this.Width = Width;
             this.Height = Height;
             this.Layer = Layer;
-
-            for (int x = 0; x < this.Width; x++)
-                for (int y = 0; y < this.Height; y++)
-                    Data[x, y] = new Tile<T>();
         }
 
         #region ITileCollection
@@ -43,7 +45,7 @@ namespace FakeProvider
                 ITileCollection CopyFrom, int Layer = 0)
         {
             this.Name = Name;
-            this.Data = new Tile<T>[Width, Height];
+            this.Tiles = new Tile<T>[Width, Height];
             this.X = X;
             this.Y = Y;
             this.Width = Width;
@@ -55,7 +57,7 @@ namespace FakeProvider
                 {
                     ITile t = CopyFrom[i, j];
                     if (t != null)
-                        Data[i - X, j - Y] = new Tile<T>(t);
+                        Tiles[i - X, j - Y] = new Tile<T>(t);
                 }
         }
 
@@ -66,7 +68,7 @@ namespace FakeProvider
                 ITile[,] CopyFrom, int Layer = 0)
         {
             this.Name = Name;
-            this.Data = new Tile<T>[Width, Height];
+            this.Tiles = new Tile<T>[Width, Height];
             this.X = X;
             this.Y = Y;
             this.Width = Width;
@@ -78,7 +80,7 @@ namespace FakeProvider
                 {
                     ITile t = CopyFrom[i, j];
                     if (t != null)
-                        Data[i - X, j - Y] = new Tile<T>(t);
+                        Tiles[i - X, j - Y] = new Tile<T>(t);
                 }
         }
 
@@ -90,14 +92,32 @@ namespace FakeProvider
 
         ITile ITileCollection.this[int X, int Y]
         {
-            get => Data[X - this.X, Y - this.Y];
-            set => Data[X - this.X, Y - this.Y].CopyFrom(value);
+            get
+            {
+                unsafe
+                {
+                    int x = X - this.X, y = Y - this.Y;
+                    if (x >= 0 && y >= 0 && x < Width && y < Height)
+                        return new Tile<T>(Tiles + x * Height + y);
+                    else
+                        return null;
+                }
+            }
+            set
+            {
+                unsafe
+                {
+                    int x = X - this.X, y = Y - this.Y;
+                    if (x >= 0 && y >= 0 && x < Width && y < Height)
+                        new Tile<T>(Tiles + x * Height + y).CopyFrom(value);
+                }
+            }
         }
 
         public IProviderTile this[int X, int Y]
         {
-            get => Data[X - this.X, Y - this.Y];
-            set => Data[X - this.X, Y - this.Y].CopyFrom(value);
+            get => Tiles[X - this.X, Y - this.Y];
+            set => Tiles[X - this.X, Y - this.Y].CopyFrom(value);
         }
 
         #endregion
@@ -119,10 +139,10 @@ namespace FakeProvider
                 for (int i = 0; i < Width; i++)
                     for (int j = 0; j < Height; j++)
                         if ((i < this.Width) && (j < this.Height))
-                            newData[i, j] = Data[i, j];
+                            newData[i, j] = Tiles[i, j];
                         else
                             newData[i, j] = new Tile<T>();
-                this.Data = newData;
+                this.Tiles = newData;
                 this.Width = Width;
                 this.Height = Height;
             }
@@ -177,9 +197,9 @@ namespace FakeProvider
 
         public void Dispose()
         {
-            if (Data == null)
+            if (Tiles == null)
                 return;
-            Data = null;
+            Tiles = null;
         }
 
         #endregion
