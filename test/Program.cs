@@ -138,6 +138,10 @@ namespace test
     {
         static void Main(string[] args)
         {
+            Provider[] a = new Provider[100000000];
+            Console.ReadKey();
+            Console.WriteLine(a.Length);
+            return;
             List<ITile> tiles = new List<ITile>();
             for (int i = 0; i < 10; i++)
             {

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using System.Reflection.Emit;
 using System.Threading;
 using Terraria;
 using TerrariaApi.Server;
@@ -24,7 +24,10 @@ namespace FakeProvider
         public override string Description => "TODO";
 
         public static TileProviderCollection Tile { get; private set; }
+        public static INamedTileCollection Void { get; private set; }
+        public static IProviderTile VoidTile { get; private set; }
         public static INamedTileCollection World { get; private set; }
+        internal static TypeBuilder TypeBuilder { get; private set; }
         internal static int[] AllPlayers;
         internal static Func<RemoteClient, byte[], int, int, bool> NetSendBytes;
 
@@ -102,6 +105,23 @@ namespace FakeProvider
 #warning TODO: rockLevel, surfaceLevel, cavernLevel or whatever
 
             ReadonlyWorld = args.Any(x => (x.ToLower() == "-readonlyworld"));
+
+            AssemblyName assemblyName = new AssemblyName("FakeProviderRuntimeAssembly");
+            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain
+                .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("FakeProviderRuntimeModule");
+            TypeBuilder = moduleBuilder.DefineType(assemblyName.FullName
+                                , TypeAttributes.Public |
+                                TypeAttributes.Class |
+                                TypeAttributes.AutoClass |
+                                TypeAttributes.AnsiClass |
+                                TypeAttributes.BeforeFieldInit |
+                                TypeAttributes.AutoLayout);
+
+            ITile[,] voidTiles = new ITile[1, 1];
+            voidTiles[0, 0] = new Tile();
+            Void = CreateReadonlyTileProvider("FakeProviderVoid", 0, 0, 1, 1, voidTiles, 0);
+            VoidTile = Void[0, 0];
         }
 
         #endregion
@@ -191,10 +211,10 @@ namespace FakeProvider
                 OffsetX, OffsetY);
 
             if (ReadonlyWorld)
-                World = new ReadonlyTileProvider("__world__", 0, 0,
+                World = CreateReadonlyTileProvider("__world__", 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile);
             else
-                World = new TileProvider("__world__", 0, 0,
+                World = CreateTileProvider("__world__", 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile);
             Tile.Add(World);
 
@@ -206,11 +226,8 @@ namespace FakeProvider
                 Main.rockLayer += OffsetY;
                 Main.tile = Tile;
             }
-            GC.Collect();
-
             WorldGen.setWorldSize();
-            Console.WriteLine($"NEW maxTilesX, maxTilesY: {Main.maxTilesX}, {Main.maxTilesY}");
-            Console.ReadKey();
+            GC.Collect();
         }
 
         #endregion
@@ -236,6 +253,91 @@ namespace FakeProvider
             Main.worldSurface += OffsetY;
             Main.rockLayer += OffsetY;
             Main.tile = Tile;
+        }
+
+        #endregion
+
+        #region CreateTileProvider
+
+        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
+        {
+            Type newType = TypeBuilder.CreateType();
+            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
+            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(
+                tileProviderType, Name, X, Y, Width, Height, Layer);
+            typeof(Tile<>)
+                .MakeGenericType(newType)
+                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
+                .SetValue(null, result);
+            return result;
+        }
+
+        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        {
+            Type newType = TypeBuilder.CreateType();
+            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
+            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(
+                tileProviderType, Name, X, Y, Width, Height, CopyFrom, Layer);
+            typeof(Tile<>)
+                .MakeGenericType(newType)
+                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
+                .SetValue(null, result);
+            return result;
+        }
+
+        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        {
+            Type newType = TypeBuilder.CreateType();
+            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
+            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(
+                tileProviderType, Name, X, Y, Width, Height, CopyFrom, Layer);
+            typeof(Tile<>)
+                .MakeGenericType(newType)
+                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
+                .SetValue(null, result);
+            return result;
+        }
+
+        #endregion
+        #region CreateReadonlyTileProvider
+
+        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
+        {
+            Type newType = TypeBuilder.CreateType();
+            Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
+            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(
+                tileProviderType, Name, X, Y, Width, Height, Layer);
+            typeof(ReadonlyTile<>)
+                .MakeGenericType(newType)
+                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
+                .SetValue(null, result);
+            return result;
+        }
+
+        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        {
+            Type newType = TypeBuilder.CreateType();
+            Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
+            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(
+                tileProviderType, Name, X, Y, Width, Height, CopyFrom, Layer);
+            typeof(ReadonlyTile<>)
+                .MakeGenericType(newType)
+                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
+                .SetValue(null, result);
+            return result;
+        }
+
+        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        {
+            Type newType = TypeBuilder.CreateType();
+            Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
+            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(
+                tileProviderType, Name, X, Y, Width, Height, CopyFrom, Layer);
+            typeof(ReadonlyTile<>)
+                .MakeGenericType(newType)
+                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
+                .SetValue(null, result);
+            return result;
         }
 
         #endregion

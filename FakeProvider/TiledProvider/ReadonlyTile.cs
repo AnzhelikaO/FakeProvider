@@ -5,7 +5,7 @@ using Terraria;
 #endregion
 namespace FakeProvider
 {
-    public sealed class ReadonlyTileReference : ITile
+    public sealed class ReadonlyTile<T> : IProviderTile
     {
         #region Constants
 
@@ -23,18 +23,38 @@ namespace FakeProvider
 
         #region Data
 
-        private StructTile[,] Data;
-        public int X { get; }
-        public int Y { get; }
+        private static INamedTileCollection _Provider;
+        public INamedTileCollection Provider => _Provider;
+
+        public ushort _type;
+        public byte _wall;
+        public byte _liquid;
+        public byte _bTileHeader;
+        public byte _bTileHeader2;
+        public byte _bTileHeader3;
+        public short _sTileHeader;
+        public short _frameX;
+        public short _frameY;
+        public ushort type { get => _type; set { } }
+        public byte wall { get => _wall; set { } }
+        public byte liquid { get => _liquid; set { } }
+        public byte bTileHeader { get => _bTileHeader; set { } }
+        public byte bTileHeader2 { get => _bTileHeader2; set { } }
+        public byte bTileHeader3 { get => _bTileHeader3; set { } }
+        public short sTileHeader { get => _sTileHeader; set { } }
+        public short frameX { get => _frameX; set { } }
+        public short frameY { get => _frameY; set { } }
 
         #endregion
         #region Constructor
 
-        public ReadonlyTileReference(StructTile[,] Data, int X, int Y)
+        public ReadonlyTile()
         {
-            this.Data = Data;
-            this.X = X;
-            this.Y = Y;
+        }
+
+        public ReadonlyTile(ITile tile)
+        {
+            ForceCopyFrom(tile);
         }
 
         #endregion
@@ -56,88 +76,6 @@ namespace FakeProvider
 
         #endregion
 
-        #region type
-
-        public ushort type
-        {
-            get => Data[X, Y].type;
-            set { }
-        }
-
-        #endregion
-        #region wall
-
-        public byte wall
-        {
-            get => Data[X, Y].wall;
-            set { }
-        }
-
-        #endregion
-        #region liquid
-
-        public byte liquid
-        {
-            get => Data[X, Y].liquid;
-            set { }
-        }
-
-        #endregion
-        #region frameX
-
-        public short frameX
-        {
-            get => Data[X, Y].frameX;
-            set { }
-        }
-
-        #endregion
-        #region frameY
-
-        public short frameY
-        {
-            get => Data[X, Y].frameY;
-            set { }
-        }
-
-        #endregion
-
-        #region sTileHeader
-
-        public short sTileHeader
-        {
-            get => Data[X, Y].sTileHeader;
-            set { }
-        }
-
-        #endregion
-        #region bTileHeader
-
-        public byte bTileHeader
-        {
-            get => Data[X, Y].bTileHeader;
-            set { }
-        }
-
-        #endregion
-        #region bTileHeader2
-
-        public byte bTileHeader2
-        {
-            get => Data[X, Y].bTileHeader2;
-            set { }
-        }
-
-        #endregion
-        #region bTileHeader3
-
-        public byte bTileHeader3
-        {
-            get => Data[X, Y].bTileHeader3;
-            set { }
-        }
-
-        #endregion
         #region collisionType
 
         public int collisionType
@@ -182,6 +120,22 @@ namespace FakeProvider
         #region CopyFrom
 
         public void CopyFrom(ITile From) { }
+
+        #endregion
+        #region ForceCopyFrom
+
+        private void ForceCopyFrom(ITile From)
+        {
+            _type = From.type;
+            _wall = From.wall;
+            _liquid = From.liquid;
+            _sTileHeader = From.sTileHeader;
+            _bTileHeader = From.bTileHeader;
+            _bTileHeader2 = From.bTileHeader2;
+            _bTileHeader3 = From.bTileHeader3;
+            _frameX = From.frameX;
+            _frameY = From.frameY;
+        }
 
         #endregion
         #region isTheSameAs
@@ -253,7 +207,7 @@ namespace FakeProvider
         #endregion
         #region checkingLiquid
 
-        public bool checkingLiquid() => ((bTileHeader3 & 8) == 8);
+        public bool checkingLiquid() => true;//((bTileHeader3 & 8) == 8);
         public void checkingLiquid(bool CheckingLiquid) { }
 
         #endregion
@@ -305,7 +259,11 @@ namespace FakeProvider
         public void inActive(bool InActive) { }
 
         #endregion
-        public bool nactive() => ((sTileHeader & 96) == 32);
+        #region nactive
+
+        public bool nactive() => true;//((sTileHeader & 96) == 32);
+
+        #endregion
 
         #region wire
 
@@ -387,8 +345,12 @@ namespace FakeProvider
         }
 
         #endregion
+        #region HasSameSlope
+
         public bool HasSameSlope(ITile Tile) =>
             ((sTileHeader & 29696) == (Tile.sTileHeader & 29696));
+
+        #endregion
         #region blockType
 
         public int blockType()
@@ -403,7 +365,11 @@ namespace FakeProvider
 
         #endregion
 
+        #region Clone
+
         public object Clone() => MemberwiseClone();
+
+        #endregion
         #region ToString
 
         public new string ToString() =>

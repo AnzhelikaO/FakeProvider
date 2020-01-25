@@ -103,7 +103,7 @@ namespace FakeProvider
                 Height = (short)(Main.maxTilesY - Y);
             if ((Width == 0) || (Height == 0))
                 return 0;
-            
+
             using (MemoryStream ms = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(ms))
             {

@@ -5,7 +5,7 @@ using Terraria;
 #endregion
 namespace FakeProvider
 {
-    public sealed class TileReference : ITile
+    public sealed class Tile<T> : IProviderTile
     {
         #region Constants
 
@@ -23,18 +23,29 @@ namespace FakeProvider
 
         #region Data
 
-        private StructTile[,] Data;
-        public int X { get; }
-        public int Y { get; }
+        private static INamedTileCollection _Provider;
+        public INamedTileCollection Provider => _Provider;
+
+        public ushort type { get; set; }
+        public byte wall { get; set; }
+        public byte liquid { get; set; }
+        public byte bTileHeader { get; set; }
+        public byte bTileHeader2 { get; set; }
+        public byte bTileHeader3 { get; set; }
+        public short sTileHeader { get; set; }
+        public short frameX { get; set; }
+        public short frameY { get; set; }
 
         #endregion
         #region Constructor
 
-        public TileReference(StructTile[,] Data, int X, int Y)
+        public Tile()
         {
-            this.Data = Data;
-            this.X = X;
-            this.Y = Y;
+        }
+
+        public Tile(ITile tile)
+        {
+            CopyFrom(tile);
         }
 
         #endregion
@@ -56,88 +67,6 @@ namespace FakeProvider
 
         #endregion
 
-        #region type
-
-        public ushort type
-        {
-            get => Data[X, Y].type;
-            set => Data[X, Y].type = value;
-        }
-
-        #endregion
-        #region wall
-
-        public byte wall
-        {
-            get => Data[X, Y].wall;
-            set => Data[X, Y].wall = value;
-        }
-
-        #endregion
-        #region liquid
-
-        public byte liquid
-        {
-            get => Data[X, Y].liquid;
-            set => Data[X, Y].liquid = value;
-        }
-
-        #endregion
-        #region frameX
-
-        public short frameX
-        {
-            get => Data[X, Y].frameX;
-            set => Data[X, Y].frameX = value;
-        }
-
-        #endregion
-        #region frameY
-
-        public short frameY
-        {
-            get => Data[X, Y].frameY;
-            set => Data[X, Y].frameY = value;
-        }
-
-        #endregion
-
-        #region sTileHeader
-
-        public short sTileHeader
-        {
-            get => Data[X, Y].sTileHeader;
-            set => Data[X, Y].sTileHeader = value;
-        }
-
-        #endregion
-        #region bTileHeader
-
-        public byte bTileHeader
-        {
-            get => Data[X, Y].bTileHeader;
-            set => Data[X, Y].bTileHeader = value;
-        }
-
-        #endregion
-        #region bTileHeader2
-
-        public byte bTileHeader2
-        {
-            get => Data[X, Y].bTileHeader2;
-            set => Data[X, Y].bTileHeader2 = value;
-        }
-
-        #endregion
-        #region bTileHeader3
-
-        public byte bTileHeader3
-        {
-            get => Data[X, Y].bTileHeader3;
-            set => Data[X, Y].bTileHeader3 = value;
-        }
-
-        #endregion
         #region collisionType
 
         public int collisionType
@@ -403,7 +332,11 @@ namespace FakeProvider
         }
 
         #endregion
+        #region nactive
+
         public bool nactive() => ((sTileHeader & 96) == 32);
+
+        #endregion
 
         #region wire
 
@@ -522,8 +455,12 @@ namespace FakeProvider
         }
 
         #endregion
+        #region HasSameSlope
+
         public bool HasSameSlope(ITile Tile) =>
             ((sTileHeader & 29696) == (Tile.sTileHeader & 29696));
+
+        #endregion
         #region blockType
 
         public int blockType()
@@ -538,7 +475,11 @@ namespace FakeProvider
 
         #endregion
 
+        #region Clone
+
         public object Clone() => MemberwiseClone();
+
+        #endregion
         #region ToString
 
         public new string ToString() =>
