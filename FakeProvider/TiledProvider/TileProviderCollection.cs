@@ -179,8 +179,8 @@ namespace FakeProvider
             {
                 for (int i = X; i < X + Width; i++)
                     for (int j = Y; j < Y + Height; j++)
-                        if (i + OffsetX < Width && j + OffsetY < Height)
-                            Tiles[i + OffsetX, j + OffsetY] = FakeProvider.VoidTile;
+                        if (OffsetX + i < Width && OffsetY + j < Height)
+                            Tiles[OffsetX + i, OffsetY + j] = FakeProvider.VoidTile;
 
                 for (short providerIndex = 0; providerIndex < Providers.Count; providerIndex++)
                 {
@@ -188,10 +188,10 @@ namespace FakeProvider
                     if (provider.Enabled)
                     {
                         Intersect(provider, X, Y, Width, Height, out int x, out int y, out int w, out int h);
-                        for (int i = x; i < x + w; i++)
-                            for (int j = y; j < y + h; j++)
-                                if (i + OffsetX < Width && j + OffsetY < Height)
-                                    Tiles[i + OffsetX, j + OffsetY] = provider[i, j];
+                        for (int i = 0; i < w; i++)
+                            for (int j = 0; j < h; j++)
+                                if (OffsetX + x + i < Width && OffsetY + y + j < Height)
+                                    Tiles[OffsetX + x + i, OffsetY + y + j] = provider[i, j];
                     }
                 }
             }
@@ -207,14 +207,18 @@ namespace FakeProvider
             lock (Locker)
             {
                 int layer = TileCollection.Layer;
-                for (int i = TileCollection.X; i < TileCollection.X + TileCollection.Width; i++)
-                    for (int j = TileCollection.Y; j < TileCollection.Y + TileCollection.Height; j++)
-                        if (i + OffsetX < Width && j + OffsetY < Height)
+                int x = TileCollection.X;
+                int y = TileCollection.Y;
+                int w = TileCollection.Width;
+                int h = TileCollection.Height;
+                for (int i = 0; i < w; i++)
+                    for (int j = 0; j < h; j++)
+                        if (OffsetX + x + i < Width && OffsetY + y + j < Height)
                         {
-                            IProviderTile tile = (IProviderTile)Tiles[i + OffsetX, j + OffsetY];
+                            IProviderTile tile = (IProviderTile)Tiles[OffsetX + x + i, OffsetY + y + j];
                             // If layer is equal then there might be a problem...
                             if (tile == null || tile.Provider.Layer <= layer || !tile.Provider.Enabled)
-                                Tiles[i + OffsetX, j + OffsetY] = TileCollection[i, j];
+                                Tiles[OffsetX + x + i, OffsetY + y + j] = TileCollection[i, j];
                         }
             }
         }

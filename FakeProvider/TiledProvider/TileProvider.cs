@@ -73,12 +73,12 @@ namespace FakeProvider
             this.Height = Height;
             this.Layer = Layer;
 
-            for (int i = X; i < X + Width; i++)
-                for (int j = Y; j < Y + Height; j++)
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
                 {
                     ITile t = CopyFrom[i, j];
                     if (t != null)
-                        Data[i - X, j - Y] = new Tile<T>(t);
+                        Data[i, j] = new Tile<T>(t);
                 }
         }
 
@@ -90,14 +90,14 @@ namespace FakeProvider
 
         ITile ITileCollection.this[int X, int Y]
         {
-            get => Data[X - this.X, Y - this.Y];
-            set => Data[X - this.X, Y - this.Y].CopyFrom(value);
+            get => Data[X, Y];
+            set => Data[X, Y].CopyFrom(value);
         }
 
         public IProviderTile this[int X, int Y]
         {
-            get => Data[X - this.X, Y - this.Y];
-            set => Data[X - this.X, Y - this.Y].CopyFrom(value);
+            get => Data[X, Y];
+            set => Data[X, Y].CopyFrom(value);
         }
 
         #endregion

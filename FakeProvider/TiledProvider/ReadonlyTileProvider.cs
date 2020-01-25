@@ -73,12 +73,12 @@ namespace FakeProvider
             this.Height = Height;
             this.Layer = Layer;
 
-            for (int i = X; i < X + Width; i++)
-                for (int j = Y; j < Y + Height; j++)
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
                 {
                     ITile t = CopyFrom[i, j];
                     if (t != null)
-                        Data[i - X, j - Y] = new ReadonlyTile<T>(t);
+                        Data[i, j] = new ReadonlyTile<T>(t);
                 }
         }
 
@@ -90,13 +90,13 @@ namespace FakeProvider
 
         ITile ITileCollection.this[int X, int Y]
         {
-            get => Data[X - this.X, Y - this.Y];
+            get => Data[X, Y];
             set { }
         }
 
         public IProviderTile this[int X, int Y]
         {
-            get => Data[X - this.X, Y - this.Y];
+            get => Data[X, Y];
             set { }
         }
 
