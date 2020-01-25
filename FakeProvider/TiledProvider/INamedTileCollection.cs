@@ -14,6 +14,9 @@ namespace FakeProvider
         int Layer { get; }
         bool Enabled { get; }
 
+        (int X, int Y, int Width, int Height) XYWH();
+        void SetXYWH(int X, int Y, int Width, int Height);
+        void Move(int X, int Y);
         void Draw(bool section);
     }
 }

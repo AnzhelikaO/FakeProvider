@@ -129,6 +129,16 @@ namespace FakeProvider
         }
 
         #endregion
+        #region Move
+
+        public void Move(int X, int Y)
+        {
+            FakeProvider.Tile.Remove(Name);
+            SetXYWH(X, Y, this.Width, this.Height);
+            FakeProvider.Tile.Add(this);
+        }
+
+        #endregion
         #region Enable
 
         public void Enable()

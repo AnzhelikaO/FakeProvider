@@ -207,18 +207,18 @@ namespace FakeProvider
                 VisibleWidth = (OffsetX + Main.maxTilesX);
             if (VisibleHeight < 0)
                 VisibleHeight = (OffsetY + Main.maxTilesY);
-            long mem1 = GC.GetTotalMemory(true) / (1024 * 1024);
+            long mem1 = GC.GetTotalMemory(true) / (1024 * 1024); // 626
             Tile = new TileProviderCollection(VisibleWidth, VisibleHeight,
                 OffsetX, OffsetY);
 
-            long mem2 = GC.GetTotalMemory(true) / (1024 * 1024);
+            long mem2 = GC.GetTotalMemory(true) / (1024 * 1024); // 703
             if (ReadonlyWorld)
                 World = CreateReadonlyTileProvider("__world__", 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile);
             else
                 World = CreateTileProvider("__world__", 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile);
-            long mem3 = GC.GetTotalMemory(true) / (1024 * 1024);
+            long mem3 = GC.GetTotalMemory(true) / (1024 * 1024); // 1242
             Tile.Add(World);
             long mem4 = GC.GetTotalMemory(true) / (1024 * 1024);
 
@@ -230,9 +230,11 @@ namespace FakeProvider
                 Main.rockLayer += OffsetY;
                 Main.tile = Tile;
             }
+            WorldGen.setWorldSize();
             long mem5 = GC.GetTotalMemory(true) / (1024 * 1024);
 
-            WorldGen.setWorldSize();
+            // Some plugin is probably holding the Main.tile reference
+            // so both old and new Main.tile exist in memory at this point...
             Console.WriteLine($"NEW maxTilesX, maxTilesY: {Main.maxTilesX}, {Main.maxTilesY}");
             Console.WriteLine($"{mem1} {mem2} {mem3} {mem4} {mem5}");
             Console.ReadKey();
