@@ -112,19 +112,16 @@ namespace FakeProvider
         public bool Remove(string Name, bool Cleanup = true)
         {
             lock (Locker)
-            {
                 using (INamedTileCollection provider = Providers.FirstOrDefault(p => (p.Name == Name)))
                 {
                     if (provider == null)
                         return false;
                     Providers.Remove(provider);
+                    // Hiding signs, chests and entities from the provider
+                    provider.HideSignsChestsEntities();
+                    // Showing tiles, signs, chests and entities under the provider
                     UpdateRectangleReferences(provider.X, provider.Y, provider.Width, provider.Height);
-
-                    // TODO: Where should this go?
-                    provider.UpdateSigns();
-                    provider.UpdateChests();
                 }
-            }
             if (Cleanup)
                 GC.Collect();
             return true;
@@ -213,21 +210,21 @@ namespace FakeProvider
                 return;
             lock (Locker)
             {
+                // Scanning rectangle where this provider is/will appear.
+                ScanRectangle(Provider.X, Provider.Y, Provider.Width, Provider.Height, Provider);
+
                 // Update tiles
                 int layer = Provider.Layer;
-                (int x, int y, int width, int height) = Clamp(Provider.X, Provider.Y,
-                    Provider.Width, Provider.Height);
+                (int x, int y, int width, int height) = Provider.ClampXYWH();
 
                 for (int i = 0; i < width; i++)
                     for (int j = 0; j < height; j++)
                     {
                         IProviderTile tile = (IProviderTile)Tiles[x + i, y + j];
-                        // If layer is equal then there might be a problem...
+                        // TODO: If layer is equal then there might be a problem...
                         if (tile == null || tile.Provider.Layer <= layer || !tile.Provider.Enabled)
                             Tiles[x + i, y + j] = Provider[i, j];
                     }
-
-                Provider.UpdateSignsChestsEntities();
 
                 foreach (INamedTileCollection provider in Providers)
                 {
@@ -240,23 +237,40 @@ namespace FakeProvider
         }
 
         #endregion
-        #region HideSignsChestsEntities
+        #region HideFakeSignsChestsEntities
 
-        public void HideSignsChestsEntities()
+        public void HideFakeSignsChestsEntities()
         {
             lock (Locker)
                 foreach (INamedTileCollection provider in Providers)
-                    provider.HideSignsChestsEntities();
+                    if (provider.Name != FakeProvider.WorldProviderName)
+                        provider.HideSignsChestsEntities();
         }
 
         #endregion
-        #region UpdateSignsChestsEntities
+        #region UpdateFakeSignsChestsEntities
 
-        public void UpdateSignsChestsEntities()
+        public void UpdateFakeSignsChestsEntities()
         {
             lock (Locker)
                 foreach (INamedTileCollection provider in Providers)
-                    provider.UpdateSignsChestsEntities();
+                    if (provider.Name != FakeProvider.WorldProviderName)
+                        provider.UpdateSignsChestsEntities();
+        }
+
+        #endregion
+        #region ScanRectangle
+
+        public void ScanRectangle(int X, int Y, int Width, int Height, INamedTileCollection IgnoreProvider = null)
+        {
+            lock (Locker)
+                foreach (INamedTileCollection provider in Providers)
+                    if (provider != IgnoreProvider)
+                    {
+                        Intersect(provider, X, Y, Width, Height, out int x, out int y, out int width, out int height);
+                        if (width > 0 && height > 0)
+                            provider.Scan();
+                    }
         }
 
         #endregion
@@ -279,13 +293,11 @@ namespace FakeProvider
 
         #region Clamp
 
-        private (int x, int y, int width, int height) Clamp(int X, int Y, int Width, int Height) =>
-            (Clamp(X, 0, this.Width),
-            Clamp(Y, 0, this.Height),
-            Clamp(Width, 0, this.Width - X),
-            Clamp(Height, 0, this.Height - Y));
-
-        private int Clamp(int value, int min, int max) => value < min ? min : (value > max ? max : value);
+        public (int x, int y, int width, int height) Clamp(int X, int Y, int Width, int Height) =>
+            (Helper.Clamp(X, 0, this.Width),
+            Helper.Clamp(Y, 0, this.Height),
+            Helper.Clamp(Width, 0, this.Width - X),
+            Helper.Clamp(Height, 0, this.Height - Y));
 
         #endregion
 

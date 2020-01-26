@@ -3,6 +3,7 @@ using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Terraria;
 using Terraria.ID;
 #endregion
@@ -11,6 +12,9 @@ namespace FakeProvider
     public sealed class ReadonlyTileProvider<T> : INamedTileCollection
     {
         #region Data
+
+        public static readonly ushort[] SignTileTypes = new ushort[] { TileID.Signs, TileID.AnnouncementBox, TileID.Tombstones };
+        public static readonly ushort[] ChestTileTypes = new ushort[] { TileID.Containers, TileID.Containers2, TileID.Dressers };
 
         public TileProviderCollection ProviderCollection { get; }
         private ReadonlyTile<T>[,] Data;
@@ -117,7 +121,14 @@ namespace FakeProvider
 
         #region XYWH
 
-        public (int X, int Y, int Width, int Height) XYWH() => (X, Y, Width, Height);
+        public (int X, int Y, int Width, int Height) XYWH(int DeltaX = 0, int DeltaY = 0) =>
+            (X + DeltaX, Y + DeltaY, Width, Height);
+
+        #endregion
+        #region ClampXYWH
+
+        public (int X, int Y, int Width, int Height) ClampXYWH() =>
+            (ProviderCollection.Clamp(X, Y, Width, Height));
 
         #endregion
         #region SetXYWH
@@ -154,27 +165,33 @@ namespace FakeProvider
         #endregion
         #region Enable
 
-        public void Enable()
+        public void Enable(bool Draw = true)
         {
             if (!Enabled)
             {
                 Enabled = true;
                 ProviderCollection.UpdateProviderReferences(this);
-                Draw(true);
+                if (Draw)
+                    this.Draw(true);
             }
         }
 
         #endregion
         #region Disable
 
-        public void Disable()
+        public void Disable(bool Draw = true)
         {
             if (Enabled)
             {
                 Enabled = false;
                 // Remove signs, chests, entities
+                HideSignsChestsEntities();
+                // Collecting manually added signs, chests and entities
+                Scan();
+                // Showing tiles, signs, chests and entities under the provider
                 ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height);
-                Draw(true);
+                if (Draw)
+                    this.Draw(true);
             }
         }
 
@@ -202,6 +219,15 @@ namespace FakeProvider
         }
 
         #endregion
+        #region Scan
+
+        public void Scan()
+        {
+            ScanSigns();
+            ScanChests();
+        }
+
+        #endregion
 
         #region AddSign
 
@@ -210,11 +236,10 @@ namespace FakeProvider
             FakeSign sign = new FakeSign(this, -1, X, Y, Text);
             lock (Locker)
             {
-                if (_Signs.Find(s => s.x == sign.x && s.y == sign.y) != null)
-                    throw new Exception("Sign with such coordinates already exists in this tile provider.");
+                _Signs.RemoveAll(s => s.x == sign.x && s.y == sign.y);
                 _Signs.Add(sign);
             }
-            UpdateSigns();
+            UpdateSign(sign);
             return sign;
         }
 
@@ -258,7 +283,7 @@ namespace FakeProvider
         #endregion
         #region UpdateSign
 
-        public bool UpdateSign(FakeSign Sign)
+        private bool UpdateSign(FakeSign Sign)
         {
             if (ProviderCollection.GetTileSafe(this.X + Sign.RelativeX, this.Y + Sign.RelativeY).Provider == this)
                 return ApplySign(Sign);
@@ -288,6 +313,8 @@ namespace FakeProvider
                     if (!applied && Main.sign[i] == null)
                     {
                         applied = true;
+                        Sign.x = ProviderCollection.OffsetX + this.X + Sign.RelativeX;
+                        Sign.y = ProviderCollection.OffsetY + this.Y + Sign.RelativeY;
                         Main.sign[i] = Sign;
                         Sign.Index = i;
 
@@ -313,6 +340,34 @@ namespace FakeProvider
         }
 
         #endregion
+        #region ScanSigns
+
+        private void ScanSigns()
+        {
+            (int x, int y, int width, int height) = XYWH(ProviderCollection.OffsetX, ProviderCollection.OffsetY);
+            for (int i = 0; i < 1000; i++)
+            {
+                Sign sign = Main.sign[i];
+                if (sign == null)
+                    continue;
+
+                IProviderTile tileOnTop = ProviderCollection.GetTileSafe(sign.x, sign.y);
+                if (sign.GetType().Name == "Sign"
+                        && Helper.Inside(sign.x, sign.y, x, y, width, height)
+                        && tileOnTop.Provider == this
+                        && tileOnTop.active()
+                        && SignTileTypes.Contains(tileOnTop.type))
+                    AddSign(sign.x - x, sign.y - y, sign.text);
+                else if (sign is FakeSign fakeSign && fakeSign.Provider == this
+                        && tileOnTop.Provider == this
+                        && (!Helper.Inside(sign.x, sign.y, x, y, width, height)
+                            || !tileOnTop.active()
+                            || !SignTileTypes.Contains(tileOnTop.type)))
+                    RemoveSign(fakeSign);
+            }
+        }
+
+        #endregion
 
         #region AddChest
 
@@ -321,11 +376,10 @@ namespace FakeProvider
             FakeChest chest = new FakeChest(this, -1, X, Y, Items);
             lock (Locker)
             {
-                if (_Chests.Find(c => c.x == chest.x && c.y == chest.y) != null)
-                    throw new Exception("Sign with such coordinates already exists in this tile provider.");
+                _Chests.RemoveAll(c => c.x == chest.x && c.y == chest.y);
                 _Chests.Add(chest);
             }
-            UpdateChests();
+            UpdateChest(chest);
             return chest;
         }
 
@@ -355,7 +409,7 @@ namespace FakeProvider
         #endregion
         #region UpdateChest
 
-        public bool UpdateChest(FakeChest Chest)
+        private bool UpdateChest(FakeChest Chest)
         {
             if (ProviderCollection.GetTileSafe(this.X + Chest.RelativeX, this.Y + Chest.RelativeY).Provider == this)
                 return ApplyChest(Chest);
@@ -385,6 +439,8 @@ namespace FakeProvider
                     if (!applied && Main.chest[i] == null)
                     {
                         applied = true;
+                        Chest.x = ProviderCollection.OffsetX + this.X + Chest.RelativeX;
+                        Chest.y = ProviderCollection.OffsetY + this.Y + Chest.RelativeY;
                         Main.chest[i] = Chest;
                         Chest.Index = i;
 
@@ -401,12 +457,41 @@ namespace FakeProvider
         }
 
         #endregion
-        #region HideSign
+        #region HideChest
 
         private void HideChest(FakeChest Chest)
         {
             if (Chest.Index >= 0 && Main.chest[Chest.Index] == Chest)
                 Main.chest[Chest.Index] = null;
+        }
+
+        #endregion
+        #region ScanChests
+
+        private void ScanChests()
+        {
+            (int x, int y, int width, int height) = XYWH(ProviderCollection.OffsetX, ProviderCollection.OffsetY);
+            for (int i = 0; i < 1000; i++)
+            {
+                Chest chest = Main.chest[i];
+                if (chest == null)
+                    continue;
+
+                IProviderTile tileOnTop = ProviderCollection.GetTileSafe(chest.x, chest.y);
+                if (chest.GetType().Name == "Chest"
+                        && Helper.Inside(chest.x, chest.y, x, y, width, height)
+                        && tileOnTop.Provider == this
+                        && tileOnTop.active()
+                        && SignTileTypes.Contains(tileOnTop.type))
+                    AddChest(chest.x - x, chest.y - y, chest.item);
+                else if (chest is FakeChest fakeChest && fakeChest.Provider == this
+                        && chest.x >= x && chest.y >= y
+                        && chest.x < x + width && chest.y < y + height
+                        && tileOnTop.Provider == this
+                        && (!tileOnTop.active()
+                            || !SignTileTypes.Contains(tileOnTop.type)))
+                    RemoveChest(fakeChest);
+            }
         }
 
         #endregion

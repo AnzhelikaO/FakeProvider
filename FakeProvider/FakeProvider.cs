@@ -23,6 +23,7 @@ namespace FakeProvider
         public override string Author => "Anzhelika & ASgo";
         public override string Description => "TODO";
 
+        public const string WorldProviderName = "__world__";
         public static TileProviderCollection Tile { get; private set; }
         public static INamedTileCollection Void { get; private set; }
         public static IProviderTile VoidTile { get; private set; }
@@ -206,10 +207,10 @@ namespace FakeProvider
             VoidTile = Void[0, 0];
 
             if (ReadonlyWorld)
-                World = CreateReadonlyTileProvider("__world__", 0, 0,
+                World = CreateReadonlyTileProvider(WorldProviderName, 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile, Int32.MinValue + 1);
             else
-                World = CreateTileProvider("__world__", 0, 0,
+                World = CreateTileProvider(WorldProviderName, 0, 0,
                     Main.maxTilesX, Main.maxTilesY, Main.tile, Int32.MinValue + 1);
 
             using (IDisposable previous = Main.tile as IDisposable)
@@ -224,6 +225,7 @@ namespace FakeProvider
             GC.Collect();
 
             // What's with loaded signs, chests and entities? Add to World TileProvider? Nah...
+            World.Scan();
         }
 
         #endregion
@@ -236,8 +238,7 @@ namespace FakeProvider
             Main.worldSurface -= OffsetY;
             Main.rockLayer -= OffsetY;
             Main.tile = World;
-            // TODO: remove fake signs, chests and entities from Main.sign, ...
-            Tile.HideSignsChestsEntities();
+            Tile.HideFakeSignsChestsEntities();
             return HookResult.Continue;
         }
 
@@ -251,8 +252,7 @@ namespace FakeProvider
             Main.worldSurface += OffsetY;
             Main.rockLayer += OffsetY;
             Main.tile = Tile;
-            // TODO: return fake signs, chests and entities from Main.sign, ... back
-            Tile.UpdateSignsChestsEntities();
+            Tile.UpdateFakeSignsChestsEntities();
         }
 
         #endregion
