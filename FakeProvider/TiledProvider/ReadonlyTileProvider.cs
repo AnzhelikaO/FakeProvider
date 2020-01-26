@@ -23,6 +23,8 @@ namespace FakeProvider
         public bool Enabled { get; private set; } = true;
         private List<FakeSign> _Signs = new List<FakeSign>();
         public ReadOnlyCollection<FakeSign> Signs => new ReadOnlyCollection<FakeSign>(_Signs);
+        private List<FakeChest> _Chests = new List<FakeChest>();
+        public ReadOnlyCollection<FakeChest> Chests => new ReadOnlyCollection<FakeChest>(_Chests);
         private object Locker = new object();
 
         #endregion
@@ -307,12 +309,105 @@ namespace FakeProvider
 
         private void HideSign(FakeSign sign)
         {
-            Console.WriteLine($"Removing FakeSign at {sign.x}, {sign.y} from {Name}");
             if (sign.Index >= 0 && Main.sign[sign.Index] == sign)
-            {
-                Console.WriteLine($"Removing success!!!");
                 Main.sign[sign.Index] = null;
+        }
+
+        #endregion
+
+        #region AddChest
+
+        public FakeChest AddChest(int X, int Y, Item[] Items = null)
+        {
+            FakeChest chest = new FakeChest(this, -1, X, Y, Items);
+            lock (Locker)
+            {
+                if (_Chests.Find(c => c.x == chest.x && c.y == chest.y) != null)
+                    throw new Exception("Sign with such coordinates already exists in this tile provider.");
+                _Chests.Add(chest);
             }
+            UpdateChests();
+            return chest;
+        }
+
+        #endregion
+        #region RemoveChest
+
+        public void RemoveChest(FakeChest Chest)
+        {
+            lock (Locker)
+            {
+                HideChest(Chest);
+                if (!_Chests.Remove(Chest))
+                    throw new Exception("No such sign in this tile provider.");
+            }
+        }
+
+        #endregion
+        #region UpdateChests
+
+        public void UpdateChests()
+        {
+            lock (Locker)
+                foreach (FakeChest chest in _Chests)
+                    UpdateChest(chest);
+        }
+
+        #endregion
+        #region UpdateChest
+
+        public bool UpdateChest(FakeChest Chest)
+        {
+            if (ProviderCollection.GetTileSafe(this.X + Chest.RelativeX, this.Y + Chest.RelativeY).Provider == this)
+                return ApplyChest(Chest);
+            else
+                HideChest(Chest);
+            return true;
+        }
+
+        #endregion
+        #region ApplyChest
+
+        private bool ApplyChest(FakeChest Chest)
+        {
+            if (Chest.Index >= 0 && Main.chest[Chest.Index] == Chest)
+            {
+                Chest.x = ProviderCollection.OffsetX + this.X + Chest.RelativeX;
+                Chest.y = ProviderCollection.OffsetY + this.Y + Chest.RelativeY;
+                return true;
+            }
+            else
+            {
+                bool applied = false;
+                for (int i = 0; i < 1000; i++)
+                {
+                    if (Main.chest[i] != null && Main.chest[i].x == Chest.x && Main.chest[i].y == Chest.y)
+                        Main.chest[i] = null;
+                    if (!applied && Main.chest[i] == null)
+                    {
+                        applied = true;
+                        Main.chest[i] = Chest;
+                        Chest.Index = i;
+
+                        // DEBUG
+                        ReadonlyTile<T> t = Data[Chest.x - FakeProvider.OffsetX - this.X, Chest.y - FakeProvider.OffsetY - this.Y];
+                        Tile t2 = new Tile();
+                        t2.active(true);
+                        t2.type = (ushort)TileID.Containers;
+                        t.ForceCopyFrom(t2);
+                    }
+                }
+                return applied;
+            }
+        }
+
+        #endregion
+        #region HideSign
+
+        private void HideChest(FakeChest Chest)
+        {
+            if (Chest.Index >= 0 && Main.chest[Chest.Index] == Chest)
+                Main.chest[Chest.Index] = null;
         }
 
         #endregion

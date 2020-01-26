@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="FakeProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TiledProvider\FakeChest.cs" />
     <Compile Include="TiledProvider\FakeSign.cs" />
     <Compile Include="TiledProvider\INamedTileCollection.cs" />
     <Compile Include="TiledProvider\IProviderTile.cs" />

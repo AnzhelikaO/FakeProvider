@@ -122,6 +122,7 @@ namespace FakeProvider
 
                     // TODO: Where should this go?
                     provider.UpdateSigns();
+                    provider.UpdateChests();
                 }
             }
             if (Cleanup)
@@ -201,7 +202,7 @@ namespace FakeProvider
                     // Update signs
                     provider.UpdateSigns();
                     // Update chests
-
+                    provider.UpdateChests();
                     // Update entities
                 }
             }
@@ -231,11 +232,10 @@ namespace FakeProvider
                     }
 
                 // Update signs
-                TileCollection.UpdateSigns();
                 //TileCollection.ApplySigns(x, y, width, height);
-
+                TileCollection.UpdateSigns();
                 // Update chests
-
+                TileCollection.UpdateChests();
                 // Update entities
 
             }

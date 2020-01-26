@@ -2,6 +2,7 @@
 using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
+using Terraria;
 #endregion
 namespace FakeProvider
 {
@@ -28,6 +29,9 @@ namespace FakeProvider
         FakeSign AddSign(int X, int Y, string Text);
         void RemoveSign(FakeSign Sign);
         void UpdateSigns();
-        //void UpdateSigns(int X, int Y, int Width, int Height);
+
+        FakeChest AddChest(int X, int Y, Item[] Items = null);
+        void RemoveChest(FakeChest Sign);
+        void UpdateChests();
     }
 }
