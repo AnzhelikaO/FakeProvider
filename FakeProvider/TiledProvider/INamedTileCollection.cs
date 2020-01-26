@@ -24,7 +24,7 @@ namespace FakeProvider
         void Enable();
         void Disable();
         void HideSignsChestsEntities();
-        void ShowSignsChestsEntities();
+        void UpdateSignsChestsEntities();
 
         FakeSign AddSign(int X, int Y, string Text);
         void RemoveSign(FakeSign Sign);

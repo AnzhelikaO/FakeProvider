@@ -252,7 +252,7 @@ namespace FakeProvider
             Main.rockLayer += OffsetY;
             Main.tile = Tile;
             // TODO: return fake signs, chests and entities from Main.sign, ... back
-            Tile.ShowSignsChestsEntities();
+            Tile.UpdateSignsChestsEntities();
         }
 
         #endregion

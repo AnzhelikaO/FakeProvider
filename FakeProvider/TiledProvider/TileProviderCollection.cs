@@ -199,11 +199,7 @@ namespace FakeProvider
                 while (providers.Count > 0)
                 {
                     INamedTileCollection provider = providers.Dequeue();
-                    // Update signs
-                    provider.UpdateSigns();
-                    // Update chests
-                    provider.UpdateChests();
-                    // Update entities
+                    provider.UpdateSignsChestsEntities();
                 }
             }
         }
@@ -211,16 +207,16 @@ namespace FakeProvider
         #endregion
         #region UpdateProviderReferences
 
-        public void UpdateProviderReferences(INamedTileCollection TileCollection)
+        public void UpdateProviderReferences(INamedTileCollection Provider)
         {
-            if (!TileCollection.Enabled)
+            if (!Provider.Enabled)
                 return;
             lock (Locker)
             {
                 // Update tiles
-                int layer = TileCollection.Layer;
-                (int x, int y, int width, int height) = Clamp(TileCollection.X, TileCollection.Y,
-                    TileCollection.Width, TileCollection.Height);
+                int layer = Provider.Layer;
+                (int x, int y, int width, int height) = Clamp(Provider.X, Provider.Y,
+                    Provider.Width, Provider.Height);
 
                 for (int i = 0; i < width; i++)
                     for (int j = 0; j < height; j++)
@@ -228,16 +224,18 @@ namespace FakeProvider
                         IProviderTile tile = (IProviderTile)Tiles[x + i, y + j];
                         // If layer is equal then there might be a problem...
                         if (tile == null || tile.Provider.Layer <= layer || !tile.Provider.Enabled)
-                            Tiles[x + i, y + j] = TileCollection[i, j];
+                            Tiles[x + i, y + j] = Provider[i, j];
                     }
 
-                // Update signs
-                //TileCollection.ApplySigns(x, y, width, height);
-                TileCollection.UpdateSigns();
-                // Update chests
-                TileCollection.UpdateChests();
-                // Update entities
+                Provider.UpdateSignsChestsEntities();
 
+                foreach (INamedTileCollection provider in Providers)
+                {
+                    Intersect(provider, x, y, width, height,
+                        out int x2, out int y2, out int width2, out int height2);
+                    if (width2 > 0 && height2 > 0)
+                        provider.UpdateSignsChestsEntities();
+                }
             }
         }
 
@@ -252,13 +250,13 @@ namespace FakeProvider
         }
 
         #endregion
-        #region ShowSignsChestsEntities
+        #region UpdateSignsChestsEntities
 
-        public void ShowSignsChestsEntities()
+        public void UpdateSignsChestsEntities()
         {
             lock (Locker)
                 foreach (INamedTileCollection provider in Providers)
-                    provider.ShowSignsChestsEntities();
+                    provider.UpdateSignsChestsEntities();
         }
 
         #endregion

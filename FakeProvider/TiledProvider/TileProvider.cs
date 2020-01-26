@@ -188,19 +188,18 @@ namespace FakeProvider
             {
                 foreach (FakeSign sign in _Signs)
                     HideSign(sign);
+                foreach (FakeChest chest in _Chests)
+                    HideChest(chest);
             }
         }
 
         #endregion
-        #region ShowSignsChestsEntities
+        #region UpdateSignsChestsEntities
 
-        public void ShowSignsChestsEntities()
+        public void UpdateSignsChestsEntities()
         {
-            lock (Locker)
-            {
-                foreach (FakeSign sign in _Signs)
-                    UpdateSign(sign);
-            }
+            UpdateSigns();
+            UpdateChests();
         }
 
         #endregion
