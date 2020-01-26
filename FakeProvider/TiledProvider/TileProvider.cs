@@ -25,7 +25,7 @@ namespace FakeProvider
         public int Width { get; private set; }
         public int Height { get; private set; }
         public int Layer { get; }
-        public bool Enabled { get; private set; } = true;
+        public bool Enabled { get; private set; } = false;
         private List<FakeSign> _Signs = new List<FakeSign>();
         public ReadOnlyCollection<FakeSign> Signs => new ReadOnlyCollection<FakeSign>(_Signs);
         private List<FakeChest> _Chests = new List<FakeChest>();
@@ -162,11 +162,14 @@ namespace FakeProvider
         #endregion
         #region Move
 
-        public void Move(int X, int Y)
+        public void Move(int X, int Y, bool Draw = true)
         {
-            Disable();
+            bool wasEnabled = Enabled;
+            if (wasEnabled)
+                Disable(Draw);
             SetXYWH(X, Y, this.Width, this.Height);
-            Enable();
+            if (wasEnabled)
+                Enable(Draw);
         }
 
         #endregion
@@ -191,10 +194,10 @@ namespace FakeProvider
             if (Enabled)
             {
                 Enabled = false;
-                // Remove signs, chests, entities
-                //HideSignsChestsEntities();
-                // Collecting manually added signs, chests and entities
+                // Adding/removing manually added/removed signs, chests and entities
                 Scan();
+                // Remove signs, chests, entities
+                HideSignsChestsEntities();
                 // Showing tiles, signs, chests and entities under the provider
                 ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height);
                 if (Draw)
@@ -209,9 +212,9 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                foreach (FakeSign sign in _Signs)
+                foreach (FakeSign sign in _Signs.ToArray())
                     HideSign(sign);
-                foreach (FakeChest chest in _Chests)
+                foreach (FakeChest chest in _Chests.ToArray())
                     HideChest(chest);
             }
         }
@@ -269,7 +272,7 @@ namespace FakeProvider
         public void UpdateSigns()
         {
             lock (Locker)
-                foreach (FakeSign sign in _Signs)
+                foreach (FakeSign sign in _Signs.ToArray())
                     UpdateSign(sign);
         }
 
@@ -288,11 +291,22 @@ namespace FakeProvider
         }*/
 
         #endregion
+        #region IsSignTile
+
+        private bool IsSignTile(int X, int Y)
+        {
+            ITile tile = GetTileSafe(X, Y);
+            return tile.active() && SignTileTypes.Contains(tile.type);
+        }
+
+        #endregion
         #region UpdateSign
 
         private bool UpdateSign(FakeSign Sign)
         {
-            if (ProviderCollection.GetTileSafe(this.X + Sign.RelativeX, this.Y + Sign.RelativeY).Provider == this)
+            if (!IsSignTile(Sign.RelativeX, Sign.RelativeY))
+                RemoveSign(Sign);
+            else if (ProviderCollection.GetTileSafe(this.X + Sign.RelativeX, this.Y + Sign.RelativeY).Provider == this)
                 return ApplySign(Sign);
             else
                 HideSign(Sign);
@@ -324,11 +338,6 @@ namespace FakeProvider
                         Sign.y = ProviderCollection.OffsetY + this.Y + Sign.RelativeY;
                         Main.sign[i] = Sign;
                         Sign.Index = i;
-
-                        // DEBUG
-                        Tile<T> t = Data[Sign.x - FakeProvider.OffsetX - this.X, Sign.y - FakeProvider.OffsetY - this.Y];
-                        t.active(true);
-                        t.type = (ushort)TileID.Signs;
                     }
                 }
                 return applied;
@@ -363,12 +372,6 @@ namespace FakeProvider
                         && tileOnTop.active()
                         && SignTileTypes.Contains(tileOnTop.type))
                     AddSign(sign.x - x, sign.y - y, sign.text);
-                else if (sign is FakeSign fakeSign && fakeSign.Provider == this
-                        && tileOnTop.Provider == this
-                        && (!Helper.Inside(sign.x, sign.y, x, y, width, height)
-                            || !tileOnTop.active()
-                            || !SignTileTypes.Contains(tileOnTop.type)))
-                    RemoveSign(fakeSign);
             }
         }
 
@@ -407,8 +410,17 @@ namespace FakeProvider
         public void UpdateChests()
         {
             lock (Locker)
-                foreach (FakeChest chest in _Chests)
+                foreach (FakeChest chest in _Chests.ToArray())
                     UpdateChest(chest);
+        }
+
+        #endregion
+        #region IsChestTile
+
+        private bool IsChestTile(int X, int Y)
+        {
+            ITile tile = GetTileSafe(X, Y);
+            return tile.active() && ChestTileTypes.Contains(tile.type);
         }
 
         #endregion
@@ -416,7 +428,9 @@ namespace FakeProvider
 
         private bool UpdateChest(FakeChest Chest)
         {
-            if (ProviderCollection.GetTileSafe(this.X + Chest.RelativeX, this.Y + Chest.RelativeY).Provider == this)
+            if (!IsChestTile(Chest.RelativeX, Chest.RelativeY))
+                RemoveChest(Chest);
+            else if (ProviderCollection.GetTileSafe(this.X + Chest.RelativeX, this.Y + Chest.RelativeY).Provider == this)
                 return ApplyChest(Chest);
             else
                 HideChest(Chest);
@@ -448,11 +462,6 @@ namespace FakeProvider
                         Chest.y = ProviderCollection.OffsetY + this.Y + Chest.RelativeY;
                         Main.chest[i] = Chest;
                         Chest.Index = i;
-
-                        // DEBUG
-                        Tile<T> t = Data[Chest.x - FakeProvider.OffsetX - this.X, Chest.y - FakeProvider.OffsetY - this.Y];
-                        t.active(true);
-                        t.type = (ushort)TileID.Containers;
                     }
                 }
                 return applied;
@@ -487,13 +496,6 @@ namespace FakeProvider
                         && tileOnTop.active()
                         && SignTileTypes.Contains(tileOnTop.type))
                     AddChest(chest.x - x, chest.y - y, chest.item);
-                else if (chest is FakeChest fakeChest && fakeChest.Provider == this
-                        && chest.x >= x && chest.y >= y
-                        && chest.x < x + width && chest.y < y + height
-                        && tileOnTop.Provider == this
-                        && (!tileOnTop.active()
-                            || !SignTileTypes.Contains(tileOnTop.type)))
-                    RemoveChest(fakeChest);
             }
         }
 

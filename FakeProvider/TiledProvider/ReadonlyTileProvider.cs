@@ -24,7 +24,7 @@ namespace FakeProvider
         public int Width { get; private set; }
         public int Height { get; private set; }
         public int Layer { get; }
-        public bool Enabled { get; private set; } = true;
+        public bool Enabled { get; private set; } = false;
         private List<FakeSign> _Signs = new List<FakeSign>();
         public ReadOnlyCollection<FakeSign> Signs => new ReadOnlyCollection<FakeSign>(_Signs);
         private List<FakeChest> _Chests = new List<FakeChest>();
@@ -155,14 +155,17 @@ namespace FakeProvider
         #endregion
         #region Move
 
-        public void Move(int X, int Y)
+        public void Move(int X, int Y, bool Draw = true)
         {
-            Disable();
+            bool wasEnabled = Enabled;
+            if (wasEnabled)
+                Disable(Draw);
             SetXYWH(X, Y, this.Width, this.Height);
-            Enable();
+            if (wasEnabled)
+                Enable(Draw);
         }
 
-        #endregion
+#endregion
         #region Enable
 
         public void Enable(bool Draw = true)
@@ -184,10 +187,10 @@ namespace FakeProvider
             if (Enabled)
             {
                 Enabled = false;
+                // Adding/removing manually added/removed signs, chests and entities
+                Scan();
                 // Remove signs, chests, entities
                 HideSignsChestsEntities();
-                // Collecting manually added signs, chests and entities
-                Scan();
                 // Showing tiles, signs, chests and entities under the provider
                 ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height);
                 if (Draw)
@@ -317,13 +320,6 @@ namespace FakeProvider
                         Sign.y = ProviderCollection.OffsetY + this.Y + Sign.RelativeY;
                         Main.sign[i] = Sign;
                         Sign.Index = i;
-
-                        // DEBUG
-                        ReadonlyTile<T> t = Data[Sign.x - FakeProvider.OffsetX - this.X, Sign.y - FakeProvider.OffsetY - this.Y];
-                        Tile t2 = new Tile();
-                        t2.active(true);
-                        t2.type = (ushort)TileID.Signs;
-                        t.ForceCopyFrom(t2);
                     }
                 }
                 return applied;
@@ -443,13 +439,6 @@ namespace FakeProvider
                         Chest.y = ProviderCollection.OffsetY + this.Y + Chest.RelativeY;
                         Main.chest[i] = Chest;
                         Chest.Index = i;
-
-                        // DEBUG
-                        ReadonlyTile<T> t = Data[Chest.x - FakeProvider.OffsetX - this.X, Chest.y - FakeProvider.OffsetY - this.Y];
-                        Tile t2 = new Tile();
-                        t2.active(true);
-                        t2.type = (ushort)TileID.Containers;
-                        t.ForceCopyFrom(t2);
                     }
                 }
                 return applied;

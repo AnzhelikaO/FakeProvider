@@ -91,18 +91,18 @@ namespace FakeProvider
 
         #region Add
 
-        public void Add(INamedTileCollection TileCollection)
+        public void Add(INamedTileCollection Provider)
         {
             lock (Locker)
             {
-                if (Providers.Any(p => (p.Name == TileCollection.Name)))
-                    throw new ArgumentException($"Tile collection '{TileCollection.Name}' " +
+                if (Providers.Any(p => (p.Name == Provider.Name)))
+                    throw new ArgumentException($"Tile collection '{Provider.Name}' " +
                         "is already in use. Name must be unique.");
-                short index = (short)Providers.FindIndex(p => (p.Layer > TileCollection.Layer));
+                short index = (short)Providers.FindIndex(p => (p.Layer > Provider.Layer));
                 if (index == -1)
                     index = (short)Providers.Count;
-                Providers.Insert(index, TileCollection);
-                UpdateProviderReferences(TileCollection);
+                Providers.Insert(index, Provider);
+                Provider.Enable(false);
             }
         }
 
@@ -116,11 +116,8 @@ namespace FakeProvider
                 {
                     if (provider == null)
                         return false;
+                    provider.Disable(false);
                     Providers.Remove(provider);
-                    // Hiding signs, chests and entities from the provider
-                    provider.HideSignsChestsEntities();
-                    // Showing tiles, signs, chests and entities under the provider
-                    UpdateRectangleReferences(provider.X, provider.Y, provider.Width, provider.Height);
                 }
             if (Cleanup)
                 GC.Collect();
