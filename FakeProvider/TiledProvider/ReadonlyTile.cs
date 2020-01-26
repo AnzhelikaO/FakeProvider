@@ -124,7 +124,7 @@ namespace FakeProvider
         #endregion
         #region ForceCopyFrom
 
-        private void ForceCopyFrom(ITile From)
+        internal void ForceCopyFrom(ITile From)
         {
             _type = From.type;
             _wall = From.wall;

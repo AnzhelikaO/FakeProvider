@@ -1,4 +1,5 @@
 ﻿#region Using
+using Microsoft.Xna.Framework;
 using OTAPI.Tile;
 using System;
 using System.Collections;
@@ -23,6 +24,8 @@ namespace FakeProvider
         /// <summary> World height visible by client. </summary>
         public int Height { get; }
         /// <summary> Horizontal offset of the loaded world. </summary>
+        
+        // TODO: I completely messed up offset.
         public int OffsetX { get; }
         /// <summary> Vertical offset of the loaded world. </summary>
         public int OffsetY { get; }
@@ -57,6 +60,14 @@ namespace FakeProvider
         }
 
         #endregion
+        #region GetTileSafe
+
+        // Offset????
+        public IProviderTile GetTileSafe(int X, int Y) => X >= 0 && Y >= 0 && X < Width && Y < Height
+            ? (IProviderTile)this[X, Y]
+            : FakeProvider.VoidTile;
+
+        #endregion
 
         #region Dispose
 
@@ -65,7 +76,7 @@ namespace FakeProvider
             lock (Locker)
             {
                 foreach (INamedTileCollection provider in Providers)
-                    (provider as IDisposable).Dispose();
+                    provider.Dispose();
             }
         }
 
@@ -92,7 +103,6 @@ namespace FakeProvider
                     index = (short)Providers.Count;
                 Providers.Insert(index, TileCollection);
                 UpdateProviderReferences(TileCollection);
-                TileCollection.Draw(true);
             }
         }
 
@@ -109,31 +119,13 @@ namespace FakeProvider
                         return false;
                     Providers.Remove(provider);
                     UpdateRectangleReferences(provider.X, provider.Y, provider.Width, provider.Height);
-                    provider.Draw(true);
+
+                    // TODO: Where should this go?
+                    provider.UpdateSigns();
                 }
             }
             if (Cleanup)
                 GC.Collect();
-            return true;
-        }
-
-        #endregion
-        #region Move
-
-        public bool Move(string Name, int X, int Y)
-        {
-            INamedTileCollection provider;
-            lock (Locker)
-            {
-                provider = Providers.FirstOrDefault(p => (p.Name == Name));
-                if (provider == null)
-                    return false;
-                Providers.Remove(provider);
-                UpdateRectangleReferences(provider.X, provider.Y, provider.Width, provider.Height);
-                provider.Draw(true);
-            }
-            provider.SetXYWH(X, Y, provider.Width, provider.Height);
-            Add(provider);
             return true;
         }
 
@@ -143,11 +135,9 @@ namespace FakeProvider
         public void Clear(INamedTileCollection except = null)
         {
             lock (Locker)
-            {
                 foreach (INamedTileCollection provider in Providers.ToArray())
                     if (provider != except)
                         Remove(provider.Name, false);
-            }
             GC.Collect();
         }
 
@@ -179,24 +169,40 @@ namespace FakeProvider
         {
             lock (Locker)
             {
+                (X, Y, Width, Height) = Clamp(X, Y, Width, Height);
                 for (int i = X; i < X + Width; i++)
                     for (int j = Y; j < Y + Height; j++)
-                        if (OffsetX + i < this.Width && OffsetY + j < this.Height)
-                            Tiles[OffsetX + i, OffsetY + j] = FakeProvider.VoidTile;
+                        Tiles[i, j] = FakeProvider.VoidTile;
 
-                for (short providerIndex = 0; providerIndex < Providers.Count; providerIndex++)
+                Queue<INamedTileCollection> providers = new Queue<INamedTileCollection>();
+                foreach (INamedTileCollection provider in Providers)
                 {
-                    INamedTileCollection provider = Providers[providerIndex];
                     if (provider.Enabled)
                     {
-                        Intersect(provider, X, Y, Width, Height, out int x, out int y, out int w, out int h);
+                        // Update tiles
+                        Intersect(provider, X, Y, Width, Height, out int x, out int y,
+                            out int width, out int height);
                         int dx = x - provider.X;
                         int dy = y - provider.Y;
-                        for (int i = 0; i < w; i++)
-                            for (int j = 0; j < h; j++)
-                                if (OffsetX + x + i < this.Width && OffsetY + y + j < this.Height)
-                                    Tiles[OffsetX + x + i, OffsetY + y + j] = provider[dx + i, dy + j];
+                        for (int i = 0; i < width; i++)
+                            for (int j = 0; j < height; j++)
+                                Tiles[x + i, y + j] = provider[dx + i, dy + j];
+
+                        if (width > 0 && height > 0)
+                            providers.Enqueue(provider);
                     }
+                }
+
+                // We are updating all the stuff only after tiles update since signs,
+                // chests and entities apply only in case the tile on top is from this provider.
+                while (providers.Count > 0)
+                {
+                    INamedTileCollection provider = providers.Dequeue();
+                    // Update signs
+                    provider.UpdateSigns();
+                    // Update chests
+
+                    // Update entities
                 }
             }
         }
@@ -210,21 +216,49 @@ namespace FakeProvider
                 return;
             lock (Locker)
             {
+                // Update tiles
                 int layer = TileCollection.Layer;
-                int x = TileCollection.X;
-                int y = TileCollection.Y;
-                int w = TileCollection.Width;
-                int h = TileCollection.Height;
-                for (int i = 0; i < w; i++)
-                    for (int j = 0; j < h; j++)
-                        if (OffsetX + x + i < this.Width && OffsetY + y + j < this.Height)
-                        {
-                            IProviderTile tile = (IProviderTile)Tiles[OffsetX + x + i, OffsetY + y + j];
-                            // If layer is equal then there might be a problem...
-                            if (tile == null || tile.Provider.Layer <= layer || !tile.Provider.Enabled)
-                                Tiles[OffsetX + x + i, OffsetY + y + j] = TileCollection[i, j];
-                        }
+                (int x, int y, int width, int height) = Clamp(TileCollection.X, TileCollection.Y,
+                    TileCollection.Width, TileCollection.Height);
+
+                for (int i = 0; i < width; i++)
+                    for (int j = 0; j < height; j++)
+                    {
+                        IProviderTile tile = (IProviderTile)Tiles[x + i, y + j];
+                        // If layer is equal then there might be a problem...
+                        if (tile == null || tile.Provider.Layer <= layer || !tile.Provider.Enabled)
+                            Tiles[x + i, y + j] = TileCollection[i, j];
+                    }
+
+                // Update signs
+                TileCollection.UpdateSigns();
+                //TileCollection.ApplySigns(x, y, width, height);
+
+                // Update chests
+
+                // Update entities
+
             }
+        }
+
+        #endregion
+        #region HideSignsChestsEntities
+
+        public void HideSignsChestsEntities()
+        {
+            lock (Locker)
+                foreach (INamedTileCollection provider in Providers)
+                    provider.HideSignsChestsEntities();
+        }
+
+        #endregion
+        #region ShowSignsChestsEntities
+
+        public void ShowSignsChestsEntities()
+        {
+            lock (Locker)
+                foreach (INamedTileCollection provider in Providers)
+                    provider.ShowSignsChestsEntities();
         }
 
         #endregion
@@ -242,6 +276,18 @@ namespace FakeProvider
                 Add(provider);
             }
         }
+
+        #endregion
+
+        #region Clamp
+
+        private (int x, int y, int width, int height) Clamp(int X, int Y, int Width, int Height) =>
+            (Clamp(X, 0, this.Width),
+            Clamp(Y, 0, this.Height),
+            Clamp(Width, 0, this.Width - X),
+            Clamp(Height, 0, this.Height - Y));
+
+        private int Clamp(int value, int min, int max) => value < min ? min : (value > max ? max : value);
 
         #endregion
 

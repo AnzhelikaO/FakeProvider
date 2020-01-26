@@ -1,8 +1,12 @@
 ﻿#region Using
 using OTAPI.Tile;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reflection;
 using Terraria;
+using Terraria.ID;
 #endregion
 namespace FakeProvider
 {
@@ -10,6 +14,7 @@ namespace FakeProvider
     {
         #region Data
 
+        public TileProviderCollection ProviderCollection { get; internal set; }
         private Tile<T>[,] Data;
         public string Name { get; }
         public int X { get; set; }
@@ -18,12 +23,17 @@ namespace FakeProvider
         public int Height { get; private set; }
         public int Layer { get; }
         public bool Enabled { get; private set; } = true;
+        private List<FakeSign> _Signs = new List<FakeSign>();
+        public ReadOnlyCollection<FakeSign> Signs => new ReadOnlyCollection<FakeSign>(_Signs);
+        private object Locker = new object();
 
         #endregion
         #region Constructor
 
-        public TileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
+        public TileProvider(TileProviderCollection ProviderCollection, string Name, int X, int Y,
+            int Width, int Height, int Layer = 0)
         {
+            this.ProviderCollection = ProviderCollection;
             this.Name = Name;
             this.Data = new Tile<T>[Width, Height];
             this.X = X;
@@ -39,9 +49,10 @@ namespace FakeProvider
 
         #region ITileCollection
 
-        public TileProvider(string Name, int X, int Y, int Width, int Height,
-                ITileCollection CopyFrom, int Layer = 0)
+        public TileProvider(TileProviderCollection ProviderCollection, string Name, int X, int Y,
+            int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
         {
+            this.ProviderCollection = ProviderCollection;
             this.Name = Name;
             this.Data = new Tile<T>[Width, Height];
             this.X = X;
@@ -62,9 +73,10 @@ namespace FakeProvider
         #endregion
         #region ITile[,]
 
-        public TileProvider(string Name, int X, int Y, int Width, int Height,
-                ITile[,] CopyFrom, int Layer = 0)
+        public TileProvider(TileProviderCollection ProviderCollection, string Name, int X, int Y,
+            int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
         {
+            this.ProviderCollection = ProviderCollection;
             this.Name = Name;
             this.Data = new Tile<T>[Width, Height];
             this.X = X;
@@ -131,7 +143,12 @@ namespace FakeProvider
         #endregion
         #region Move
 
-        public void Move(int X, int Y) => FakeProvider.Tile.Move(Name, X, Y);
+        public void Move(int X, int Y)
+        {
+            Disable();
+            SetXYWH(X, Y, this.Width, this.Height);
+            Enable();
+        }
 
         #endregion
         #region Enable
@@ -141,7 +158,7 @@ namespace FakeProvider
             if (!Enabled)
             {
                 Enabled = true;
-                FakeProvider.Tile.UpdateProviderReferences(this);
+                ProviderCollection.UpdateProviderReferences(this);
                 Draw(true);
             }
         }
@@ -154,8 +171,146 @@ namespace FakeProvider
             if (Enabled)
             {
                 Enabled = false;
-                FakeProvider.Tile.UpdateRectangleReferences(X, Y, Width, Height);
+                // Remove signs, chests, entities
+                ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height);
                 Draw(true);
+            }
+        }
+
+        #endregion
+        #region HideSignsChestsEntities
+
+        public void HideSignsChestsEntities()
+        {
+            lock (Locker)
+            {
+                foreach (FakeSign sign in _Signs)
+                    HideSign(sign);
+            }
+        }
+
+        #endregion
+        #region ShowSignsChestsEntities
+
+        public void ShowSignsChestsEntities()
+        {
+            lock (Locker)
+            {
+                foreach (FakeSign sign in _Signs)
+                    UpdateSign(sign);
+            }
+        }
+
+        #endregion
+
+        #region AddSign
+
+        public FakeSign AddSign(int X, int Y, string Text)
+        {
+            FakeSign sign = new FakeSign(this, -1, X, Y, Text);
+            lock (Locker)
+            {
+                if (_Signs.Find(s => s.x == sign.x && s.y == sign.y) != null)
+                    throw new Exception("Sign with such coordinates already exists in this tile provider.");
+                _Signs.Add(sign);
+            }
+            UpdateSigns();
+            return sign;
+        }
+
+        #endregion
+        #region RemoveSign
+
+        public void RemoveSign(FakeSign Sign)
+        {
+            lock (Locker)
+            {
+                HideSign(Sign);
+                if (!_Signs.Remove(Sign))
+                    throw new Exception("No such sign in this tile provider.");
+            }
+        }
+
+        #endregion
+        #region UpdateSigns
+
+        public void UpdateSigns()
+        {
+            lock (Locker)
+                foreach (FakeSign sign in _Signs)
+                    UpdateSign(sign);
+        }
+
+        /*public void UpdateSigns(int X, int Y, int Width, int Height)
+        {
+            lock (Locker)
+                foreach (FakeSign sign in _Signs.Where(s =>
+                    s.RelativeX)
+                {
+                    int signX = this.X + sign.RelativeX;
+                    int signY = this.Y + sign.RelativeY;
+                    if (ProviderCollection.GetTileSafe(signX, signY).Provider == this
+                            && !ApplySign(sign))
+                        break;
+                }
+        }*/
+
+        #endregion
+        #region UpdateSign
+
+        public bool UpdateSign(FakeSign Sign)
+        {
+            if (ProviderCollection.GetTileSafe(this.X + Sign.RelativeX, this.Y + Sign.RelativeY).Provider == this)
+                return ApplySign(Sign);
+            else
+                HideSign(Sign);
+            return true;
+        }
+
+        #endregion
+        #region ApplySign
+
+        private bool ApplySign(FakeSign Sign)
+        {
+            if (Sign.Index >= 0 && Main.sign[Sign.Index] == Sign)
+            {
+                Sign.x = ProviderCollection.OffsetX + this.X + Sign.RelativeX;
+                Sign.y = ProviderCollection.OffsetY + this.Y + Sign.RelativeY;
+                return true;
+            }
+            else
+            {
+                bool applied = false;
+                for (int i = 0; i < 1000; i++)
+                {
+                    if (Main.sign[i] != null && Main.sign[i].x == Sign.x && Main.sign[i].y == Sign.y)
+                        Main.sign[i] = null;
+                    if (!applied && Main.sign[i] == null)
+                    {
+                        applied = true;
+                        Main.sign[i] = Sign;
+                        Sign.Index = i;
+
+                        // DEBUG
+                        Tile<T> t = Data[Sign.x - FakeProvider.OffsetX - this.X, Sign.y - FakeProvider.OffsetY - this.Y];
+                        t.active(true);
+                        t.type = (ushort)TileID.Signs;
+                    }
+                }
+                return applied;
+            }
+        }
+
+        #endregion
+        #region HideSign
+
+        private void HideSign(FakeSign sign)
+        {
+            Console.WriteLine($"Removing FakeSign at {sign.x}, {sign.y} from {Name}");
+            if (sign.Index >= 0 && Main.sign[sign.Index] == sign)
+            {
+                Console.WriteLine($"Removing success!!!");
+                Main.sign[sign.Index] = null;
             }
         }
 
@@ -163,9 +318,9 @@ namespace FakeProvider
 
         #region Draw
 
-        public void Draw(bool section=false)
+        public void Draw(bool Section = true)
         {
-            if (section)
+            if (Section)
             {
                 NetMessage.SendData((int)PacketTypes.TileSendSection, -1, -1, null, X, Y, Width, Height);
                 int sx1 = Netplay.GetSectionX(X), sy1 = Netplay.GetSectionY(Y);
@@ -184,6 +339,7 @@ namespace FakeProvider
         {
             if (Data == null)
                 return;
+            Disable();
             Data = null;
         }
 
