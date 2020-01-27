@@ -263,6 +263,12 @@ namespace FakeProvider
         }
 
         #endregion
+        #region TileOnTop
+
+        public bool TileOnTop(int X, int Y) =>
+            ProviderCollection.GetTileSafe(this.X + X, this.Y + Y).Provider == this;
+
+        #endregion
 
         #region AddSign
 
@@ -306,7 +312,7 @@ namespace FakeProvider
 
         private bool UpdateSign(FakeSign Sign)
         {
-            if (IsSignTile(Sign.RelativeX, Sign.RelativeY, true))
+            if (IsSignTile(Sign.RelativeX, Sign.RelativeY) && TileOnTop(Sign.RelativeX, Sign.RelativeY))
                 return ApplySign(Sign);
             else
                 HideSign(Sign);
@@ -364,12 +370,11 @@ namespace FakeProvider
                 if (sign == null)
                     continue;
 
-                IProviderTile tileOnTop = ProviderCollection.GetTileSafe(sign.x, sign.y);
                 if (sign.GetType().Name == "Sign" // <=> not FakeSign or some other inherited type
                     && Helper.Inside(sign.x, sign.y, x, y, width, height)
-                    && tileOnTop.Provider == this)
+                    && TileOnTop(sign.x - this.X, sign.y - this.Y))
                 {
-                    if (tileOnTop.active() && SignTileTypes.Contains(tileOnTop.type))
+                    if (IsSignTile(sign.x - this.X, sign.y - this.Y))
                         AddSign(sign.x - x, sign.y - y, sign.text);
                     else
                         Main.sign[i] = null;
@@ -380,13 +385,10 @@ namespace FakeProvider
         #endregion
         #region IsSignTile
 
-        private bool IsSignTile(int X, int Y, bool CheckTileIsOnTop = false)
+        private bool IsSignTile(int X, int Y)
         {
             ITile providerTile = GetTileSafe(X, Y);
-            return providerTile.active()
-                && SignTileTypes.Contains(providerTile.type)
-                && (!CheckTileIsOnTop
-                    || ProviderCollection.GetTileSafe(this.X + X, this.Y + Y).Provider == this);
+            return providerTile.active() && SignTileTypes.Contains(providerTile.type);
         }
 
         #endregion
@@ -433,7 +435,7 @@ namespace FakeProvider
 
         private bool UpdateChest(FakeChest Chest)
         {
-            if (IsChestTile(Chest.RelativeX, Chest.RelativeY, true))
+            if (IsChestTile(Chest.RelativeX, Chest.RelativeY) && TileOnTop(Chest.RelativeX, Chest.RelativeY))
                 return ApplyChest(Chest);
             else
                 HideChest(Chest);
@@ -491,12 +493,11 @@ namespace FakeProvider
                 if (chest == null)
                     continue;
 
-                IProviderTile tileOnTop = ProviderCollection.GetTileSafe(chest.x, chest.y);
                 if (chest.GetType().Name == "Chest" // <=> not FakeChest or some other inherited type
                     && Helper.Inside(chest.x, chest.y, x, y, width, height)
-                    && tileOnTop.Provider == this)
+                    && TileOnTop(chest.x - this.X, chest.y - this.Y))
                 {
-                    if (tileOnTop.active() && SignTileTypes.Contains(tileOnTop.type))
+                    if (IsChestTile(chest.x - this.X, chest.y - this.Y))
                         AddChest(chest.x - x, chest.y - y, chest.item);
                     else
                         Main.chest[i] = null;
@@ -507,13 +508,10 @@ namespace FakeProvider
         #endregion
         #region IsChestTile
 
-        private bool IsChestTile(int X, int Y, bool CheckTileIsOnTop = false)
+        private bool IsChestTile(int X, int Y)
         {
             ITile providerTile = GetTileSafe(X, Y);
-            return providerTile.active()
-                && ChestTileTypes.Contains(providerTile.type)
-                && (!CheckTileIsOnTop
-                    || ProviderCollection.GetTileSafe(this.X + X, this.Y + Y).Provider == this);
+            return providerTile.active() && ChestTileTypes.Contains(providerTile.type);
         }
 
         #endregion
