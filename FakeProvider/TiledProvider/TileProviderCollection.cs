@@ -91,17 +91,14 @@ namespace FakeProvider
 
         #region Add
 
-        public void Add(INamedTileCollection Provider)
+        internal void Add(INamedTileCollection Provider)
         {
             lock (Locker)
             {
                 if (Providers.Any(p => (p.Name == Provider.Name)))
                     throw new ArgumentException($"Tile collection '{Provider.Name}' " +
                         "is already in use. Name must be unique.");
-                short index = (short)Providers.FindIndex(p => (p.Layer > Provider.Layer));
-                if (index == -1)
-                    index = (short)Providers.Count;
-                Providers.Insert(index, Provider);
+                SetTop(Provider);
                 Provider.Enable(false);
             }
         }
@@ -109,14 +106,14 @@ namespace FakeProvider
         #endregion
         #region Remove
 
-        public bool Remove(string Name, bool Cleanup = true)
+        public bool Remove(string Name, bool Draw = true, bool Cleanup = true)
         {
             lock (Locker)
                 using (INamedTileCollection provider = Providers.FirstOrDefault(p => (p.Name == Name)))
                 {
                     if (provider == null)
                         return false;
-                    provider.Disable(false);
+                    provider.Disable(Draw);
                     Providers.Remove(provider);
                 }
             if (Cleanup)
@@ -132,8 +129,23 @@ namespace FakeProvider
             lock (Locker)
                 foreach (INamedTileCollection provider in Providers.ToArray())
                     if (provider != except)
-                        Remove(provider.Name, false);
+                        Remove(provider.Name, true, false);
             GC.Collect();
+        }
+
+        #endregion
+        #region SetTop
+
+        internal void SetTop(INamedTileCollection Provider)
+        {
+            lock (Locker)
+            {
+                Providers.Remove(Provider);
+                int index = Providers.FindIndex(p => (p.Layer > Provider.Layer));
+                if (index == -1)
+                    index = Providers.Count;
+                Providers.Insert(index, Provider);
+            }
         }
 
         #endregion
@@ -268,22 +280,6 @@ namespace FakeProvider
                         if (width > 0 && height > 0)
                             provider.Scan();
                     }
-        }
-
-        #endregion
-
-        #region SetTop
-
-        public void SetTop(string Name)
-        {
-            lock (Locker)
-            {
-                INamedTileCollection provider = Providers.FirstOrDefault(p => (p.Name == Name));
-                if (provider == null)
-                    return;
-                Remove(provider.Name);
-                Add(provider);
-            }
         }
 
         #endregion

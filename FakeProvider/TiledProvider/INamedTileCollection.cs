@@ -12,18 +12,26 @@ namespace FakeProvider
 
         TileProviderCollection ProviderCollection { get; }
         string Name { get; }
-        int X { get; set; }
-        int Y { get; set; }
+        int X { get; }
+        int Y { get; }
         int Layer { get; }
         bool Enabled { get; }
+
+        void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
+            int Width, int Height, int Layer = 0);
+        void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
+            int Width, int Height, ITileCollection CopyFrom, int Layer = 0);
+        void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
+            int Width, int Height, ITile[,] CopyFrom, int Layer = 0);
 
         (int X, int Y, int Width, int Height) XYWH(int DeltaX = 0, int DeltaY = 0);
         (int X, int Y, int Width, int Height) ClampXYWH();
         void SetXYWH(int X, int Y, int Width, int Height);
         void Move(int X, int Y, bool Draw = true);
-        void Draw(bool Section);
+        void Draw(bool Section = true);
         void Enable(bool Draw = true);
         void Disable(bool Draw = true);
+        void SetTop(bool Draw = true);
         void HideSignsChestsEntities();
         void UpdateSignsChestsEntities();
         void Scan();
