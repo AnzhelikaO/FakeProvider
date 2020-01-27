@@ -1,16 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Terraria;
-
+﻿using Terraria;
 namespace FakeProvider
 {
-    public class FakeChest : Chest
+    public class FakeChest : Chest, IFake
     {
         public INamedTileCollection Provider { get; }
-        public int Index { get; internal set; }
+        public int Index { get; set; }
+        public int X
+        {
+            get => x;
+            set => x = value;
+        }
+        public int Y
+        {
+            get => y;
+            set => y = value;
+        }
         public int RelativeX { get; set; }
         public int RelativeY { get; set; }
 
@@ -20,11 +24,11 @@ namespace FakeProvider
             this.Index = Index;
             this.RelativeX = X;
             this.RelativeY = Y;
-            x = Provider.ProviderCollection.OffsetX + Provider.X + X;
-            y = Provider.ProviderCollection.OffsetY + Provider.Y + Y;
-            item = Items ?? new Item[40];
+            this.x = Provider.ProviderCollection.OffsetX + Provider.X + X;
+            this.y = Provider.ProviderCollection.OffsetY + Provider.Y + Y;
+            this.item = Items ?? new Item[40];
             for (int i = 0; i < 40; i++)
-                item[i] = item[i] ?? new Item();
+                this.item[i] = this.item[i] ?? new Item();
         }
     }
 }
