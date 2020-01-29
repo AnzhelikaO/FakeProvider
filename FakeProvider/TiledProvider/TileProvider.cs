@@ -283,6 +283,72 @@ namespace FakeProvider
         }
 
         #endregion
+        #region AddEntity
+
+        public FakeSign AddEntity(Sign Entity)
+        {
+            FakeSign sign = new FakeSign(this, Array.IndexOf(Main.sign, Entity), Entity.x, Entity.y, Entity.text);
+            lock (Locker)
+                _Entities.Add(sign);
+            UpdateEntity(sign);
+            return sign;
+        }
+
+        public FakeChest AddEntity(Chest Entity)
+        {
+            FakeChest chest = new FakeChest(this, Array.IndexOf(Main.chest, Entity), Entity.x, Entity.y, Entity.item);
+            lock (Locker)
+                _Entities.Add(chest);
+            UpdateEntity(chest);
+            return chest;
+        }
+
+        public IFake AddEntity(TileEntity Entity) =>
+            Entity is TETrainingDummy trainingDummy
+                ? (IFake)AddEntity(trainingDummy)
+                : Entity is TEItemFrame itemFrame
+                    ? (IFake)AddEntity(itemFrame)
+                    : Entity is TELogicSensor logicSensor
+                        ? (IFake)AddEntity(logicSensor)
+                        : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
+
+        public FakeTrainingDummy AddEntity(TETrainingDummy Entity)
+        {
+            TileEntity.ByID.Remove(Entity.ID);
+            TileEntity.ByPosition.Remove(Entity.Position);
+            FakeTrainingDummy fake = new FakeTrainingDummy(this, Entity.ID,
+                Entity.Position.X, Entity.Position.Y);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeItemFrame AddEntity(TEItemFrame Entity)
+        {
+            TileEntity.ByID.Remove(Entity.ID);
+            TileEntity.ByPosition.Remove(Entity.Position);
+            FakeItemFrame fake = new FakeItemFrame(this, Entity.ID,
+                Entity.Position.X, Entity.Position.Y, Entity.item);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeLogicSensor AddEntity(TELogicSensor Entity)
+        {
+            TileEntity.ByID.Remove(Entity.ID);
+            TileEntity.ByPosition.Remove(Entity.Position);
+            FakeLogicSensor fake = new FakeLogicSensor(this, Entity.ID, Entity.Position.X,
+                Entity.Position.Y, Entity.logicCheck);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        #endregion
         #region RemoveEntity
 
         public void RemoveEntity(IFake Entity)
@@ -389,7 +455,8 @@ namespace FakeProvider
                 TileEntity.ByID[Entity.Index] = (TileEntity)Entity;
                 return true;
             }
-            throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
+            else
+                throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
         }
 
         #endregion
@@ -397,12 +464,12 @@ namespace FakeProvider
 
         private void HideEntity(IFake Entity)
         {
-            if (Entity is FakeSign)
+            if (Entity is Sign)
             {
                 if (Entity.Index >= 0 && Main.sign[Entity.Index] == Entity)
                     Main.sign[Entity.Index] = null;
             }
-            else if (Entity is FakeChest)
+            else if (Entity is Chest)
             {
                 if (Entity.Index >= 0 && Main.chest[Entity.Index] == Entity)
                     Main.chest[Entity.Index] = null;
@@ -417,8 +484,21 @@ namespace FakeProvider
                     TileEntity.ByPosition.Remove(new Point16(Entity.X, Entity.Y));
                 }
             }
-            throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
+            else
+                throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
         }
+
+        #endregion
+        #region GetEntityTileTypes
+
+        private ushort[] GetEntityTileTypes(TileEntity Entity) =>
+            Entity is TETrainingDummy
+                ? FakeTrainingDummy._TileTypes
+                : Entity is TEItemFrame
+                    ? FakeItemFrame._TileTypes
+                    : Entity is TELogicSensor
+                        ? FakeLogicSensor._TileTypes
+                        : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
 
         #endregion
         #region ScanEntities
@@ -442,7 +522,7 @@ namespace FakeProvider
                     && TileOnTop(sign.x - this.X, sign.y - this.Y))
                 {
                     if (IsEntityTile(sign.x - this.X, sign.y - this.Y, FakeSign._TileTypes))
-                        AddSign(sign.x - x, sign.y - y, sign.text);
+                        AddEntity(sign);
                     else
                         Main.sign[i] = null;
                 }
@@ -459,57 +539,29 @@ namespace FakeProvider
                     && TileOnTop(chest.x - this.X, chest.y - this.Y))
                 {
                     if (IsEntityTile(chest.x - this.X, chest.y - this.Y, FakeChest._TileTypes))
-                        AddChest(chest.x - x, chest.y - y, chest.item);
+                        AddEntity(chest);
                     else
                         Main.chest[i] = null;
                 }
             }
 
-            foreach (TileEntity entity in TileEntity.ByID.Values)
+            foreach (TileEntity entity in TileEntity.ByID.Values.ToArray())
             {
                 int entityX = entity.Position.X;
                 int entityY = entity.Position.Y;
 
-                if (entity.GetType().Name == nameof(TETrainingDummy) // <=> not FakeTrainingDummy or some other inherited type
+                if ((entity.GetType().Name == nameof(TETrainingDummy)      // <=> not FakeTrainingDummy or some other inherited type
+                        || entity.GetType().Name == nameof(TEItemFrame)    // <=> not FakeItemFrame or some other inherited type
+                        || entity.GetType().Name == nameof(TELogicSensor)) // <=> not FakeLogicSensor or some other inherited type
                     && Helper.Inside(entityX, entityY, x, y, width, height)
                     && TileOnTop(entityX - this.X, entityY - this.Y))
                 {
-                    if (IsEntityTile(entityX - this.X, entityY - this.Y, FakeTrainingDummy._TileTypes))
-                        AddTrainingDummy(entityX - x, entityY - y);
-                    else if (entity.ID >= 0
-                        && TileEntity.ByID.TryGetValue(entity.ID, out TileEntity entity2)
-                        && entity == entity2)
+                    if (IsEntityTile(entityX - this.X, entityY - this.Y, GetEntityTileTypes(entity)))
+                        AddEntity(entity);
+                    else
                     {
                         TileEntity.ByID.Remove(entity.ID);
-                        TileEntity.ByPosition.Remove(new Point16(entityX, entityY));
-                    }
-                }
-                else if (entity.GetType().Name == nameof(TEItemFrame) // <=> not FakeItemFrame or some other inherited type
-                    && Helper.Inside(entityX, entityY, x, y, width, height)
-                    && TileOnTop(entityX - this.X, entityY - this.Y))
-                {
-                    if (IsEntityTile(entityX - this.X, entityY - this.Y, FakeItemFrame._TileTypes))
-                        AddItemFrame(entityX - x, entityY - y, ((TEItemFrame)entity).item);
-                    else if (entity.ID >= 0
-                        && TileEntity.ByID.TryGetValue(entity.ID, out TileEntity entity2)
-                        && entity == entity2)
-                    {
-                        TileEntity.ByID.Remove(entity.ID);
-                        TileEntity.ByPosition.Remove(new Point16(entityX, entityY));
-                    }
-                }
-                else if (entity.GetType().Name == nameof(TELogicSensor) // <=> not FakeLogicSensor or some other inherited type
-                    && Helper.Inside(entityX, entityY, x, y, width, height)
-                    && TileOnTop(entityX - this.X, entityY - this.Y))
-                {
-                    if (IsEntityTile(entityX - this.X, entityY - this.Y, FakeLogicSensor._TileTypes))
-                        AddLogicSensor(entityX - x, entityY - y, ((TELogicSensor)entity).logicCheck);
-                    else if (entity.ID >= 0
-                        && TileEntity.ByID.TryGetValue(entity.ID, out TileEntity entity2)
-                        && entity == entity2)
-                    {
-                        TileEntity.ByID.Remove(entity.ID);
-                        TileEntity.ByPosition.Remove(new Point16(entityX, entityY));
+                        TileEntity.ByPosition.Remove(entity.Position);
                     }
                 }
             }

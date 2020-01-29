@@ -235,7 +235,7 @@ namespace FakeProvider
             Main.worldSurface -= OffsetY;
             Main.rockLayer -= OffsetY;
             Main.tile = World;
-            Tile.HideFakeSignsChestsEntities();
+            Tile.HideEntities();
             return HookResult.Continue;
         }
 
@@ -249,7 +249,7 @@ namespace FakeProvider
             Main.worldSurface += OffsetY;
             Main.rockLayer += OffsetY;
             Main.tile = Tile;
-            Tile.UpdateFakeSignsChestsEntities();
+            Tile.UpdateEntities();
         }
 
         #endregion

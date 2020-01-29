@@ -244,9 +244,9 @@ namespace FakeProvider
         }
 
         #endregion
-        #region HideFakeSignsChestsEntities
+        #region HideEntities
 
-        public void HideFakeSignsChestsEntities()
+        public void HideEntities()
         {
             lock (Locker)
                 foreach (INamedTileCollection provider in Providers)
@@ -255,9 +255,9 @@ namespace FakeProvider
         }
 
         #endregion
-        #region UpdateFakeSignsChestsEntities
+        #region UpdateEntities
 
-        public void UpdateFakeSignsChestsEntities()
+        public void UpdateEntities()
         {
             lock (Locker)
                 foreach (INamedTileCollection provider in Providers)
