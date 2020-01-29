@@ -57,10 +57,14 @@ namespace FakeProvider
         {
             get
             {
+                X -= OffsetX;
+                Y -= OffsetY;
                 return Providers[ProviderIndex[X, Y]][X, Y];
             }
             set
             {
+                X -= OffsetX;
+                Y -= OffsetY;
                 Providers[ProviderIndex[X, Y]][X, Y] = value;
             }
         }
