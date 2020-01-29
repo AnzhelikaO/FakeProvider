@@ -28,6 +28,7 @@ namespace FakeProvider
         public int OffsetY { get; }
         /// <summary> Tile to be visible outside of all providers. </summary>
         public StructTile[,] VoidTile { get; }
+        public Tile VoidTile2 = new Tile();
         private object Locker { get; } = new object();
 
         #endregion
@@ -56,19 +57,11 @@ namespace FakeProvider
         {
             get
             {
-                short providerIndex;
-                if (X < 0 || X >= Width || Y < 0 || Y >= Height || (providerIndex = ProviderIndex[X, Y]) < 0)
-                    return new ReadonlyTileReference(VoidTile, 0, 0);
-                INamedTileCollection provider = Providers[providerIndex];
-                return provider[(X - OffsetX), (Y - OffsetY)];
+                return Providers[ProviderIndex[X, Y]][X, Y];
             }
             set
             {
-                short providerIndex;
-                if (X < 0 || X >= Width || Y < 0 || Y >= Height || (providerIndex = ProviderIndex[X, Y]) < 0)
-                    return;
-                INamedTileCollection provider = Providers[providerIndex];
-                provider[(X - OffsetX), (Y - OffsetY)] = value;
+                Providers[ProviderIndex[X, Y]][X, Y] = value;
             }
         }
 
