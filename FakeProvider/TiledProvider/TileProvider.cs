@@ -287,7 +287,9 @@ namespace FakeProvider
 
         public FakeSign AddEntity(Sign Entity)
         {
-            FakeSign sign = new FakeSign(this, Array.IndexOf(Main.sign, Entity), Entity.x, Entity.y, Entity.text);
+            int x = Entity.x - ProviderCollection.OffsetX - this.X;
+            int y = Entity.y - ProviderCollection.OffsetY - this.Y;
+            FakeSign sign = new FakeSign(this, Array.IndexOf(Main.sign, Entity), x, y, Entity.text);
             lock (Locker)
                 _Entities.Add(sign);
             UpdateEntity(sign);
@@ -296,7 +298,9 @@ namespace FakeProvider
 
         public FakeChest AddEntity(Chest Entity)
         {
-            FakeChest chest = new FakeChest(this, Array.IndexOf(Main.chest, Entity), Entity.x, Entity.y, Entity.item);
+            int x = Entity.x - ProviderCollection.OffsetX - this.X;
+            int y = Entity.y - ProviderCollection.OffsetY - this.Y;
+            FakeChest chest = new FakeChest(this, Array.IndexOf(Main.chest, Entity), x, y, Entity.item);
             lock (Locker)
                 _Entities.Add(chest);
             UpdateEntity(chest);
@@ -314,10 +318,11 @@ namespace FakeProvider
 
         public FakeTrainingDummy AddEntity(TETrainingDummy Entity)
         {
+            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
+            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
             TileEntity.ByID.Remove(Entity.ID);
             TileEntity.ByPosition.Remove(Entity.Position);
-            FakeTrainingDummy fake = new FakeTrainingDummy(this, Entity.ID,
-                Entity.Position.X, Entity.Position.Y);
+            FakeTrainingDummy fake = new FakeTrainingDummy(this, Entity.ID, x, y, Entity.npc);
             lock (Locker)
                 _Entities.Add(fake);
             UpdateEntity(fake);
@@ -326,10 +331,11 @@ namespace FakeProvider
 
         public FakeItemFrame AddEntity(TEItemFrame Entity)
         {
+            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
+            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
             TileEntity.ByID.Remove(Entity.ID);
             TileEntity.ByPosition.Remove(Entity.Position);
-            FakeItemFrame fake = new FakeItemFrame(this, Entity.ID,
-                Entity.Position.X, Entity.Position.Y, Entity.item);
+            FakeItemFrame fake = new FakeItemFrame(this, Entity.ID, x, y, Entity.item);
             lock (Locker)
                 _Entities.Add(fake);
             UpdateEntity(fake);
@@ -338,10 +344,11 @@ namespace FakeProvider
 
         public FakeLogicSensor AddEntity(TELogicSensor Entity)
         {
+            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
+            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
             TileEntity.ByID.Remove(Entity.ID);
             TileEntity.ByPosition.Remove(Entity.Position);
-            FakeLogicSensor fake = new FakeLogicSensor(this, Entity.ID, Entity.Position.X,
-                Entity.Position.Y, Entity.logicCheck);
+            FakeLogicSensor fake = new FakeLogicSensor(this, Entity.ID, x, y, Entity.logicCheck);
             lock (Locker)
                 _Entities.Add(fake);
             UpdateEntity(fake);
@@ -449,7 +456,7 @@ namespace FakeProvider
                     TileEntity.ByPosition.Remove(position);
                 Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
                 Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
-                TileEntity.ByPosition[position] = (TileEntity)Entity;
+                TileEntity.ByPosition[new Point16(Entity.X, Entity.Y)] = (TileEntity)Entity;
                 if (Entity.Index < 0)
                     Entity.Index = TileEntity.AssignNewID();
                 TileEntity.ByID[Entity.Index] = (TileEntity)Entity;
@@ -474,14 +481,21 @@ namespace FakeProvider
                 if (Entity.Index >= 0 && Main.chest[Entity.Index] == Entity)
                     Main.chest[Entity.Index] = null;
             }
-            else if (Entity is TileEntity)
+            else if (Entity is TileEntity entity)
             {
+                TileEntity.ByID.Remove(Entity.Index);
                 if (Entity.Index >= 0
-                    && TileEntity.ByID.TryGetValue(Entity.Index, out TileEntity entity)
-                    && entity == Entity)
+                        && TileEntity.ByPosition.TryGetValue(entity.Position, out TileEntity entity2)
+                        && entity == entity2)
+                    TileEntity.ByPosition.Remove(entity.Position);
+
+                if (Entity is TETrainingDummy trainingDummy && trainingDummy.npc >= 0)
                 {
-                    TileEntity.ByID.Remove(Entity.Index);
-                    TileEntity.ByPosition.Remove(new Point16(Entity.X, Entity.Y));
+                    NPC npc = Main.npc[trainingDummy.npc];
+                    npc.netID = 0;
+                    npc.active = false;
+                    NetMessage.SendData((int)PacketTypes.NpcUpdate, -1, -1, null, trainingDummy.npc);
+                    trainingDummy.npc = -1;
                 }
             }
             else
