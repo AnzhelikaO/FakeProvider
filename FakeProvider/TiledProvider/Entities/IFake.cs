@@ -8,5 +8,6 @@
         int RelativeY { get; set; }
         int X { get; set; }
         int Y { get; set; }
+        ushort[] TileTypes { get; }
     }
 }

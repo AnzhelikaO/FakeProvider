@@ -4,19 +4,16 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Reflection;
 using Terraria;
-using Terraria.ID;
+using Terraria.DataStructures;
+using Terraria.GameContent.Tile_Entities;
 #endregion
 namespace FakeProvider
 {
     public sealed class TileProvider<T> : INamedTileCollection
     {
         #region Data
-
-        public static readonly ushort[] SignTileTypes = new ushort[] { TileID.Signs, TileID.AnnouncementBox, TileID.Tombstones };
-        public static readonly ushort[] ChestTileTypes = new ushort[] { TileID.Containers, TileID.Containers2, TileID.Dressers };
-
+        
         public TileProviderCollection ProviderCollection { get; internal set; }
         private Tile<T>[,] Data;
         public string Name { get; private set; }
@@ -26,10 +23,8 @@ namespace FakeProvider
         public int Height { get; private set; }
         public int Layer { get; private set; }
         public bool Enabled { get; private set; } = false;
-        private List<FakeSign> _Signs = new List<FakeSign>();
-        public ReadOnlyCollection<FakeSign> Signs => new ReadOnlyCollection<FakeSign>(_Signs);
-        private List<FakeChest> _Chests = new List<FakeChest>();
-        public ReadOnlyCollection<FakeChest> Chests => new ReadOnlyCollection<FakeChest>(_Chests);
+        private List<IFake> _Entities = new List<IFake>();
+        public ReadOnlyCollection<IFake> Entities => new ReadOnlyCollection<IFake>(_Entities);
         private object Locker = new object();
 
         #endregion
@@ -199,9 +194,9 @@ namespace FakeProvider
             {
                 Enabled = false;
                 // Adding/removing manually added/removed signs, chests and entities
-                Scan();
+                ScanEntities();
                 // Remove signs, chests, entities
-                HideSignsChestsEntities();
+                HideEntities();
                 // Showing tiles, signs, chests and entities under the provider
                 ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height);
                 if (Draw)
@@ -221,48 +216,6 @@ namespace FakeProvider
         }
 
         #endregion
-        #region HideSignsChestsEntities
-
-        public void HideSignsChestsEntities()
-        {
-            lock (Locker)
-            {
-                foreach (FakeSign sign in _Signs.ToArray())
-                    HideSign(sign);
-                foreach (FakeChest chest in _Chests.ToArray())
-                    HideChest(chest);
-            }
-        }
-
-        #endregion
-        #region UpdateSignsChestsEntities
-
-        /// <summary>
-        /// Shows signs, chests and entities in Main.sign, Main.chest, ___ where
-        /// the tile of this provider is on top of the ProviderCollection Tile map
-        /// and hides otherwise.
-        /// </summary>
-        public void UpdateSignsChestsEntities()
-        {
-            UpdateSigns();
-            UpdateChests();
-        }
-
-        #endregion
-        #region Scan
-
-        /// <summary>
-        /// Adds manually added signs, chests and entities to the provider;
-        /// Removes irrelevant signs, chests and entities from the provider.
-        /// The method doesn't actually show things in Main.sign/Main.chest/...
-        /// </summary>
-        public void Scan()
-        {
-            ScanSigns();
-            ScanChests();
-        }
-
-        #endregion
         #region TileOnTop
 
         public bool TileOnTop(int X, int Y) =>
@@ -276,92 +229,206 @@ namespace FakeProvider
         {
             FakeSign sign = new FakeSign(this, -1, X, Y, Text);
             lock (Locker)
-            {
-                _Signs.RemoveAll(s => s.x == sign.x && s.y == sign.y);
-                _Signs.Add(sign);
-            }
-            UpdateSign(sign);
+                _Entities.Add(sign);
+            UpdateEntity(sign);
             return sign;
         }
 
         #endregion
-        #region RemoveSign
+        #region AddChest
 
-        public void RemoveSign(FakeSign Sign)
+        public FakeChest AddChest(int X, int Y, Item[] Items = null)
+        {
+            FakeChest chest = new FakeChest(this, -1, X, Y, Items);
+            lock (Locker)
+                _Entities.Add(chest);
+            UpdateEntity(chest);
+            return chest;
+        }
+
+        #endregion
+        #region AddTrainingDummy
+
+        public FakeTrainingDummy AddTrainingDummy(int X, int Y)
+        {
+            FakeTrainingDummy dummy = new FakeTrainingDummy(this, -1, X, Y);
+            lock (Locker)
+                _Entities.Add(dummy);
+            UpdateEntity(dummy);
+            return dummy;
+        }
+
+        #endregion
+        #region AddItemFrame
+
+        public FakeItemFrame AddItemFrame(int X, int Y, Item Item = null)
+        {
+            FakeItemFrame itemFrame = new FakeItemFrame(this, -1, X, Y, Item);
+            lock (Locker)
+                _Entities.Add(itemFrame);
+            UpdateEntity(itemFrame);
+            return itemFrame;
+        }
+
+        #endregion
+        #region AddLogicSensor
+
+        public FakeLogicSensor AddLogicSensor(int X, int Y, TELogicSensor.LogicCheckType LogicCheckType)
+        {
+            FakeLogicSensor sensor = new FakeLogicSensor(this, -1, X, Y, LogicCheckType);
+            lock (Locker)
+                _Entities.Add(sensor);
+            UpdateEntity(sensor);
+            return sensor;
+        }
+
+        #endregion
+        #region RemoveEntity
+
+        public void RemoveEntity(IFake Entity)
         {
             lock (Locker)
             {
-                HideSign(Sign);
-                if (!_Signs.Remove(Sign))
-                    throw new Exception("No such sign in this tile provider.");
+                HideEntity(Entity);
+                if (!_Entities.Remove(Entity))
+                    throw new Exception("No such entity in this tile provider.");
             }
         }
 
         #endregion
-        #region UpdateSigns
+        #region UpdateEntities
 
-        public void UpdateSigns()
+        public void UpdateEntities()
         {
             lock (Locker)
-                foreach (FakeSign sign in _Signs.ToArray())
-                    UpdateSign(sign);
+                foreach (IFake entity in _Entities.ToArray())
+                    UpdateEntity(entity);
         }
 
         #endregion
-        #region UpdateSign
+        #region HideEntities
 
-        private bool UpdateSign(FakeSign Sign)
+        public void HideEntities()
         {
-            if (IsSignTile(Sign.RelativeX, Sign.RelativeY) && TileOnTop(Sign.RelativeX, Sign.RelativeY))
-                return ApplySign(Sign);
+            lock (Locker)
+                foreach (IFake entity in _Entities.ToArray())
+                    HideEntity(entity);
+        }
+
+        #endregion
+        #region UpdateEntity
+
+        private bool UpdateEntity(IFake Entity)
+        {
+            if (IsEntityTile(Entity.RelativeX, Entity.RelativeY, Entity.TileTypes)
+                    && TileOnTop(Entity.RelativeX, Entity.RelativeY))
+                return ApplyEntity(Entity);
             else
-                HideSign(Sign);
+                HideEntity(Entity);
             return true;
         }
 
         #endregion
-        #region ApplySign
+        #region ApplyEntity
 
-        private bool ApplySign(FakeSign Sign)
+        private bool ApplyEntity(IFake Entity)
         {
-            Sign.x = ProviderCollection.OffsetX + this.X + Sign.RelativeX;
-            Sign.y = ProviderCollection.OffsetY + this.Y + Sign.RelativeY;
-            if (Sign.Index >= 0 && Main.sign[Sign.Index] == Sign)
-                return true;
-
-            bool applied = false;
-            for (int i = 0; i < 1000; i++)
+            if (Entity is FakeSign)
             {
-                if (Main.sign[i] != null && Main.sign[i].x == Sign.x && Main.sign[i].y == Sign.y)
-                    Main.sign[i] = null;
-                if (!applied && Main.sign[i] == null)
+                Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
+                Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
+                if (Entity.Index >= 0 && Main.sign[Entity.Index] == Entity)
+                    return true;
+
+                bool applied = false;
+                for (int i = 0; i < 1000; i++)
                 {
-                    applied = true;
-                    Main.sign[i] = Sign;
-                    Sign.Index = i;
+                    if (Main.sign[i] != null && Main.sign[i].x == Entity.X && Main.sign[i].y == Entity.Y)
+                        Main.sign[i] = null;
+                    if (!applied && Main.sign[i] == null)
+                    {
+                        applied = true;
+                        Main.sign[i] = (FakeSign)Entity;
+                        Entity.Index = i;
+                    }
+                }
+                return applied;
+            }
+            else if (Entity is FakeChest)
+            {
+                Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
+                Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
+                if (Entity.Index >= 0 && Main.chest[Entity.Index] == Entity)
+                    return true;
+
+                bool applied = false;
+                for (int i = 0; i < 1000; i++)
+                {
+                    if (Main.chest[i] != null && Main.chest[i].x == Entity.X && Main.chest[i].y == Entity.Y)
+                        Main.chest[i] = null;
+                    if (!applied && Main.chest[i] == null)
+                    {
+                        applied = true;
+                        Main.chest[i] = (FakeChest)Entity;
+                        Entity.Index = i;
+                    }
+                }
+                return applied;
+            }
+            else if (Entity is TileEntity)
+            {
+                Point16 position = new Point16(Entity.X, Entity.Y);
+                if (TileEntity.ByPosition.TryGetValue(position, out TileEntity entity)
+                        && entity == Entity)
+                    TileEntity.ByPosition.Remove(position);
+                Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
+                Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
+                TileEntity.ByPosition[position] = (TileEntity)Entity;
+                if (Entity.Index < 0)
+                    Entity.Index = TileEntity.AssignNewID();
+                TileEntity.ByID[Entity.Index] = (TileEntity)Entity;
+                return true;
+            }
+            throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
+        }
+
+        #endregion
+        #region HideEntity
+
+        private void HideEntity(IFake Entity)
+        {
+            if (Entity is FakeSign)
+            {
+                if (Entity.Index >= 0 && Main.sign[Entity.Index] == Entity)
+                    Main.sign[Entity.Index] = null;
+            }
+            else if (Entity is FakeChest)
+            {
+                if (Entity.Index >= 0 && Main.chest[Entity.Index] == Entity)
+                    Main.chest[Entity.Index] = null;
+            }
+            else if (Entity is TileEntity)
+            {
+                if (Entity.Index >= 0
+                    && TileEntity.ByID.TryGetValue(Entity.Index, out TileEntity entity)
+                    && entity == Entity)
+                {
+                    TileEntity.ByID.Remove(Entity.Index);
+                    TileEntity.ByPosition.Remove(new Point16(Entity.X, Entity.Y));
                 }
             }
-            return applied;
+            throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
         }
 
         #endregion
-        #region HideSign
+        #region ScanEntities
 
-        private void HideSign(FakeSign sign)
-        {
-            if (sign.Index >= 0 && Main.sign[sign.Index] == sign)
-                Main.sign[sign.Index] = null;
-        }
-
-        #endregion
-        #region ScanSigns
-
-        private void ScanSigns()
+        public void ScanEntities()
         {
             lock (Locker)
-                foreach (FakeSign sign in _Signs.ToArray())
-                    if (!IsSignTile(sign.RelativeX, sign.RelativeY))
-                        RemoveSign(sign);
+                foreach (IFake entity in _Entities.ToArray())
+                    if (!IsEntityTile(entity.RelativeX, entity.RelativeY, entity.TileTypes))
+                        RemoveEntity(entity);
 
             (int x, int y, int width, int height) = XYWH(ProviderCollection.OffsetX, ProviderCollection.OffsetY);
             for (int i = 0; i < 1000; i++)
@@ -370,148 +437,91 @@ namespace FakeProvider
                 if (sign == null)
                     continue;
 
-                if (sign.GetType().Name == "Sign" // <=> not FakeSign or some other inherited type
+                if (sign.GetType().Name == nameof(Sign) // <=> not FakeSign or some other inherited type
                     && Helper.Inside(sign.x, sign.y, x, y, width, height)
                     && TileOnTop(sign.x - this.X, sign.y - this.Y))
                 {
-                    if (IsSignTile(sign.x - this.X, sign.y - this.Y))
+                    if (IsEntityTile(sign.x - this.X, sign.y - this.Y, FakeSign._TileTypes))
                         AddSign(sign.x - x, sign.y - y, sign.text);
                     else
                         Main.sign[i] = null;
                 }
             }
-        }
 
-        #endregion
-        #region IsSignTile
-
-        private bool IsSignTile(int X, int Y)
-        {
-            ITile providerTile = GetTileSafe(X, Y);
-            return providerTile.active() && SignTileTypes.Contains(providerTile.type);
-        }
-
-        #endregion
-
-        #region AddChest
-
-        public FakeChest AddChest(int X, int Y, Item[] Items = null)
-        {
-            FakeChest chest = new FakeChest(this, -1, X, Y, Items);
-            lock (Locker)
-            {
-                _Chests.RemoveAll(c => c.x == chest.x && c.y == chest.y);
-                _Chests.Add(chest);
-            }
-            UpdateChest(chest);
-            return chest;
-        }
-
-        #endregion
-        #region RemoveChest
-
-        public void RemoveChest(FakeChest Chest)
-        {
-            lock (Locker)
-            {
-                HideChest(Chest);
-                if (!_Chests.Remove(Chest))
-                    throw new Exception("No such sign in this tile provider.");
-            }
-        }
-
-        #endregion
-        #region UpdateChests
-
-        public void UpdateChests()
-        {
-            lock (Locker)
-                foreach (FakeChest chest in _Chests.ToArray())
-                    UpdateChest(chest);
-        }
-
-        #endregion
-        #region UpdateChest
-
-        private bool UpdateChest(FakeChest Chest)
-        {
-            if (IsChestTile(Chest.RelativeX, Chest.RelativeY) && TileOnTop(Chest.RelativeX, Chest.RelativeY))
-                return ApplyChest(Chest);
-            else
-                HideChest(Chest);
-            return true;
-        }
-
-        #endregion
-        #region ApplyChest
-
-        private bool ApplyChest(FakeChest Chest)
-        {
-            Chest.x = ProviderCollection.OffsetX + this.X + Chest.RelativeX;
-            Chest.y = ProviderCollection.OffsetY + this.Y + Chest.RelativeY;
-            if (Chest.Index >= 0 && Main.chest[Chest.Index] == Chest)
-                return true;
-
-            bool applied = false;
-            for (int i = 0; i < 1000; i++)
-            {
-                if (Main.chest[i] != null && Main.chest[i].x == Chest.x && Main.chest[i].y == Chest.y)
-                    Main.chest[i] = null;
-                if (!applied && Main.chest[i] == null)
-                {
-                    applied = true;
-                    Main.chest[i] = Chest;
-                    Chest.Index = i;
-                }
-            }
-            return applied;
-        }
-
-        #endregion
-        #region HideChest
-
-        private void HideChest(FakeChest Chest)
-        {
-            if (Chest.Index >= 0 && Main.chest[Chest.Index] == Chest)
-                Main.chest[Chest.Index] = null;
-        }
-
-        #endregion
-        #region ScanChests
-
-        private void ScanChests()
-        {
-            lock (Locker)
-                foreach (FakeChest chest in _Chests.ToArray())
-                    if (!IsChestTile(chest.RelativeX, chest.RelativeY))
-                        RemoveChest(chest);
-
-            (int x, int y, int width, int height) = XYWH(ProviderCollection.OffsetX, ProviderCollection.OffsetY);
             for (int i = 0; i < 1000; i++)
             {
                 Chest chest = Main.chest[i];
                 if (chest == null)
                     continue;
 
-                if (chest.GetType().Name == "Chest" // <=> not FakeChest or some other inherited type
+                if (chest.GetType().Name == nameof(Chest) // <=> not FakeChest or some other inherited type
                     && Helper.Inside(chest.x, chest.y, x, y, width, height)
                     && TileOnTop(chest.x - this.X, chest.y - this.Y))
                 {
-                    if (IsChestTile(chest.x - this.X, chest.y - this.Y))
+                    if (IsEntityTile(chest.x - this.X, chest.y - this.Y, FakeChest._TileTypes))
                         AddChest(chest.x - x, chest.y - y, chest.item);
                     else
                         Main.chest[i] = null;
                 }
             }
+
+            foreach (TileEntity entity in TileEntity.ByID.Values)
+            {
+                int entityX = entity.Position.X;
+                int entityY = entity.Position.Y;
+
+                if (entity.GetType().Name == nameof(TETrainingDummy) // <=> not FakeTrainingDummy or some other inherited type
+                    && Helper.Inside(entityX, entityY, x, y, width, height)
+                    && TileOnTop(entityX - this.X, entityY - this.Y))
+                {
+                    if (IsEntityTile(entityX - this.X, entityY - this.Y, FakeTrainingDummy._TileTypes))
+                        AddTrainingDummy(entityX - x, entityY - y);
+                    else if (entity.ID >= 0
+                        && TileEntity.ByID.TryGetValue(entity.ID, out TileEntity entity2)
+                        && entity == entity2)
+                    {
+                        TileEntity.ByID.Remove(entity.ID);
+                        TileEntity.ByPosition.Remove(new Point16(entityX, entityY));
+                    }
+                }
+                else if (entity.GetType().Name == nameof(TEItemFrame) // <=> not FakeItemFrame or some other inherited type
+                    && Helper.Inside(entityX, entityY, x, y, width, height)
+                    && TileOnTop(entityX - this.X, entityY - this.Y))
+                {
+                    if (IsEntityTile(entityX - this.X, entityY - this.Y, FakeItemFrame._TileTypes))
+                        AddItemFrame(entityX - x, entityY - y, ((TEItemFrame)entity).item);
+                    else if (entity.ID >= 0
+                        && TileEntity.ByID.TryGetValue(entity.ID, out TileEntity entity2)
+                        && entity == entity2)
+                    {
+                        TileEntity.ByID.Remove(entity.ID);
+                        TileEntity.ByPosition.Remove(new Point16(entityX, entityY));
+                    }
+                }
+                else if (entity.GetType().Name == nameof(TELogicSensor) // <=> not FakeLogicSensor or some other inherited type
+                    && Helper.Inside(entityX, entityY, x, y, width, height)
+                    && TileOnTop(entityX - this.X, entityY - this.Y))
+                {
+                    if (IsEntityTile(entityX - this.X, entityY - this.Y, FakeLogicSensor._TileTypes))
+                        AddLogicSensor(entityX - x, entityY - y, ((TELogicSensor)entity).logicCheck);
+                    else if (entity.ID >= 0
+                        && TileEntity.ByID.TryGetValue(entity.ID, out TileEntity entity2)
+                        && entity == entity2)
+                    {
+                        TileEntity.ByID.Remove(entity.ID);
+                        TileEntity.ByPosition.Remove(new Point16(entityX, entityY));
+                    }
+                }
+            }
         }
 
         #endregion
-        #region IsChestTile
+        #region IsEntityTile
 
-        private bool IsChestTile(int X, int Y)
+        private bool IsEntityTile(int X, int Y, ushort[] TileTypes)
         {
             ITile providerTile = GetTileSafe(X, Y);
-            return providerTile.active() && ChestTileTypes.Contains(providerTile.type);
+            return providerTile.active() && TileTypes.Contains(providerTile.type);
         }
 
         #endregion

@@ -1,8 +1,13 @@
-﻿using Terraria;
+﻿#region Using
+using Terraria;
+using Terraria.ID;
+#endregion
 namespace FakeProvider
 {
     public class FakeSign : Sign, IFake
     {
+        #region Data
+
         public INamedTileCollection Provider { get; }
         public int Index { get; set; }
         public int X
@@ -15,8 +20,19 @@ namespace FakeProvider
             get => y;
             set => y = value;
         }
+        internal static ushort[] _TileTypes = new ushort[]
+        {
+            TileID.Signs,
+            TileID.AnnouncementBox,
+            TileID.Tombstones
+        };
+        public ushort[] TileTypes => _TileTypes;
         public int RelativeX { get; set; }
         public int RelativeY { get; set; }
+
+        #endregion
+
+        #region Constructor
 
         public FakeSign(INamedTileCollection Provider, int Index, int X, int Y, string Text = "")
         {
@@ -28,5 +44,7 @@ namespace FakeProvider
             this.y = Provider.ProviderCollection.OffsetY + Provider.Y + Y;
             this.text = Text;
         }
+
+        #endregion
     }
 }

@@ -1,8 +1,8 @@
 ﻿#region Using
 using OTAPI.Tile;
 using System;
-using System.Collections.Generic;
 using Terraria;
+using Terraria.GameContent.Tile_Entities;
 #endregion
 namespace FakeProvider
 {
@@ -32,16 +32,15 @@ namespace FakeProvider
         void Enable(bool Draw = true);
         void Disable(bool Draw = true);
         void SetTop(bool Draw = true);
-        void HideSignsChestsEntities();
-        void UpdateSignsChestsEntities();
-        void Scan();
 
         FakeSign AddSign(int X, int Y, string Text);
-        void RemoveSign(FakeSign Sign);
-        void UpdateSigns();
-
         FakeChest AddChest(int X, int Y, Item[] Items = null);
-        void RemoveChest(FakeChest Sign);
-        void UpdateChests();
+        FakeTrainingDummy AddTrainingDummy(int X, int Y);
+        FakeItemFrame AddItemFrame(int X, int Y, Item Item = null);
+        FakeLogicSensor AddLogicSensor(int X, int Y, TELogicSensor.LogicCheckType LogicCheckType);
+        void RemoveEntity(IFake Entity);
+        void UpdateEntities();
+        void HideEntities();
+        void ScanEntities();
     }
 }

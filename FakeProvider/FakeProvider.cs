@@ -2,12 +2,9 @@
 using OTAPI;
 using OTAPI.Tile;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Threading;
 using Terraria;
 using TerrariaApi.Server;
 #endregion
@@ -19,9 +16,9 @@ namespace FakeProvider
         #region Data
 
         public override string Name => "FakeProvider";
-        public override Version Version => Assembly.GetExecutingAssembly().GetName().Version;
-        public override string Author => "Anzhelika & ASgo";
+        public override string Author => "ASgo and Anzhelika";
         public override string Description => "TODO";
+        public override Version Version => Assembly.GetExecutingAssembly().GetName().Version;
 
         public const string WorldProviderName = "__world__";
         public static TileProviderCollection Tile { get; private set; }
@@ -225,7 +222,7 @@ namespace FakeProvider
             GC.Collect();
 
             // What's with loaded signs, chests and entities? Add to World TileProvider? Nah...
-            World.Scan();
+            World.ScanEntities();
         }
 
         #endregion

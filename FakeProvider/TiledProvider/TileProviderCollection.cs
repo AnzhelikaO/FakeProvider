@@ -1,11 +1,9 @@
 ﻿#region Using
-using Microsoft.Xna.Framework;
 using OTAPI.Tile;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Terraria;
 #endregion
 namespace FakeProvider
 {
@@ -205,7 +203,7 @@ namespace FakeProvider
                 while (providers.Count > 0)
                 {
                     INamedTileCollection provider = providers.Dequeue();
-                    provider.UpdateSignsChestsEntities();
+                    provider.UpdateEntities();
                 }
             }
         }
@@ -240,7 +238,7 @@ namespace FakeProvider
                     Intersect(provider, x, y, width, height,
                         out int x2, out int y2, out int width2, out int height2);
                     if (width2 > 0 && height2 > 0)
-                        provider.UpdateSignsChestsEntities();
+                        provider.UpdateEntities();
                 }
             }
         }
@@ -253,7 +251,7 @@ namespace FakeProvider
             lock (Locker)
                 foreach (INamedTileCollection provider in Providers)
                     if (provider.Name != FakeProvider.WorldProviderName)
-                        provider.HideSignsChestsEntities();
+                        provider.HideEntities();
         }
 
         #endregion
@@ -264,7 +262,7 @@ namespace FakeProvider
             lock (Locker)
                 foreach (INamedTileCollection provider in Providers)
                     if (provider.Name != FakeProvider.WorldProviderName)
-                        provider.UpdateSignsChestsEntities();
+                        provider.UpdateEntities();
         }
 
         #endregion
@@ -278,7 +276,7 @@ namespace FakeProvider
                     {
                         Intersect(provider, X, Y, Width, Height, out int x, out int y, out int width, out int height);
                         if (width > 0 && height > 0)
-                            provider.Scan();
+                            provider.ScanEntities();
                     }
         }
 

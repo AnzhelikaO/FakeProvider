@@ -5,7 +5,7 @@ using Terraria;
 #endregion
 namespace FakeProvider
 {
-    public sealed class ReadonlyTile<T> : IProviderTile
+    public sealed class Tile<T> : IProviderTile
     {
         #region Constants
 
@@ -26,35 +26,26 @@ namespace FakeProvider
         private static INamedTileCollection _Provider;
         public INamedTileCollection Provider => _Provider;
 
-        public ushort _type;
-        public byte _wall;
-        public byte _liquid;
-        public byte _bTileHeader;
-        public byte _bTileHeader2;
-        public byte _bTileHeader3;
-        public short _sTileHeader;
-        public short _frameX;
-        public short _frameY;
-        public ushort type { get => _type; set { } }
-        public byte wall { get => _wall; set { } }
-        public byte liquid { get => _liquid; set { } }
-        public byte bTileHeader { get => _bTileHeader; set { } }
-        public byte bTileHeader2 { get => _bTileHeader2; set { } }
-        public byte bTileHeader3 { get => _bTileHeader3; set { } }
-        public short sTileHeader { get => _sTileHeader; set { } }
-        public short frameX { get => _frameX; set { } }
-        public short frameY { get => _frameY; set { } }
+        public ushort type { get; set; }
+        public byte wall { get; set; }
+        public byte liquid { get; set; }
+        public byte bTileHeader { get; set; }
+        public byte bTileHeader2 { get; set; }
+        public byte bTileHeader3 { get; set; }
+        public short sTileHeader { get; set; }
+        public short frameX { get; set; }
+        public short frameY { get; set; }
 
         #endregion
         #region Constructor
 
-        public ReadonlyTile()
+        public Tile()
         {
         }
 
-        public ReadonlyTile(ITile tile)
+        public Tile(ITile tile)
         {
-            ForceCopyFrom(tile);
+            CopyFrom(tile);
         }
 
         #endregion
@@ -98,43 +89,67 @@ namespace FakeProvider
 
         #region ClearEverything
 
-        public void ClearEverything() { }
+        public void ClearEverything()
+        {
+            type = 0;
+            wall = 0;
+            ClearMetadata();
+        }
 
         #endregion
         #region ClearTile
 
-        public void ClearTile() { }
+        public void ClearTile()
+        {
+            slope(0);
+            halfBrick(false);
+            active(false);
+        }
 
         #endregion
         #region ClearMetadata
 
-        public void ClearMetadata() { }
+        public void ClearMetadata()
+        {
+            liquid = 0;
+            sTileHeader = 0;
+            bTileHeader = 0;
+            bTileHeader2 = 0;
+            bTileHeader3 = 0;
+            frameX = 0;
+            frameY = 0;
+        }
 
         #endregion
         #region ResetToType
 
-        public void ResetToType(ushort Type) { }
+        public void ResetToType(ushort Type)
+        {
+            liquid = 0;
+            sTileHeader = 32;
+            bTileHeader = 0;
+            bTileHeader2 = 0;
+            bTileHeader3 = 0;
+            frameX = 0;
+            frameY = 0;
+            type = Type;
+        }
 
         #endregion
 
         #region CopyFrom
 
-        public void CopyFrom(ITile From) { }
-
-        #endregion
-        #region ForceCopyFrom
-
-        internal void ForceCopyFrom(ITile From)
+        public void CopyFrom(ITile From)
         {
-            _type = From.type;
-            _wall = From.wall;
-            _liquid = From.liquid;
-            _sTileHeader = From.sTileHeader;
-            _bTileHeader = From.bTileHeader;
-            _bTileHeader2 = From.bTileHeader2;
-            _bTileHeader3 = From.bTileHeader3;
-            _frameX = From.frameX;
-            _frameY = From.frameY;
+            type = From.type;
+            wall = From.wall;
+            liquid = From.liquid;
+            sTileHeader = From.sTileHeader;
+            bTileHeader = From.bTileHeader;
+            bTileHeader2 = From.bTileHeader2;
+            bTileHeader3 = From.bTileHeader3;
+            frameX = From.frameX;
+            frameY = From.frameY;
         }
 
         #endregion
@@ -190,123 +205,218 @@ namespace FakeProvider
         #region lava
 
         public bool lava() => ((bTileHeader & 32) == 32);
-        public void lava(bool Lava) { }
+        public void lava(bool Lava)
+        {
+            if (Lava)
+                bTileHeader = (byte)((bTileHeader & 159) | 32);
+            else
+                bTileHeader &= 223;
+        }
 
         #endregion
         #region honey
 
         public bool honey() => ((bTileHeader & 64) == 64);
-        public void honey(bool Honey) { }
+        public void honey(bool Honey)
+        {
+            if (Honey)
+                bTileHeader = (byte)((bTileHeader & 159) | 64);
+            else
+                bTileHeader &= 191;
+        }
 
         #endregion
         #region liquidType
 
         public byte liquidType() => (byte)((bTileHeader & 96) >> 5);
-        public void liquidType(int LiquidType) { }
+        public void liquidType(int LiquidType)
+        {
+            if (LiquidType == 0)
+                bTileHeader &= 159;
+            else if (LiquidType == 1)
+                lava(true);
+            else if (LiquidType == 2)
+                honey(true);
+        }
 
         #endregion
         #region checkingLiquid
 
-        public bool checkingLiquid() => true;//((bTileHeader3 & 8) == 8);
-        public void checkingLiquid(bool CheckingLiquid) { }
+        public bool checkingLiquid() => ((bTileHeader3 & 8) == 8);
+        public void checkingLiquid(bool CheckingLiquid)
+        {
+            if (CheckingLiquid)
+                bTileHeader3 |= 8;
+            else
+                bTileHeader3 &= 247;
+        }
 
         #endregion
         #region skipLiquid
 
         public bool skipLiquid() => ((bTileHeader3 & 16) == 16);
-        public void skipLiquid(bool SkipLiquid) { }
+        public void skipLiquid(bool SkipLiquid)
+        {
+            if (SkipLiquid)
+                bTileHeader3 |= 16;
+            else
+                bTileHeader3 &= 239;
+        }
 
         #endregion
 
         #region frame
 
         public byte frameNumber() => (byte)((bTileHeader2 & 48) >> 4);
-        public void frameNumber(byte FrameNumber) { }
+        public void frameNumber(byte FrameNumber) =>
+            bTileHeader2 = (byte)((bTileHeader2 & 207) | ((FrameNumber & 3) << 4));
 
         public byte wallFrameNumber() => (byte)((bTileHeader2 & 192) >> 6);
-        public void wallFrameNumber(byte WallFrameNumber) { }
+        public void wallFrameNumber(byte WallFrameNumber) =>
+            bTileHeader2 = (byte)((bTileHeader2 & 63) | ((WallFrameNumber & 3) << 6));
 
         public int wallFrameX() => ((bTileHeader2 & 15) * 36);
-        public void wallFrameX(int WallFrameX) { }
+        public void wallFrameX(int WallFrameX) =>
+            bTileHeader2 = (byte)((bTileHeader2 & 240) | ((WallFrameX / 36) & 15));
 
         public int wallFrameY() => ((bTileHeader3 & 7) * 36);
-        public void wallFrameY(int WallFrameY) { }
+        public void wallFrameY(int WallFrameY) =>
+            bTileHeader3 = (byte)((bTileHeader3 & 248) | ((WallFrameY / 36) & 7));
 
         #endregion
 
         #region color
 
         public byte color() => (byte)(sTileHeader & 31);
-        public void color(byte Color) { }
+        public void color(byte Color)
+        {
+            if (Color > 30)
+                Color = 30;
+            sTileHeader = (short)((sTileHeader & 65504) | Color);
+        }
 
         #endregion
         #region wallColor
 
         public byte wallColor() => (byte)(bTileHeader & 31);
-        public void wallColor(byte WallColor) { }
+        public void wallColor(byte WallColor)
+        {
+            if (WallColor > 30)
+                WallColor = 30;
+            bTileHeader = (byte)((bTileHeader & 224) | WallColor);
+        }
 
         #endregion
 
         #region active
 
         public bool active() => ((sTileHeader & 32) == 32);
-        public void active(bool Active) { }
+        public void active(bool Active)
+        {
+            if (Active)
+                sTileHeader |= 32;
+            else
+                sTileHeader = (short)(sTileHeader & 65503);
+        }
 
         #endregion
         #region inActive
 
         public bool inActive() => ((sTileHeader & 64) == 64);
-        public void inActive(bool InActive) { }
+        public void inActive(bool InActive)
+        {
+            if (InActive)
+                sTileHeader |= 64;
+            else
+                sTileHeader = (short)(sTileHeader & 65471);
+        }
 
         #endregion
         #region nactive
 
-        public bool nactive() => true;//((sTileHeader & 96) == 32);
+        public bool nactive() => ((sTileHeader & 96) == 32);
 
         #endregion
 
         #region wire
 
         public bool wire() => ((sTileHeader & 128) == 128);
-        public void wire(bool Wire) { }
+        public void wire(bool Wire)
+        {
+            if (Wire)
+                sTileHeader |= 128;
+            else
+                sTileHeader = (short)(sTileHeader & 65407);
+        }
 
         #endregion
         #region wire2
 
         public bool wire2() => ((sTileHeader & 256) == 256);
-        public void wire2(bool Wire2) { }
+        public void wire2(bool Wire2)
+        {
+            if (Wire2)
+                sTileHeader |= 256;
+            else
+                sTileHeader = (short)(sTileHeader & 65279);
+        }
 
         #endregion
         #region wire3
 
         public bool wire3() => ((sTileHeader & 512) == 512);
-        public void wire3(bool Wire3) { }
+        public void wire3(bool Wire3)
+        {
+            if (Wire3)
+                sTileHeader |= 512;
+            else
+                sTileHeader = (short)(sTileHeader & 65023);
+        }
 
         #endregion
         #region wire4
 
         public bool wire4() => ((bTileHeader & 128) == 128);
 
-        public void wire4(bool Wire4) { }
+        public void wire4(bool Wire4)
+        {
+            if (Wire4)
+                bTileHeader |= 128;
+            else
+                bTileHeader &= 127;
+        }
 
         #endregion
         #region actuator
 
         public bool actuator() => ((sTileHeader & 2048) == 2048);
-        public void actuator(bool Actuator) { }
+        public void actuator(bool Actuator)
+        {
+            if (Actuator)
+                sTileHeader |= 2048;
+            else
+                sTileHeader = (short)(sTileHeader & 63487);
+        }
 
         #endregion
 
         #region halfBrick
 
         public bool halfBrick() => ((sTileHeader & 1024) == 1024);
-        public void halfBrick(bool HalfBrick) { }
+        public void halfBrick(bool HalfBrick)
+        {
+            if (HalfBrick)
+                sTileHeader |= 1024;
+            else
+                sTileHeader = (short)(sTileHeader & 64511);
+        }
 
         #endregion
         #region slope
 
         public byte slope() => (byte)((sTileHeader & 28672) >> 12);
-        public void slope(byte Slope) { }
+        public void slope(byte Slope) =>
+            sTileHeader = (short)((sTileHeader & 36863) | ((Slope & 7) << 12));
 
         #endregion
         #region topSlope

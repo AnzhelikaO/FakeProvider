@@ -1,8 +1,13 @@
-﻿using Terraria;
+﻿#region Using
+using Terraria;
+using Terraria.ID;
+#endregion
 namespace FakeProvider
 {
     public class FakeChest : Chest, IFake
     {
+        #region Data
+
         public INamedTileCollection Provider { get; }
         public int Index { get; set; }
         public int X
@@ -15,8 +20,19 @@ namespace FakeProvider
             get => y;
             set => y = value;
         }
+        internal static ushort[] _TileTypes = new ushort[]
+        {
+            TileID.Containers,
+            TileID.Containers2,
+            TileID.Dressers
+        };
+        public ushort[] TileTypes => _TileTypes;
         public int RelativeX { get; set; }
         public int RelativeY { get; set; }
+
+        #endregion
+
+        #region Constructor
 
         public FakeChest(INamedTileCollection Provider, int Index, int X, int Y, Item[] Items = null)
         {
@@ -30,5 +46,7 @@ namespace FakeProvider
             for (int i = 0; i < 40; i++)
                 this.item[i] = this.item[i] ?? new Item();
         }
+
+        #endregion
     }
 }
