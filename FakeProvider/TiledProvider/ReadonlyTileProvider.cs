@@ -26,6 +26,7 @@ namespace FakeProvider
         private List<IFake> _Entities = new List<IFake>();
         public ReadOnlyCollection<IFake> Entities => new ReadOnlyCollection<IFake>(_Entities);
         private object Locker = new object();
+        private bool ScanCompleted = false;
 
         #endregion
         #region Constructor
@@ -519,6 +520,10 @@ namespace FakeProvider
 
         public void ScanEntities()
         {
+            if (ScanCompleted)
+                return;
+            ScanCompleted = true;
+
             lock (Locker)
                 foreach (IFake entity in _Entities.ToArray())
                     if (!IsEntityTile(entity.RelativeX, entity.RelativeY, entity.TileTypes))
