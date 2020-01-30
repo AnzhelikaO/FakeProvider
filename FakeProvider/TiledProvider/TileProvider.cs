@@ -13,9 +13,9 @@ namespace FakeProvider
     public sealed class TileProvider<T> : INamedTileCollection
     {
         #region Data
-        
+
         public TileProviderCollection ProviderCollection { get; internal set; }
-        private Tile<T>[,] Data;
+        private StructTile[,] Data;
         public string Name { get; private set; }
         public int X { get; private set; }
         public int Y { get; private set; }
@@ -42,16 +42,12 @@ namespace FakeProvider
                 throw new Exception("Attempt to reinitialize.");
             this.ProviderCollection = ProviderCollection;
             this.Name = Name;
-            this.Data = new Tile<T>[Width, Height];
+            this.Data = new StructTile[Width, Height];
             this.X = X;
             this.Y = Y;
             this.Width = Width;
             this.Height = Height;
             this.Layer = Layer;
-
-            for (int x = 0; x < this.Width; x++)
-                for (int y = 0; y < this.Height; y++)
-                    Data[x, y] = new Tile<T>();
         }
 
         public void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
@@ -61,7 +57,7 @@ namespace FakeProvider
                 throw new Exception("Attempt to reinitialize.");
             this.ProviderCollection = ProviderCollection;
             this.Name = Name;
-            this.Data = new Tile<T>[Width, Height];
+            this.Data = new StructTile[Width, Height];
             this.X = X;
             this.Y = Y;
             this.Width = Width;
@@ -73,7 +69,7 @@ namespace FakeProvider
                 {
                     ITile t = CopyFrom[i, j];
                     if (t != null)
-                        Data[i - X, j - Y] = new Tile<T>(t);
+                        this[i, j].CopyFrom(t);
                 }
         }
 
@@ -84,7 +80,7 @@ namespace FakeProvider
                 throw new Exception("Attempt to reinitialize.");
             this.ProviderCollection = ProviderCollection;
             this.Name = Name;
-            this.Data = new Tile<T>[Width, Height];
+            this.Data = new StructTile[Width, Height];
             this.X = X;
             this.Y = Y;
             this.Width = Width;
@@ -96,8 +92,7 @@ namespace FakeProvider
                 {
                     ITile t = CopyFrom[i, j];
                     if (t != null)
-                        Data[i, j] = new Tile<T>(t);
-                    this[i, j] = new Tile<T>(t);
+                        this[i, j].CopyFrom(t);
                 }
         }
 
@@ -107,22 +102,34 @@ namespace FakeProvider
 
         ITile ITileCollection.this[int X, int Y]
         {
-            get => Data[X, Y];
-            set => Data[X, Y].CopyFrom(value);
+            get => new TileReference<T>(Data, X, Y);
+            set => new TileReference<T>(Data, X, Y).CopyFrom(value);
         }
 
         public IProviderTile this[int X, int Y]
         {
-            get => Data[X, Y];
-            set => Data[X, Y].CopyFrom(value);
+            get => new TileReference<T>(Data, X, Y);
+            set => new TileReference<T>(Data, X, Y).CopyFrom(value);
         }
+
+        #endregion
+        #region GetIncapsulatedTile
+
+        public IProviderTile GetIncapsulatedTile(int X, int Y) =>
+            new TileReference<T>(Data, X - this.X, Y - this.Y);
+
+        #endregion
+        #region SetIncapsulatedTile
+
+        public void SetIncapsulatedTile(int X, int Y, ITile Tile) =>
+            new TileReference<T>(Data, X - this.X, Y - this.Y).CopyFrom(Tile);
 
         #endregion
         #region GetTileSafe
 
         public IProviderTile GetTileSafe(int X, int Y) => X >= 0 && Y >= 0 && X < Width && Y < Height
-            ? Data[X, Y]
-            : FakeProvider.VoidTile;
+            ? this[X, Y]
+            : ProviderCollection.VoidTile;
 
         #endregion
 
@@ -146,13 +153,11 @@ namespace FakeProvider
             this.Y = Y;
             if ((this.Width != Width) || (this.Height != Height))
             {
-                Tile<T>[,] newData = new Tile<T>[Width, Height];
+                StructTile[,] newData = new StructTile[Width, Height];
                 for (int i = 0; i < Width; i++)
                     for (int j = 0; j < Height; j++)
                         if ((i < this.Width) && (j < this.Height))
                             newData[i, j] = Data[i, j];
-                        else
-                            newData[i, j] = new Tile<T>();
                 this.Data = newData;
                 this.Width = Width;
                 this.Height = Height;
@@ -493,7 +498,7 @@ namespace FakeProvider
                 if (Entity is TETrainingDummy trainingDummy && trainingDummy.npc >= 0)
                 {
                     NPC npc = Main.npc[trainingDummy.npc];
-                    npc.netID = 0;
+                    npc.type = 0;
                     npc.active = false;
                     NetMessage.SendData((int)PacketTypes.NpcUpdate, -1, -1, null, trainingDummy.npc);
                     trainingDummy.npc = -1;

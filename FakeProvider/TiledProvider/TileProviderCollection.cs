@@ -11,40 +11,47 @@ namespace FakeProvider
     {
         #region Data
 
-        // ImmutableList?????????????????????????????????????????????????????????????????????????????????????
-        // ??????????????????????????????????????????????????????????????????????????????????????????????????
-        // ????????????????????????????????????????????????
         private static List<INamedTileCollection> Providers = new List<INamedTileCollection>();
-        private static ITile[,] Tiles;
+        private static ushort[,] ProviderIndexes;
 
         /// <summary> World width visible by client. </summary>
-        public int Width { get; }
+        public int Width { get; protected set; }
         /// <summary> World height visible by client. </summary>
-        public int Height { get; }
+        public int Height { get; protected set; }
         /// <summary> Horizontal offset of the loaded world. </summary>
-        
+
         // TODO: I completely messed up offset.
-        public int OffsetX { get; }
+        public int OffsetX { get; protected set; }
         /// <summary> Vertical offset of the loaded world. </summary>
-        public int OffsetY { get; }
+        public int OffsetY { get; protected set; }
         /// <summary> Tile to be visible outside of all providers. </summary>
-        private object Locker { get; } = new object();
+        protected object Locker { get; set; } = new object();
+        protected INamedTileCollection Void { get; set; }
+        public IProviderTile VoidTile { get; protected set; }
 
         #endregion
         #region Constructor
 
-        public TileProviderCollection(int Width, int Height,
-            int OffsetX, int OffsetY)
+        public TileProviderCollection() : base() { }
+
+        #endregion
+
+        #region Initialize
+
+        public void Initialize(int Width, int Height, int OffsetX, int OffsetY)
         {
+            if (ProviderIndexes != null)
+                throw new Exception("Attempt to reinitialize.");
+
             this.Width = Width;
             this.Height = Height;
             this.OffsetX = OffsetX;
             this.OffsetY = OffsetY;
 
-            Tiles = new IProviderTile[this.Width, this.Height];
-            for (int x = 0; x < this.Width; x++)
-                for (int y = 0; y < this.Height; y++)
-                    Tiles[x, y] = FakeProvider.VoidTile;
+            ProviderIndexes = new ushort[this.Width, this.Height];
+            Void = FakeProvider.CreateReadonlyTileProvider("__void__", 0, 0, 1, 1,
+                new ITile[,] { { new Terraria.Tile() } }, Int32.MinValue);
+            VoidTile = Void[0, 0];
         }
 
         #endregion
@@ -53,8 +60,18 @@ namespace FakeProvider
 
         public ITile this[int X, int Y]
         {
-            get => Tiles[X - OffsetX, Y - OffsetY];
-            set => Tiles[X - OffsetX, Y - OffsetY].CopyFrom(value);
+            get
+            {
+                X -= OffsetX;
+                Y -= OffsetY;
+                return Providers[ProviderIndexes[X, Y]].GetIncapsulatedTile(X, Y);
+            }
+            set
+            {
+                X -= OffsetX;
+                Y -= OffsetY;
+                Providers[ProviderIndexes[X, Y]].SetIncapsulatedTile(X, Y, value);
+            }
         }
 
         #endregion
@@ -63,7 +80,7 @@ namespace FakeProvider
         // Offset????
         public IProviderTile GetTileSafe(int X, int Y) => X >= 0 && Y >= 0 && X < Width && Y < Height
             ? (IProviderTile)this[X, Y]
-            : FakeProvider.VoidTile;
+            : VoidTile;
 
         #endregion
 
@@ -177,11 +194,12 @@ namespace FakeProvider
                 (X, Y, Width, Height) = Clamp(X, Y, Width, Height);
                 for (int i = X; i < X + Width; i++)
                     for (int j = Y; j < Y + Height; j++)
-                        Tiles[i, j] = FakeProvider.VoidTile;
+                        ProviderIndexes[i, j] = 0;
 
                 Queue<INamedTileCollection> providers = new Queue<INamedTileCollection>();
-                foreach (INamedTileCollection provider in Providers)
+                for (ushort k = 0; k < Providers.Count; k++)
                 {
+                    INamedTileCollection provider = Providers[k];
                     if (provider.Enabled)
                     {
                         // Update tiles
@@ -191,7 +209,7 @@ namespace FakeProvider
                         int dy = y - provider.Y;
                         for (int i = 0; i < width; i++)
                             for (int j = 0; j < height; j++)
-                                Tiles[x + i, y + j] = provider[dx + i, dy + j];
+                                ProviderIndexes[x + i, y + j] = k;
 
                         if (width > 0 && height > 0)
                             providers.Enqueue(provider);
@@ -217,6 +235,8 @@ namespace FakeProvider
                 return;
             lock (Locker)
             {
+                ushort providerIndex = (ushort)Providers.IndexOf(Provider);
+
                 // Scanning rectangle where this provider is/will appear.
                 ScanRectangle(Provider.X, Provider.Y, Provider.Width, Provider.Height, Provider);
 
@@ -227,10 +247,11 @@ namespace FakeProvider
                 for (int i = 0; i < width; i++)
                     for (int j = 0; j < height; j++)
                     {
-                        IProviderTile tile = (IProviderTile)Tiles[x + i, y + j];
+                        ushort providerIndexOnTop = ProviderIndexes[x + i, y + j];
+                        IProviderTile tile = Providers[providerIndexOnTop][x + i, y + j];
                         // TODO: If layer is equal then there might be a problem...
                         if (tile == null || tile.Provider.Layer <= layer || !tile.Provider.Enabled)
-                            Tiles[x + i, y + j] = Provider[i, j];
+                            ProviderIndexes[x + i, y + j] = providerIndex;
                     }
 
                 foreach (INamedTileCollection provider in Providers)
@@ -303,3 +324,4 @@ namespace FakeProvider
         #endregion
     }
 }
+

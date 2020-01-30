@@ -9,6 +9,8 @@ namespace FakeProvider
     public interface INamedTileCollection : ITileCollection, IDisposable
     {
         IProviderTile this[int x, int y] { get; set; }
+        IProviderTile GetIncapsulatedTile(int X, int Y);
+        void SetIncapsulatedTile(int X, int Y, ITile Tile);
 
         TileProviderCollection ProviderCollection { get; }
         string Name { get; }
