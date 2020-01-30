@@ -28,8 +28,9 @@ namespace FakeProvider
 
         (int X, int Y, int Width, int Height) XYWH(int DeltaX = 0, int DeltaY = 0);
         (int X, int Y, int Width, int Height) ClampXYWH();
-        void SetXYWH(int X, int Y, int Width, int Height);
+        void SetXYWH(int X, int Y, int Width, int Height, bool Draw = true);
         void Move(int X, int Y, bool Draw = true);
+        void Resize(int Width, int Height, bool Draw = true);
         void Draw(bool Section = true);
         void Enable(bool Draw = true);
         void Disable(bool Draw = true);

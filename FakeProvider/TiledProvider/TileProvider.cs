@@ -147,12 +147,19 @@ namespace FakeProvider
         #endregion
         #region SetXYWH
 
-        public void SetXYWH(int X, int Y, int Width, int Height)
+        public void SetXYWH(int X, int Y, int Width, int Height, bool Draw = true)
         {
+            bool wasEnabled = Enabled;
+            if (wasEnabled)
+                Disable(Draw);
+
             this.X = X;
             this.Y = Y;
             if ((this.Width != Width) || (this.Height != Height))
             {
+                if (Width <= 0 || Height <= 0)
+                    throw new ArgumentException("Invalid new width or height.");
+
                 StructTile[,] newData = new StructTile[Width, Height];
                 for (int i = 0; i < Width; i++)
                     for (int j = 0; j < Height; j++)
@@ -162,20 +169,22 @@ namespace FakeProvider
                 this.Width = Width;
                 this.Height = Height;
             }
+
+            if (wasEnabled)
+                Enable(Draw);
         }
 
         #endregion
         #region Move
 
-        public void Move(int X, int Y, bool Draw = true)
-        {
-            bool wasEnabled = Enabled;
-            if (wasEnabled)
-                Disable(Draw);
-            SetXYWH(X, Y, this.Width, this.Height);
-            if (wasEnabled)
-                Enable(Draw);
-        }
+        public void Move(int X, int Y, bool Draw = true) =>
+            SetXYWH(X, Y, this.Width, this.Height, Draw);
+
+        #endregion
+        #region Resize
+
+        public void Resize(int Width, int Height, bool Draw = true) =>
+            SetXYWH(this.X, this.Y, Width, Height, Draw);
 
         #endregion
         #region Enable
@@ -215,7 +224,7 @@ namespace FakeProvider
 
         public void SetTop(bool Draw = true)
         {
-            ProviderCollection.SetTop(this);
+            ProviderCollection.PlaceProviderOnTopOfLayer(this);
             ProviderCollection.UpdateProviderReferences(this);
             if (Draw)
                 this.Draw();

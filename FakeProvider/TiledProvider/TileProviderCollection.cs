@@ -7,13 +7,23 @@ using System.Linq;
 #endregion
 namespace FakeProvider
 {
-    public class TileProviderCollection : ITileCollection, IDisposable, IEnumerable<INamedTileCollection>
+    public class TileProviderCollection : ITileCollection, IDisposable
     {
         #region Data
 
-        private static List<INamedTileCollection> Providers = new List<INamedTileCollection>();
-        private static ushort[,] ProviderIndexes;
-
+        public const string VoidProviderName = "__void__";
+        private List<INamedTileCollection> _Providers = new List<INamedTileCollection>();
+        /// <summary> List of all registered providers. </summary>
+        public INamedTileCollection[] Providers
+        {
+            get
+            {
+                lock (Locker)
+                    return _Providers.ToArray();
+            }
+        }
+        /// <summary> <see cref="ProviderIndexes"/>[X, Y] is an index of provider at point (X, Y). </summary>
+        private ushort[,] ProviderIndexes;
         /// <summary> World width visible by client. </summary>
         public int Width { get; protected set; }
         /// <summary> World height visible by client. </summary>
@@ -49,7 +59,7 @@ namespace FakeProvider
             this.OffsetY = OffsetY;
 
             ProviderIndexes = new ushort[this.Width, this.Height];
-            Void = FakeProvider.CreateReadonlyTileProvider("__void__", 0, 0, 1, 1,
+            Void = FakeProvider.CreateReadonlyTileProvider(VoidProviderName, 0, 0, 1, 1,
                 new ITile[,] { { new Terraria.Tile() } }, Int32.MinValue);
             VoidTile = Void[0, 0];
         }
@@ -64,13 +74,13 @@ namespace FakeProvider
             {
                 X -= OffsetX;
                 Y -= OffsetY;
-                return Providers[ProviderIndexes[X, Y]].GetIncapsulatedTile(X, Y);
+                return _Providers[ProviderIndexes[X, Y]].GetIncapsulatedTile(X, Y);
             }
             set
             {
                 X -= OffsetX;
                 Y -= OffsetY;
-                Providers[ProviderIndexes[X, Y]].SetIncapsulatedTile(X, Y, value);
+                _Providers[ProviderIndexes[X, Y]].SetIncapsulatedTile(X, Y, value);
             }
         }
 
@@ -90,7 +100,7 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                foreach (INamedTileCollection provider in Providers)
+                foreach (INamedTileCollection provider in _Providers)
                     provider.Dispose();
             }
         }
@@ -99,8 +109,14 @@ namespace FakeProvider
 
         #region operator[]
 
-        public INamedTileCollection this[string Name] =>
-            Providers.FirstOrDefault(p => (p.Name == Name));
+        public INamedTileCollection this[string Name]
+        {
+            get
+            {
+                lock (Locker)
+                    return _Providers.FirstOrDefault(p => (p.Name == Name));
+            }
+        }
 
         #endregion
 
@@ -110,10 +126,10 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                if (Providers.Any(p => (p.Name == Provider.Name)))
+                if (_Providers.Any(p => (p.Name == Provider.Name)))
                     throw new ArgumentException($"Tile collection '{Provider.Name}' " +
                         "is already in use. Name must be unique.");
-                SetTop(Provider);
+                PlaceProviderOnTopOfLayer(Provider);
                 Provider.Enable(false);
             }
         }
@@ -123,13 +139,16 @@ namespace FakeProvider
 
         public bool Remove(string Name, bool Draw = true, bool Cleanup = true)
         {
+            if (Name == VoidProviderName)
+                throw new InvalidOperationException("You cannot remove void provider.");
+
             lock (Locker)
-                using (INamedTileCollection provider = Providers.FirstOrDefault(p => (p.Name == Name)))
+                using (INamedTileCollection provider = _Providers.FirstOrDefault(p => (p.Name == Name)))
                 {
                     if (provider == null)
                         return false;
                     provider.Disable(Draw);
-                    Providers.Remove(provider);
+                    _Providers.Remove(provider);
                 }
             if (Cleanup)
                 GC.Collect();
@@ -142,7 +161,7 @@ namespace FakeProvider
         public void Clear(INamedTileCollection except = null)
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in Providers.ToArray())
+                foreach (INamedTileCollection provider in _Providers.ToArray())
                     if (provider != except)
                         Remove(provider.Name, true, false);
             GC.Collect();
@@ -151,20 +170,35 @@ namespace FakeProvider
         #endregion
         #region SetTop
 
-        internal void SetTop(INamedTileCollection Provider)
+        public bool SetTop(string Name, bool Draw = true)
         {
             lock (Locker)
             {
-                Providers.Remove(Provider);
-                int index = Providers.FindIndex(p => (p.Layer > Provider.Layer));
-                if (index == -1)
-                    index = Providers.Count;
-                Providers.Insert(index, Provider);
+                INamedTileCollection provider = _Providers.FirstOrDefault(p => (p.Name == Name));
+                if (provider == null)
+                    return false;
+                provider.SetTop(Draw);
+                return true;
             }
         }
 
         #endregion
 
+        #region PlaceProviderOnTopOfLayer
+
+        internal void PlaceProviderOnTopOfLayer(INamedTileCollection Provider)
+        {
+            lock (Locker)
+            {
+                _Providers.Remove(Provider);
+                int index = _Providers.FindIndex(p => (p.Layer > Provider.Layer));
+                if (index == -1)
+                    index = _Providers.Count;
+                _Providers.Insert(index, Provider);
+            }
+        }
+
+        #endregion
         #region Intersect
 
         internal static void Intersect(INamedTileCollection Provider, int X, int Y, int Width, int Height,
@@ -197,9 +231,9 @@ namespace FakeProvider
                         ProviderIndexes[i, j] = 0;
 
                 Queue<INamedTileCollection> providers = new Queue<INamedTileCollection>();
-                for (ushort k = 0; k < Providers.Count; k++)
+                for (ushort k = 0; k < _Providers.Count; k++)
                 {
-                    INamedTileCollection provider = Providers[k];
+                    INamedTileCollection provider = _Providers[k];
                     if (provider.Enabled)
                     {
                         // Update tiles
@@ -235,7 +269,7 @@ namespace FakeProvider
                 return;
             lock (Locker)
             {
-                ushort providerIndex = (ushort)Providers.IndexOf(Provider);
+                ushort providerIndex = (ushort)_Providers.IndexOf(Provider);
 
                 // Scanning rectangle where this provider is/will appear.
                 ScanRectangle(Provider.X, Provider.Y, Provider.Width, Provider.Height, Provider);
@@ -248,13 +282,13 @@ namespace FakeProvider
                     for (int j = 0; j < height; j++)
                     {
                         ushort providerIndexOnTop = ProviderIndexes[x + i, y + j];
-                        IProviderTile tile = Providers[providerIndexOnTop][x + i, y + j];
+                        IProviderTile tile = _Providers[providerIndexOnTop][x + i, y + j];
                         // TODO: If layer is equal then there might be a problem...
                         if (tile == null || tile.Provider.Layer <= layer || !tile.Provider.Enabled)
                             ProviderIndexes[x + i, y + j] = providerIndex;
                     }
 
-                foreach (INamedTileCollection provider in Providers)
+                foreach (INamedTileCollection provider in _Providers)
                 {
                     Intersect(provider, x, y, width, height,
                         out int x2, out int y2, out int width2, out int height2);
@@ -270,7 +304,7 @@ namespace FakeProvider
         public void HideEntities()
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in Providers)
+                foreach (INamedTileCollection provider in _Providers)
                     if (provider.Name != FakeProvider.WorldProviderName)
                         provider.HideEntities();
         }
@@ -281,7 +315,7 @@ namespace FakeProvider
         public void UpdateEntities()
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in Providers)
+                foreach (INamedTileCollection provider in _Providers)
                     if (provider.Name != FakeProvider.WorldProviderName)
                         provider.UpdateEntities();
         }
@@ -292,7 +326,7 @@ namespace FakeProvider
         public void ScanRectangle(int X, int Y, int Width, int Height, INamedTileCollection IgnoreProvider = null)
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in Providers)
+                foreach (INamedTileCollection provider in _Providers)
                     if (provider != IgnoreProvider)
                     {
                         Intersect(provider, X, Y, Width, Height, out int x, out int y, out int width, out int height);
@@ -310,16 +344,6 @@ namespace FakeProvider
             Helper.Clamp(Y, 0, this.Height),
             Helper.Clamp(Width, 0, this.Width - X),
             Helper.Clamp(Height, 0, this.Height - Y));
-
-        #endregion
-
-        #region GetEnumerator
-
-        public IEnumerator<INamedTileCollection> GetEnumerator() =>
-            Providers.GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() =>
-            Providers.GetEnumerator();
 
         #endregion
     }
