@@ -31,9 +31,9 @@ namespace FakeProvider
         /// <summary> Horizontal offset of the loaded world. </summary>
 
         // TODO: I completely messed up offset.
-        public int OffsetX { get; protected set; }
+        public int OffsetX { get; internal protected set; }
         /// <summary> Vertical offset of the loaded world. </summary>
-        public int OffsetY { get; protected set; }
+        public int OffsetY { get; internal protected set; }
         /// <summary> Tile to be visible outside of all providers. </summary>
         protected object Locker { get; set; } = new object();
         protected INamedTileCollection Void { get; set; }

@@ -72,7 +72,7 @@ namespace FakeProvider
             OffsetY = offsetY;
 
             #endregion
-            #region Width, Height
+            #region VisibleWidth, VisibleHeight
 
             int visibleWidth = -1;
             argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-visiblewidth")));
@@ -130,7 +130,7 @@ namespace FakeProvider
                 AllPlayers[i] = i;
 
             Hooks.World.IO.PreLoadWorld += OnPreLoadWorld;
-            //Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
+            Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
             Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
             Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
@@ -144,7 +144,7 @@ namespace FakeProvider
             if (Disposing)
             {
                 Hooks.World.IO.PreLoadWorld -= OnPreLoadWorld;
-                //Hooks.World.IO.PostLoadWorld -= OnPostLoadWorld;
+                Hooks.World.IO.PostLoadWorld -= OnPostLoadWorld;
                 Hooks.World.IO.PreSaveWorld -= OnPreSaveWorld;
                 Hooks.World.IO.PostSaveWorld -= OnPostSaveWorld;
                 ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
@@ -159,6 +159,7 @@ namespace FakeProvider
         private static HookResult OnPreLoadWorld(ref bool loadFromCloud)
         {
             LoadWorldDirect(loadFromCloud);
+            Hooks.World.IO.PostLoadWorld?.Invoke(loadFromCloud);
             return HookResult.Cancel;
         }
 
@@ -167,10 +168,23 @@ namespace FakeProvider
 
         private static void OnPostLoadWorld(bool FromCloud)
         {
-            //LoadCustomTileProvider();
+            Tile.OffsetX = OffsetX;
+            Tile.OffsetY = OffsetY;
+
+            Main.maxTilesX = VisibleWidth;
+            Main.maxTilesY = VisibleHeight;
+            Main.worldSurface += OffsetY;
+            Main.rockLayer += OffsetY;
+            Main.spawnTileX += OffsetX;
+            Main.spawnTileY += OffsetY;
+            WorldGen.setWorldSize();
+
+            World.ScanEntities();
+
+            GC.Collect();
         }
 
-        #endregion
+#endregion
         #region OnPreSaveWorld
 
         private static HookResult OnPreSaveWorld(ref bool Cloud, ref bool ResetTime)
@@ -239,33 +253,28 @@ namespace FakeProvider
 
         private static void LoadCustomTileProvider()
         {
+            int maxTilesX = Main.maxTilesX;
+            int maxTilesY = Main.maxTilesY;
             if (VisibleWidth < 0)
-                VisibleWidth = (OffsetX + Main.maxTilesX);
+                VisibleWidth = (OffsetX + maxTilesX);
+            else
+                VisibleWidth++;
             if (VisibleHeight < 0)
-                VisibleHeight = (OffsetY + Main.maxTilesY);
+                VisibleHeight = (OffsetY + maxTilesY);
+            else
+                VisibleHeight++;
             Tile = new TileProviderCollection();
-            Tile.Initialize(VisibleWidth, VisibleHeight, OffsetX, OffsetY);
+            Tile.Initialize(VisibleWidth, VisibleHeight, 0, 0);
 
             if (ReadonlyWorld)
                 World = CreateReadonlyTileProvider(WorldProviderName, 0, 0,
-                    Main.maxTilesX, Main.maxTilesY, Int32.MinValue + 1);
+                    maxTilesX, maxTilesY, Int32.MinValue + 1);
             else
                 World = CreateTileProvider(WorldProviderName, 0, 0,
-                    Main.maxTilesX, Main.maxTilesY, Int32.MinValue + 1);
+                    maxTilesX, maxTilesY, Int32.MinValue + 1);
 
             using (IDisposable previous = Main.tile as IDisposable)
-            {
-                Main.maxTilesX = VisibleWidth;
-                Main.maxTilesY = VisibleHeight;
-                Main.worldSurface += OffsetY;
-                Main.rockLayer += OffsetY;
                 Main.tile = Tile;
-            }
-
-            WorldGen.setWorldSize();
-            GC.Collect();
-
-            World.ScanEntities();
         }
 
         #endregion
@@ -455,9 +464,12 @@ namespace FakeProvider
                 return 5;
             }
 
+            // ======================
             LoadCustomTileProvider();
+            // ======================
 
             WorldFile.LoadWorldTiles(reader, importance);
+
             if (reader.BaseStream.Position != (long)array[2])
             {
                 return 5;
