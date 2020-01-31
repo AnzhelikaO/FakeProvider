@@ -22,6 +22,8 @@ namespace FakeProvider
         public int Y { get; private set; }
         public int Width { get; private set; }
         public int Height { get; private set; }
+        public int Index { get; private set; } = -1;
+        public int Order { get; internal set; } = -1;
         public int Layer { get; private set; }
         public bool Enabled { get; private set; } = false;
         private List<IFake> _Entities = new List<IFake>();
@@ -37,12 +39,11 @@ namespace FakeProvider
         #endregion
         #region Initialize
 
-        public void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
+        internal void Initialize(TileProviderCollection ProviderCollection, int Index, string Name, int X, int Y,
             int Width, int Height, int Layer = 0)
         {
-            if (this.Name != null)
-                throw new Exception("Attempt to reinitialize.");
             this.ProviderCollection = ProviderCollection;
+            this.Index = Index;
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
             this.X = X;
@@ -52,12 +53,11 @@ namespace FakeProvider
             this.Layer = Layer;
         }
 
-        public void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
+        internal void Initialize(TileProviderCollection ProviderCollection, int Index, string Name, int X, int Y,
             int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
         {
-            if (this.Name != null)
-                throw new Exception("Attempt to reinitialize.");
             this.ProviderCollection = ProviderCollection;
+            this.Index = Index;
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
             this.X = X;
@@ -75,12 +75,11 @@ namespace FakeProvider
                 }
         }
 
-        public void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
+        internal void Initialize(TileProviderCollection ProviderCollection, int Index, string Name, int X, int Y,
             int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
         {
-            if (this.Name != null)
-                throw new Exception("Attempt to reinitialize.");
             this.ProviderCollection = ProviderCollection;
+            this.Index = Index;
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
             this.X = X;
@@ -214,7 +213,7 @@ namespace FakeProvider
                 // Remove signs, chests, entities
                 HideEntities();
                 // Showing tiles, signs, chests and entities under the provider
-                ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height);
+                ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height, Index);
                 if (Draw)
                     this.Draw(true);
             }

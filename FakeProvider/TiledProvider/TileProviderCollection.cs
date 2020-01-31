@@ -12,7 +12,8 @@ namespace FakeProvider
         #region Data
 
         public const string VoidProviderName = "__void__";
-        private List<INamedTileCollection> _Providers = new List<INamedTileCollection>();
+        private INamedTileCollection[] _Providers = new INamedTileCollection[10];
+        private List<INamedTileCollection> Order = new List<INamedTileCollection>();
         /// <summary> List of all registered providers. </summary>
         public INamedTileCollection[] Providers
         {
@@ -100,7 +101,7 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                foreach (INamedTileCollection provider in _Providers)
+                foreach (INamedTileCollection provider in Order)
                     provider.Dispose();
             }
         }
@@ -122,14 +123,47 @@ namespace FakeProvider
 
         #region Add
 
-        internal void Add(INamedTileCollection Provider)
+        internal void Add(dynamic Provider, string Name, int X, int Y, int Width, int Height, int Layer = 0)
         {
             lock (Locker)
             {
-                if (_Providers.Any(p => (p.Name == Provider.Name)))
+                if (Order.Any(p => (p.Name == Name)))
                     throw new ArgumentException($"Tile collection '{Provider.Name}' " +
                         "is already in use. Name must be unique.");
                 PlaceProviderOnTopOfLayer(Provider);
+                int index = GetEmptyIndex();
+                _Providers[index] = Provider;
+                Provider.Initialize(this, index, Name, X, Y, Width, Height, Layer);
+                Provider.Enable(false);
+            }
+        }
+
+        internal void Add(dynamic Provider, string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        {
+            lock (Locker)
+            {
+                if (Order.Any(p => (p.Name == Name)))
+                    throw new ArgumentException($"Tile collection '{Provider.Name}' " +
+                        "is already in use. Name must be unique.");
+                PlaceProviderOnTopOfLayer(Provider);
+                int index = GetEmptyIndex();
+                _Providers[index] = Provider;
+                Provider.Initialize(this, index, Name, X, Y, Width, Height, CopyFrom, Layer);
+                Provider.Enable(false);
+            }
+        }
+
+        internal void Add(dynamic Provider, string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        {
+            lock (Locker)
+            {
+                if (Order.Any(p => (p.Name == Name)))
+                    throw new ArgumentException($"Tile collection '{Provider.Name}' " +
+                        "is already in use. Name must be unique.");
+                PlaceProviderOnTopOfLayer(Provider);
+                int index = GetEmptyIndex();
+                _Providers[index] = Provider;
+                Provider.Initialize(this, index, Name, X, Y, Width, Height, CopyFrom, Layer);
                 Provider.Enable(false);
             }
         }
@@ -143,12 +177,13 @@ namespace FakeProvider
                 throw new InvalidOperationException("You cannot remove void provider.");
 
             lock (Locker)
-                using (INamedTileCollection provider = _Providers.FirstOrDefault(p => (p.Name == Name)))
+                using (INamedTileCollection provider = Order.FirstOrDefault(p => (p.Name == Name)))
                 {
                     if (provider == null)
                         return false;
                     provider.Disable(Draw);
-                    _Providers.Remove(provider);
+                    Order.Remove(provider);
+                    _Providers[provider.Index] = null;
                 }
             if (Cleanup)
                 GC.Collect();
@@ -161,7 +196,7 @@ namespace FakeProvider
         public void Clear(INamedTileCollection except = null)
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in _Providers.ToArray())
+                foreach (INamedTileCollection provider in Order.ToArray())
                     if (provider != except)
                         Remove(provider.Name, true, false);
             GC.Collect();
@@ -174,7 +209,7 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                INamedTileCollection provider = _Providers.FirstOrDefault(p => (p.Name == Name));
+                INamedTileCollection provider = Order.FirstOrDefault(p => (p.Name == Name));
                 if (provider == null)
                     return false;
                 provider.SetTop(Draw);
@@ -184,17 +219,35 @@ namespace FakeProvider
 
         #endregion
 
+        #region GetEmptyIndex
+
+        private int GetEmptyIndex()
+        {
+            int index = 0;
+            while (index < _Providers.Length && _Providers[index] != null)
+                index++;
+            if (index >= _Providers.Length)
+                Array.Resize(ref _Providers, _Providers.Length * 2);
+            return index;
+        }
+
+        #endregion
         #region PlaceProviderOnTopOfLayer
 
         internal void PlaceProviderOnTopOfLayer(INamedTileCollection Provider)
         {
             lock (Locker)
             {
-                _Providers.Remove(Provider);
-                int index = _Providers.FindIndex(p => (p.Layer > Provider.Layer));
-                if (index == -1)
-                    index = _Providers.Count;
-                _Providers.Insert(index, Provider);
+                Order.Remove(Provider);
+                int order = Order.FindIndex(p => (p.Layer > Provider.Layer));
+                if (order == -1)
+                    order = Order.Count;
+                Order.Insert(order, Provider);
+                for (int i = order; i < Order.Count; i++)
+                {
+                    dynamic provider = Order[i];
+                    provider.Order = i;
+                }
             }
         }
 
@@ -221,21 +274,17 @@ namespace FakeProvider
         #endregion
         #region UpdateRectangleReferences
 
-        public void UpdateRectangleReferences(int X, int Y, int Width, int Height)
+        public void UpdateRectangleReferences(int X, int Y, int Width, int Height, int RemoveIndex)
         {
             lock (Locker)
             {
                 (X, Y, Width, Height) = Clamp(X, Y, Width, Height);
-                for (int i = X; i < X + Width; i++)
-                    for (int j = Y; j < Y + Height; j++)
-                        ProviderIndexes[i, j] = 0;
 
                 Queue<INamedTileCollection> providers = new Queue<INamedTileCollection>();
-                for (ushort k = 0; k < _Providers.Count; k++)
-                {
-                    INamedTileCollection provider = _Providers[k];
+                foreach (INamedTileCollection provider in Order)
                     if (provider.Enabled)
                     {
+                        ushort providerIndex = (ushort)provider.Index;
                         // Update tiles
                         Intersect(provider, X, Y, Width, Height, out int x, out int y,
                             out int width, out int height);
@@ -243,12 +292,16 @@ namespace FakeProvider
                         int dy = y - provider.Y;
                         for (int i = 0; i < width; i++)
                             for (int j = 0; j < height; j++)
-                                ProviderIndexes[x + i, y + j] = k;
+                                ProviderIndexes[x + i, y + j] = providerIndex;
 
                         if (width > 0 && height > 0)
                             providers.Enqueue(provider);
                     }
-                }
+
+                for (int i = X; i < X + Width; i++)
+                    for (int j = Y; j < Y + Height; j++)
+                        if (ProviderIndexes[i, j] == RemoveIndex)
+                            ProviderIndexes[i, j] = 0;
 
                 // We are updating all the stuff only after tiles update since signs,
                 // chests and entities apply only in case the tile on top is from this provider.
@@ -269,13 +322,13 @@ namespace FakeProvider
                 return;
             lock (Locker)
             {
-                ushort providerIndex = (ushort)_Providers.IndexOf(Provider);
+                ushort providerIndex = (ushort)Provider.Index;
 
                 // Scanning rectangle where this provider is/will appear.
                 ScanRectangle(Provider.X, Provider.Y, Provider.Width, Provider.Height, Provider);
 
                 // Update tiles
-                int layer = Provider.Layer;
+                int order = Provider.Order;
                 (int x, int y, int width, int height) = Provider.ClampXYWH();
 
                 for (int i = 0; i < width; i++)
@@ -283,12 +336,11 @@ namespace FakeProvider
                     {
                         ushort providerIndexOnTop = ProviderIndexes[x + i, y + j];
                         IProviderTile tile = _Providers[providerIndexOnTop][x + i, y + j];
-                        // TODO: If layer is equal then there might be a problem...
-                        if (tile == null || tile.Provider.Layer <= layer || !tile.Provider.Enabled)
+                        if (tile == null || tile.Provider.Order <= order || !tile.Provider.Enabled)
                             ProviderIndexes[x + i, y + j] = providerIndex;
                     }
 
-                foreach (INamedTileCollection provider in _Providers)
+                foreach (INamedTileCollection provider in Order)
                 {
                     Intersect(provider, x, y, width, height,
                         out int x2, out int y2, out int width2, out int height2);
@@ -304,7 +356,7 @@ namespace FakeProvider
         public void HideEntities()
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in _Providers)
+                foreach (INamedTileCollection provider in Order)
                     if (provider.Name != FakeProvider.WorldProviderName)
                         provider.HideEntities();
         }
@@ -315,7 +367,7 @@ namespace FakeProvider
         public void UpdateEntities()
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in _Providers)
+                foreach (INamedTileCollection provider in Order)
                     if (provider.Name != FakeProvider.WorldProviderName)
                         provider.UpdateEntities();
         }
@@ -326,7 +378,7 @@ namespace FakeProvider
         public void ScanRectangle(int X, int Y, int Width, int Height, INamedTileCollection IgnoreProvider = null)
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in _Providers)
+                foreach (INamedTileCollection provider in Order)
                     if (provider != IgnoreProvider)
                     {
                         Intersect(provider, X, Y, Width, Height, out int x, out int y, out int width, out int height);

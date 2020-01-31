@@ -17,15 +17,10 @@ namespace FakeProvider
         string Name { get; }
         int X { get; }
         int Y { get; }
+        int Index { get; }
+        int Order { get; }
         int Layer { get; }
         bool Enabled { get; }
-
-        void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
-            int Width, int Height, int Layer = 0);
-        void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
-            int Width, int Height, ITileCollection CopyFrom, int Layer = 0);
-        void Initialize(TileProviderCollection ProviderCollection, string Name, int X, int Y,
-            int Width, int Height, ITile[,] CopyFrom, int Layer = 0);
 
         (int X, int Y, int Width, int Height) XYWH(int DeltaX = 0, int DeltaY = 0);
         (int X, int Y, int Width, int Height) ClampXYWH();
