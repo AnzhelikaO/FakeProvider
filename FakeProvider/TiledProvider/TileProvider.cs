@@ -16,6 +16,7 @@ namespace FakeProvider
 
         public TileProviderCollection ProviderCollection { get; internal set; }
         private StructTile[,] Data;
+        public INamedTileCollection Tile => this;
         public string Name { get; private set; }
         public int X { get; private set; }
         public int Y { get; private set; }
@@ -231,10 +232,11 @@ namespace FakeProvider
         }
 
         #endregion
-        #region TileOnTop
+        #region Update
 
-        public bool TileOnTop(int X, int Y) =>
-            ProviderCollection.GetTileSafe(this.X + X, this.Y + Y).Provider == this;
+        public void Update()
+        {
+        }
 
         #endregion
 
@@ -604,6 +606,12 @@ namespace FakeProvider
             ITile providerTile = GetTileSafe(X, Y);
             return providerTile.active() && TileTypes.Contains(providerTile.type);
         }
+
+        #endregion
+        #region TileOnTop
+
+        public bool TileOnTop(int X, int Y) =>
+            ProviderCollection.GetTileSafe(this.X + X, this.Y + Y).Provider == this;
 
         #endregion
 

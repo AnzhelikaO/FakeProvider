@@ -11,6 +11,7 @@ namespace FakeProvider
         IProviderTile this[int x, int y] { get; set; }
         IProviderTile GetIncapsulatedTile(int X, int Y);
         void SetIncapsulatedTile(int X, int Y, ITile Tile);
+        INamedTileCollection Tile { get; }
 
         TileProviderCollection ProviderCollection { get; }
         string Name { get; }
@@ -35,6 +36,7 @@ namespace FakeProvider
         void Enable(bool Draw = true);
         void Disable(bool Draw = true);
         void SetTop(bool Draw = true);
+        void Update();
 
         FakeSign AddSign(int X, int Y, string Text);
         FakeChest AddChest(int X, int Y, Item[] Items = null);
