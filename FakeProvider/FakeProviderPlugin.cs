@@ -180,12 +180,14 @@ namespace FakeProvider
             lock (ProvidersToAdd)
             {
                 ProvidersLoaded = true;
+
                 FakeProviderAPI.Tile.Add(FakeProviderAPI.Tile.Void);
+                ProvidersToAdd.Remove(FakeProviderAPI.Tile.Void);
+
                 FakeProviderAPI.Tile.Add(FakeProviderAPI.World);
+                ProvidersToAdd.Remove(FakeProviderAPI.World);
                 FakeProviderAPI.World.ScanEntities();
 
-                ProvidersToAdd.Remove(FakeProviderAPI.Tile.Void);
-                ProvidersToAdd.Remove(FakeProviderAPI.World);
                 foreach (INamedTileCollection provider in ProvidersToAdd)
                     FakeProviderAPI.Tile.Add(provider);
                 ProvidersToAdd.Clear();
