@@ -50,25 +50,26 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FakeProvider.cs" />
+    <Compile Include="FakeProviderPlugin.cs" />
+    <Compile Include="FakeProviderAPI.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TiledProvider\Entities\FakeChest.cs" />
-    <Compile Include="TiledProvider\Entities\FakeItemFrame.cs" />
-    <Compile Include="TiledProvider\Entities\FakeLogicSensor.cs" />
-    <Compile Include="TiledProvider\Entities\FakeSign.cs" />
-    <Compile Include="TiledProvider\Entities\FakeTrainingDummy.cs" />
-    <Compile Include="TiledProvider\Entities\IFake.cs" />
-    <Compile Include="TiledProvider\INamedTileCollection.cs" />
-    <Compile Include="TiledProvider\TileProvider.cs" />
-    <Compile Include="TiledProvider\TileProviderCollection.cs" />
-    <Compile Include="TiledProvider\Tiles\ReadonlyTileReference.cs" />
-    <Compile Include="TiledProvider\Tiles\IProviderTile.cs" />
-    <Compile Include="TiledProvider\ReadonlyTileProvider.cs" />
-    <Compile Include="TiledProvider\Tiles\StructTile.cs" />
+    <Compile Include="TileProvider\Entities\FakeChest.cs" />
+    <Compile Include="TileProvider\Entities\FakeItemFrame.cs" />
+    <Compile Include="TileProvider\Entities\FakeLogicSensor.cs" />
+    <Compile Include="TileProvider\Entities\FakeSign.cs" />
+    <Compile Include="TileProvider\Entities\FakeTrainingDummy.cs" />
+    <Compile Include="TileProvider\Entities\IFake.cs" />
+    <Compile Include="TileProvider\INamedTileCollection.cs" />
+    <Compile Include="TileProvider\TileProvider.cs" />
+    <Compile Include="TileProvider\TileProviderCollection.cs" />
+    <Compile Include="TileProvider\Tiles\ReadonlyTileReference.cs" />
+    <Compile Include="TileProvider\Tiles\IProviderTile.cs" />
+    <Compile Include="TileProvider\ReadonlyTileProvider.cs" />
+    <Compile Include="TileProvider\Tiles\StructTile.cs" />
     <Compile Include="SendSectionPacket.cs" />
     <Compile Include="SendTileSquarePacket.cs" />
-    <Compile Include="TiledProvider\Tiles\TileReference.cs" />
+    <Compile Include="TileProvider\Tiles\TileReference.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

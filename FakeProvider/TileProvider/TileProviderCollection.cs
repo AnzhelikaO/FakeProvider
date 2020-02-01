@@ -37,7 +37,7 @@ namespace FakeProvider
         public int OffsetY { get; internal protected set; }
         /// <summary> Tile to be visible outside of all providers. </summary>
         protected object Locker { get; set; } = new object();
-        protected INamedTileCollection Void { get; set; }
+        internal protected INamedTileCollection Void { get; set; }
         public IProviderTile VoidTile { get; protected set; }
 
         #endregion
@@ -60,7 +60,7 @@ namespace FakeProvider
             this.OffsetY = OffsetY;
 
             ProviderIndexes = new ushort[this.Width, this.Height];
-            Void = FakeProvider.CreateReadonlyTileProvider(VoidProviderName, 0, 0, 1, 1,
+            Void = FakeProviderAPI.CreateReadonlyTileProvider(VoidProviderName, 0, 0, 1, 1,
                 new ITile[,] { { new Terraria.Tile() } }, Int32.MinValue);
             VoidTile = Void[0, 0];
         }
@@ -115,7 +115,7 @@ namespace FakeProvider
             get
             {
                 lock (Locker)
-                    return _Providers.FirstOrDefault(p => (p.Name == Name));
+                    return Order.FirstOrDefault(p => (p.Name == Name));
             }
         }
 
@@ -123,47 +123,18 @@ namespace FakeProvider
 
         #region Add
 
-        internal void Add(dynamic Provider, string Name, int X, int Y, int Width, int Height, int Layer = 0)
+        internal void Add(dynamic Provider)
         {
             lock (Locker)
             {
-                if (Order.Any(p => (p.Name == Name)))
+                if (Order.Any(p => (p.Name == Provider.Name)))
                     throw new ArgumentException($"Tile collection '{Provider.Name}' " +
                         "is already in use. Name must be unique.");
                 PlaceProviderOnTopOfLayer(Provider);
                 int index = GetEmptyIndex();
                 _Providers[index] = Provider;
-                Provider.Initialize(this, index, Name, X, Y, Width, Height, Layer);
-                Provider.Enable(false);
-            }
-        }
-
-        internal void Add(dynamic Provider, string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
-        {
-            lock (Locker)
-            {
-                if (Order.Any(p => (p.Name == Name)))
-                    throw new ArgumentException($"Tile collection '{Provider.Name}' " +
-                        "is already in use. Name must be unique.");
-                PlaceProviderOnTopOfLayer(Provider);
-                int index = GetEmptyIndex();
-                _Providers[index] = Provider;
-                Provider.Initialize(this, index, Name, X, Y, Width, Height, CopyFrom, Layer);
-                Provider.Enable(false);
-            }
-        }
-
-        internal void Add(dynamic Provider, string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
-        {
-            lock (Locker)
-            {
-                if (Order.Any(p => (p.Name == Name)))
-                    throw new ArgumentException($"Tile collection '{Provider.Name}' " +
-                        "is already in use. Name must be unique.");
-                PlaceProviderOnTopOfLayer(Provider);
-                int index = GetEmptyIndex();
-                _Providers[index] = Provider;
-                Provider.Initialize(this, index, Name, X, Y, Width, Height, CopyFrom, Layer);
+                Provider.ProviderCollection = this;
+                Provider.Index = index;
                 Provider.Enable(false);
             }
         }
@@ -276,6 +247,8 @@ namespace FakeProvider
 
         public void UpdateRectangleReferences(int X, int Y, int Width, int Height, int RemoveIndex)
         {
+            if (!FakeProviderPlugin.ProvidersLoaded)
+                return;
             lock (Locker)
             {
                 (X, Y, Width, Height) = Clamp(X, Y, Width, Height);
@@ -318,7 +291,7 @@ namespace FakeProvider
 
         public void UpdateProviderReferences(INamedTileCollection Provider)
         {
-            if (!Provider.Enabled)
+            if (!Provider.Enabled || !FakeProviderPlugin.ProvidersLoaded)
                 return;
             lock (Locker)
             {
@@ -357,7 +330,7 @@ namespace FakeProvider
         {
             lock (Locker)
                 foreach (INamedTileCollection provider in Order)
-                    if (provider.Name != FakeProvider.WorldProviderName)
+                    if (provider.Name != FakeProviderAPI.WorldProviderName)
                         provider.HideEntities();
         }
 
@@ -368,7 +341,7 @@ namespace FakeProvider
         {
             lock (Locker)
                 foreach (INamedTileCollection provider in Order)
-                    if (provider.Name != FakeProvider.WorldProviderName)
+                    if (provider.Name != FakeProviderAPI.WorldProviderName)
                         provider.UpdateEntities();
         }
 

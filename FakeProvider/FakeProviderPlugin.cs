@@ -12,11 +12,12 @@ using Terraria.Social;
 using Terraria.Utilities;
 using TerrariaApi.Server;
 using OTAPI.Callbacks.Terraria;
+using System.Collections.Generic;
 #endregion
 namespace FakeProvider
 {
     [ApiVersion(2, 1)]
-    public class FakeProvider : TerrariaPlugin
+    public class FakeProviderPlugin : TerrariaPlugin
     {
         #region Data
 
@@ -24,12 +25,6 @@ namespace FakeProvider
         public override string Author => "ASgo and Anzhelika";
         public override string Description => "TODO";
         public override Version Version => Assembly.GetExecutingAssembly().GetName().Version;
-
-        public const string WorldProviderName = "__world__";
-        public static TileProviderCollection Tile { get; private set; }
-        public static INamedTileCollection World { get; private set; }
-        internal static ModuleBuilder ModuleBuilder { get; private set; }
-        private static int TypeCounter = 0;
         internal static int[] AllPlayers;
         internal static Func<RemoteClient, byte[], int, int, bool> NetSendBytes;
 
@@ -39,11 +34,14 @@ namespace FakeProvider
         public static int VisibleHeight { get; private set; }
         public static bool ReadonlyWorld { get; private set; }
 
+        internal static List<INamedTileCollection> ProvidersToAdd = new List<INamedTileCollection>();
+        internal static bool ProvidersLoaded = false;
+
         #endregion
 
         #region Constructor
 
-        public FakeProvider(Main game) : base(game)
+        public FakeProviderPlugin(Main game) : base(game)
         {
             Order = -1002;
             string[] args = Environment.GetCommandLineArgs();
@@ -112,7 +110,7 @@ namespace FakeProvider
             AssemblyName assemblyName = new AssemblyName("FakeProviderRuntimeAssembly");
             AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain
                 .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-            ModuleBuilder = assemblyBuilder.DefineDynamicModule("FakeProviderRuntimeModule");
+            Helper.ModuleBuilder = assemblyBuilder.DefineDynamicModule("FakeProviderRuntimeModule");
         }
 
         #endregion
@@ -168,8 +166,8 @@ namespace FakeProvider
 
         private static void OnPostLoadWorld(bool FromCloud)
         {
-            Tile.OffsetX = OffsetX;
-            Tile.OffsetY = OffsetY;
+            FakeProviderAPI.Tile.OffsetX = OffsetX;
+            FakeProviderAPI.Tile.OffsetY = OffsetY;
 
             Main.maxTilesX = VisibleWidth;
             Main.maxTilesY = VisibleHeight;
@@ -179,22 +177,36 @@ namespace FakeProvider
             Main.spawnTileY += OffsetY;
             WorldGen.setWorldSize();
 
-            World.ScanEntities();
+            lock (ProvidersToAdd)
+            {
+                ProvidersLoaded = true;
+                FakeProviderAPI.Tile.Add(FakeProviderAPI.Tile.Void);
+                FakeProviderAPI.Tile.Add(FakeProviderAPI.World);
+                FakeProviderAPI.World.ScanEntities();
+
+                ProvidersToAdd.Remove(FakeProviderAPI.Tile.Void);
+                ProvidersToAdd.Remove(FakeProviderAPI.World);
+                foreach (INamedTileCollection provider in ProvidersToAdd)
+                    FakeProviderAPI.Tile.Add(provider);
+                ProvidersToAdd.Clear();
+            }
+
+            Main.tile = FakeProviderAPI.Tile;
 
             GC.Collect();
         }
 
-#endregion
+        #endregion
         #region OnPreSaveWorld
 
         private static HookResult OnPreSaveWorld(ref bool Cloud, ref bool ResetTime)
         {
-            Main.maxTilesX = World.Width;
-            Main.maxTilesY = World.Height;
+            Main.maxTilesX = FakeProviderAPI.World.Width;
+            Main.maxTilesY = FakeProviderAPI.World.Height;
             Main.worldSurface -= OffsetY;
             Main.rockLayer -= OffsetY;
-            Main.tile = World;
-            Tile.HideEntities();
+            Main.tile = FakeProviderAPI.World;
+            FakeProviderAPI.Tile.HideEntities();
             return HookResult.Continue;
         }
 
@@ -207,8 +219,8 @@ namespace FakeProvider
             Main.maxTilesY = VisibleHeight;
             Main.worldSurface += OffsetY;
             Main.rockLayer += OffsetY;
-            Main.tile = Tile;
-            Tile.UpdateEntities();
+            Main.tile = FakeProviderAPI.Tile;
+            FakeProviderAPI.Tile.UpdateEntities();
         }
 
         #endregion
@@ -249,9 +261,9 @@ namespace FakeProvider
 
         #endregion
 
-        #region LoadCustomTileProvider
+        #region CreateCustomTileProvider
 
-        private static void LoadCustomTileProvider()
+        private static void CreateCustomTileProvider()
         {
             int maxTilesX = Main.maxTilesX;
             int maxTilesY = Main.maxTilesY;
@@ -263,18 +275,18 @@ namespace FakeProvider
                 VisibleHeight = (OffsetY + maxTilesY);
             else
                 VisibleHeight++;
-            Tile = new TileProviderCollection();
-            Tile.Initialize(VisibleWidth, VisibleHeight, 0, 0);
+            FakeProviderAPI.Tile = new TileProviderCollection();
+            FakeProviderAPI.Tile.Initialize(VisibleWidth, VisibleHeight, 0, 0);
 
             if (ReadonlyWorld)
-                World = CreateReadonlyTileProvider(WorldProviderName, 0, 0,
+                FakeProviderAPI.World = FakeProviderAPI.CreateReadonlyTileProvider(FakeProviderAPI.WorldProviderName, 0, 0,
                     maxTilesX, maxTilesY, Int32.MinValue + 1);
             else
-                World = CreateTileProvider(WorldProviderName, 0, 0,
+                FakeProviderAPI.World = FakeProviderAPI.CreateTileProvider(FakeProviderAPI.WorldProviderName, 0, 0,
                     maxTilesX, maxTilesY, Int32.MinValue + 1);
 
             using (IDisposable previous = Main.tile as IDisposable)
-                Main.tile = Tile;
+                Main.tile = FakeProviderAPI.World;
         }
 
         #endregion
@@ -465,7 +477,7 @@ namespace FakeProvider
             }
 
             // ======================
-            LoadCustomTileProvider();
+            CreateCustomTileProvider();
             // ======================
 
             WorldFile.LoadWorldTiles(reader, importance);
@@ -526,116 +538,6 @@ namespace FakeProvider
             }
             return WorldFile.LoadFooter(reader);
         }
-
-        #endregion
-
-        #region CreateTileProvider
-
-        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
-        {
-            Type newType = CreateType();
-            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            Tile.Add(result, Name, X, Y, Width, Height, Layer);
-            return result;
-        }
-
-        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
-        {
-            Type newType = CreateType();
-            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            Tile.Add(result, Name, X, Y, Width, Height, CopyFrom, Layer);
-            return result;
-        }
-
-        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
-        {
-            Type newType = CreateType();
-            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            Tile.Add(result, Name, X, Y, Width, Height, CopyFrom, Layer);
-            return result;
-        }
-
-        #endregion
-        #region CreateReadonlyTileProvider
-
-        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
-        {
-            Type newType = CreateType();
-            Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            typeof(ReadonlyTileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            Tile.Add(result, Name, X, Y, Width, Height, Layer);
-            return result;
-        }
-
-        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
-        {
-            Type newType = CreateType();
-            Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            typeof(ReadonlyTileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            Tile.Add(result, Name, X, Y, Width, Height, CopyFrom, Layer);
-            return result;
-        }
-
-        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
-        {
-            Type newType = CreateType();
-            Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            typeof(ReadonlyTileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            Tile.Add(result, Name, X, Y, Width, Height, CopyFrom, Layer);
-            return result;
-        }
-
-        #endregion
-
-        #region CreateType
-
-        public static Type CreateType() =>
-            ModuleBuilder.DefineType($"FakeType{TypeCounter++}",
-                TypeAttributes.Public |
-                TypeAttributes.Class |
-                TypeAttributes.AutoClass |
-                TypeAttributes.AnsiClass |
-                TypeAttributes.BeforeFieldInit |
-                TypeAttributes.AutoLayout).CreateType();
 
         #endregion
     }

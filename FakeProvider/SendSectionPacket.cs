@@ -18,7 +18,7 @@ namespace FakeProvider
 
         public static void Send(int Who, int IgnoreIndex,
                 int X, int Y, int Width, int Height) =>
-            Send(((Who == -1) ? FakeProvider.AllPlayers : new int[] { Who }),
+            Send(((Who == -1) ? FakeProviderPlugin.AllPlayers : new int[] { Who }),
                 IgnoreIndex, X, Y, Width, Height);
 
         public static void Send(IEnumerable<int> Who, int IgnoreIndex,
@@ -69,7 +69,7 @@ namespace FakeProvider
             foreach (RemoteClient client in clients)
                 try
                 {
-                    if (FakeProvider.NetSendBytes(client, data, 0, data.Length))
+                    if (FakeProviderPlugin.NetSendBytes(client, data, 0, data.Length))
                         continue;
 
                     client.Socket.AsyncSend(data, 0, data.Length,

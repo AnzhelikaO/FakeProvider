@@ -22,7 +22,7 @@ namespace FakeProvider
         public int Y { get; private set; }
         public int Width { get; private set; }
         public int Height { get; private set; }
-        public int Index { get; private set; } = -1;
+        public int Index { get; internal set; } = -1;
         public int Order { get; internal set; } = -1;
         public int Layer { get; private set; }
         public bool Enabled { get; private set; } = false;
@@ -38,11 +38,8 @@ namespace FakeProvider
         #endregion
         #region Initialize
 
-        internal void Initialize(TileProviderCollection ProviderCollection, int Index, string Name, int X, int Y,
-            int Width, int Height, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer = 0)
         {
-            this.ProviderCollection = ProviderCollection;
-            this.Index = Index;
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
             this.X = X;
@@ -52,11 +49,8 @@ namespace FakeProvider
             this.Layer = Layer;
         }
 
-        internal void Initialize(TileProviderCollection ProviderCollection, int Index, string Name, int X, int Y,
-            int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
         {
-            this.ProviderCollection = ProviderCollection;
-            this.Index = Index;
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
             this.X = X;
@@ -74,11 +68,8 @@ namespace FakeProvider
                 }
         }
 
-        internal void Initialize(TileProviderCollection ProviderCollection, int Index, string Name, int X, int Y,
-            int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
         {
-            this.ProviderCollection = ProviderCollection;
-            this.Index = Index;
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
             this.X = X;
@@ -609,7 +600,7 @@ namespace FakeProvider
         #endregion
         #region TileOnTop
 
-        public bool TileOnTop(int X, int Y) =>
+        private bool TileOnTop(int X, int Y) =>
             ProviderCollection.GetTileSafe(this.X + X, this.Y + Y).Provider == this;
 
         #endregion
