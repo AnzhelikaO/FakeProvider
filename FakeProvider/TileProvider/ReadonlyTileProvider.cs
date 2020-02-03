@@ -232,6 +232,34 @@ namespace FakeProvider
         }
 
         #endregion
+        #region Clear
+
+        public void Clear()
+        {
+            for (int x = 0; x < Width; x++)
+                for (int y = 0; y < Height; y++)
+                    this[x, y].ClearEverything();
+
+            foreach (var entity in Entities)
+                RemoveEntity(entity);
+        }
+
+        #endregion
+        #region CopyFrom
+
+        public void CopyFrom(INamedTileCollection provider)
+        {
+            Clear();
+            SetXYWH(provider.X, provider.Y, provider.Width, provider.Height);
+            for (int x = 0; x < Width; x++)
+                for (int y = 0; y < Height; y++)
+                    this[x, y] = provider[x, y];
+
+            foreach (var entity in provider.Entities)
+                AddEntity(entity);
+        }
+
+        #endregion
 
         #region AddSign
 
@@ -295,70 +323,89 @@ namespace FakeProvider
         #endregion
         #region AddEntity
 
-        public FakeSign AddEntity(Sign Entity)
+        public IFake AddEntity(IFake Entity) =>
+            Entity is Sign sign
+                ? AddEntity(sign)
+                : Entity is Chest chest
+                    ? AddEntity(chest)
+                    : Entity is TileEntity tileEntity
+                        ? AddEntity(tileEntity)
+                        : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}",
+                            nameof(Entity));
+
+        public FakeSign AddEntity(Sign Entity, bool replace = false)
         {
             int x = Entity.x - ProviderCollection.OffsetX - this.X;
             int y = Entity.y - ProviderCollection.OffsetY - this.Y;
-            FakeSign sign = new FakeSign(this, Array.IndexOf(Main.sign, Entity), x, y, Entity.text);
+            FakeSign sign = new FakeSign(this, replace ? Array.IndexOf(Main.sign, Entity) : -1, x, y, Entity.text);
             lock (Locker)
                 _Entities.Add(sign);
             UpdateEntity(sign);
             return sign;
         }
 
-        public FakeChest AddEntity(Chest Entity)
+        public FakeChest AddEntity(Chest Entity, bool replace = false)
         {
             int x = Entity.x - ProviderCollection.OffsetX - this.X;
             int y = Entity.y - ProviderCollection.OffsetY - this.Y;
-            FakeChest chest = new FakeChest(this, Array.IndexOf(Main.chest, Entity), x, y, Entity.item);
+            FakeChest chest = new FakeChest(this, replace ? Array.IndexOf(Main.chest, Entity) : -1, x, y, Entity.item);
             lock (Locker)
                 _Entities.Add(chest);
             UpdateEntity(chest);
             return chest;
         }
 
-        public IFake AddEntity(TileEntity Entity) =>
+        public IFake AddEntity(TileEntity Entity, bool replace = false) =>
             Entity is TETrainingDummy trainingDummy
-                ? (IFake)AddEntity(trainingDummy)
+                ? (IFake)AddEntity(trainingDummy, replace)
                 : Entity is TEItemFrame itemFrame
-                    ? (IFake)AddEntity(itemFrame)
+                    ? (IFake)AddEntity(itemFrame, replace)
                     : Entity is TELogicSensor logicSensor
-                        ? (IFake)AddEntity(logicSensor)
+                        ? (IFake)AddEntity(logicSensor, replace)
                         : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
 
-        public FakeTrainingDummy AddEntity(TETrainingDummy Entity)
+        public FakeTrainingDummy AddEntity(TETrainingDummy Entity, bool replace = false)
         {
             int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
             int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
-            TileEntity.ByID.Remove(Entity.ID);
-            TileEntity.ByPosition.Remove(Entity.Position);
-            FakeTrainingDummy fake = new FakeTrainingDummy(this, Entity.ID, x, y, Entity.npc);
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeTrainingDummy fake = new FakeTrainingDummy(this, replace ? Entity.ID : -1, x, y, Entity.npc);
             lock (Locker)
                 _Entities.Add(fake);
             UpdateEntity(fake);
             return fake;
         }
 
-        public FakeItemFrame AddEntity(TEItemFrame Entity)
+        public FakeItemFrame AddEntity(TEItemFrame Entity, bool replace = false)
         {
             int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
             int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
-            TileEntity.ByID.Remove(Entity.ID);
-            TileEntity.ByPosition.Remove(Entity.Position);
-            FakeItemFrame fake = new FakeItemFrame(this, Entity.ID, x, y, Entity.item);
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeItemFrame fake = new FakeItemFrame(this, replace ? Entity.ID : -1, x, y, Entity.item);
             lock (Locker)
                 _Entities.Add(fake);
             UpdateEntity(fake);
             return fake;
         }
 
-        public FakeLogicSensor AddEntity(TELogicSensor Entity)
+        public FakeLogicSensor AddEntity(TELogicSensor Entity, bool replace = false)
         {
             int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
             int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
-            TileEntity.ByID.Remove(Entity.ID);
-            TileEntity.ByPosition.Remove(Entity.Position);
-            FakeLogicSensor fake = new FakeLogicSensor(this, Entity.ID, x, y, Entity.logicCheck);
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeLogicSensor fake = new FakeLogicSensor(this, replace ? Entity.ID : -1, x, y, Entity.logicCheck);
             lock (Locker)
                 _Entities.Add(fake);
             UpdateEntity(fake);
@@ -550,7 +597,7 @@ namespace FakeProvider
                     && TileOnTop(sign.x - this.X, sign.y - this.Y))
                 {
                     if (IsEntityTile(sign.x - this.X, sign.y - this.Y, FakeSign._TileTypes))
-                        AddEntity(sign);
+                        AddEntity(sign, true);
                     else
                         Main.sign[i] = null;
                 }
@@ -567,7 +614,7 @@ namespace FakeProvider
                     && TileOnTop(chest.x - this.X, chest.y - this.Y))
                 {
                     if (IsEntityTile(chest.x - this.X, chest.y - this.Y, FakeChest._TileTypes))
-                        AddEntity(chest);
+                        AddEntity(chest, true);
                     else
                         Main.chest[i] = null;
                 }
@@ -585,7 +632,7 @@ namespace FakeProvider
                     && TileOnTop(entityX - this.X, entityY - this.Y))
                 {
                     if (IsEntityTile(entityX - this.X, entityY - this.Y, GetEntityTileTypes(entity)))
-                        AddEntity(entity);
+                        AddEntity(entity, true);
                     else
                     {
                         TileEntity.ByID.Remove(entity.ID);
