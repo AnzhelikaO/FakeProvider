@@ -238,11 +238,11 @@ namespace FakeProvider
                 case PacketTypes.TileSendSection:
                     args.Handled = true;
                     // We allow sending packet to custom list of players by specifying it in text parameter
-                    if (args.text?._text == null)
-                        SendSectionPacket.Send(args.remoteClient, args.ignoreClient,
+                    if (args.text?._text?.Length > 0)
+                        SendSectionPacket.Send(args.text._text.Select(c => (int)c), args.ignoreClient,
                             args.number, (int)args.number2, (short)args.number3, (short)args.number4);
                     else
-                        SendSectionPacket.Send(args.text._text.Select(c => (int)c), args.ignoreClient,
+                        SendSectionPacket.Send(args.remoteClient, args.ignoreClient,
                             args.number, (int)args.number2, (short)args.number3, (short)args.number4);
                     break;
                 case PacketTypes.TileFrameSection:
@@ -251,11 +251,11 @@ namespace FakeProvider
                     break;
                 case PacketTypes.TileSendSquare:
                     args.Handled = true;
-                    if (args.text?._text == null)
-                        SendTileSquarePacket.Send(args.remoteClient, args.ignoreClient,
+                    if (args.text?._text?.Length > 0)
+                        SendTileSquarePacket.Send(args.text._text.Select(c => (int)c), args.ignoreClient,
                             args.number, (int)args.number2, (int)args.number3, args.number5);
                     else
-                        SendTileSquarePacket.Send(args.text._text.Select(c => (int)c), args.ignoreClient,
+                        SendTileSquarePacket.Send(args.remoteClient, args.ignoreClient,
                             args.number, (int)args.number2, (int)args.number3, args.number5);
                     break;
             }
