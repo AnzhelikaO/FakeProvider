@@ -48,6 +48,9 @@
     <Reference Include="TerrariaServer">
       <HintPath>_References\TerrariaServer.exe</HintPath>
     </Reference>
+    <Reference Include="TShockAPI">
+      <HintPath>..\..\..\..\source\repos\TUITicTacToe\_References\TShockAPI.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FakeProviderPlugin.cs" />

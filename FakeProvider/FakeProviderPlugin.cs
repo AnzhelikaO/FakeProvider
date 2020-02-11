@@ -13,6 +13,7 @@ using Terraria.Utilities;
 using TerrariaApi.Server;
 using OTAPI.Callbacks.Terraria;
 using System.Collections.Generic;
+using TShockAPI;
 #endregion
 namespace FakeProvider
 {
@@ -36,6 +37,10 @@ namespace FakeProvider
 
         internal static List<INamedTileCollection> ProvidersToAdd = new List<INamedTileCollection>();
         internal static bool ProvidersLoaded = false;
+        public static Command[] CommandList = new Command[]
+        {
+            new Command("FakeProvider.Control", FakeCommand, "fake")
+        };
 
         #endregion
 
@@ -132,6 +137,8 @@ namespace FakeProvider
             Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
             Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
+
+            Commands.ChatCommands.AddRange(CommandList);
         }
 
         #endregion
@@ -258,6 +265,109 @@ namespace FakeProvider
                         SendTileSquarePacket.Send(args.remoteClient, args.ignoreClient,
                             args.number, (int)args.number2, (int)args.number3, args.number5);
                     break;
+            }
+        }
+
+        #endregion
+
+        #region FindProvider
+
+        public static bool FindProvider(string name, TSPlayer player, out INamedTileCollection found)
+        {
+            found = null;
+            List<INamedTileCollection> foundProviders = new List<INamedTileCollection>();
+            string lowerName = name.ToLower();
+            foreach (INamedTileCollection provider in FakeProviderAPI.Tile.Providers)
+            {
+                if (provider == null)
+                    continue;
+                if (provider.Name == name)
+                {
+                    found = provider;
+                    return true;
+                }
+                else if (provider.Name.ToLower().StartsWith(lowerName))
+                    foundProviders.Add(provider);
+            }
+            if (foundProviders.Count == 0)
+            {
+                player?.SendErrorMessage($"Invalid provider '{name}'.");
+                return false;
+            }
+            else if (foundProviders.Count > 1)
+            {
+                if (player != null)
+                    TShock.Utils.SendMultipleMatchError(player, foundProviders);
+                return false;
+            }
+            else
+            {
+                found = foundProviders[0];
+                return true;
+            }
+        }
+
+        #endregion
+        #region FakeCommand
+
+        public static void FakeCommand(CommandArgs args)
+        {
+            string arg0 = args.Parameters.ElementAtOrDefault(0);
+            switch (arg0?.ToLower())
+            {
+                case "list":
+                {
+                    if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out int page))
+                        return;
+                    List<string> lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.Providers);
+                    PaginationTools.SendPage(args.Player, page, lines, new PaginationTools.Settings()
+                    {
+                        HeaderFormat = "Fake providers ({0}/{1}):",
+                        FooterFormat = "Type '/fake list {0}' for more.",
+                        NothingToDisplayString = "There are no fake providers yet."
+                    });
+                    break;
+                }
+                case "tp":
+                case "teleport":
+                {
+                    if (args.Parameters.Count != 2)
+                    {
+                        args.Player.SendErrorMessage("/fake tp \"provider name\"");
+                        return;
+                    }
+                    if (!FindProvider(args.Parameters[1], args.Player, out INamedTileCollection provider))
+                        return;
+
+                    args.Player.Teleport((provider.X + provider.Width / 2) * 16,
+                        (provider.Y + provider.Height / 2) * 16);
+                    args.Player.SendSuccessMessage($"Teleported to fake provider '{provider.Name}'.");
+                    break;
+                }
+                case "info":
+                {
+                    if (args.Parameters.Count != 2)
+                    {
+                        args.Player.SendErrorMessage("/fake info \"provider name\"");
+                        return;
+                    }
+                    if (!FindProvider(args.Parameters[1], args.Player, out INamedTileCollection provider))
+                        return;
+
+                    args.Player.SendInfoMessage(
+$@"Fake provider '{provider.Name}' ({provider.GetType().Name})
+Position and size: {provider.XYWH()}
+Enabled: {provider.Enabled}");
+                    break;
+                }
+                default:
+                {
+                    args.Player.SendSuccessMessage("/fake subcommands:");
+                    args.Player.SendInfoMessage("/fake info \"provider name\"");
+                    args.Player.SendInfoMessage("/fake tp \"provider name\"");
+                    args.Player.SendInfoMessage("/fake list [page]");
+                    break;
+                }
             }
         }
 
