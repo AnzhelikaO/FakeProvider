@@ -171,8 +171,8 @@ namespace FakeProvider
         #endregion
         #region Move
 
-        public void Move(int X, int Y, bool Draw = true) =>
-            SetXYWH(X, Y, this.Width, this.Height, Draw);
+        public void Move(int DeltaX, int DeltaY, bool Draw = true) =>
+            SetXYWH(this.X + DeltaX, this.Y + DeltaY, this.Width, this.Height, Draw);
 
         #endregion
         #region Resize

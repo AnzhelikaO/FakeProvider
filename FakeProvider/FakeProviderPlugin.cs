@@ -315,6 +315,7 @@ namespace FakeProvider
             string arg0 = args.Parameters.ElementAtOrDefault(0);
             switch (arg0?.ToLower())
             {
+                case "l":
                 case "list":
                 {
                     if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out int page))
@@ -344,6 +345,28 @@ namespace FakeProvider
                     args.Player.SendSuccessMessage($"Teleported to fake provider '{provider.Name}'.");
                     break;
                 }
+                case "m":
+                case "move":
+                {
+                    if (args.Parameters.Count != 4)
+                    {
+                        args.Player.SendErrorMessage("/fake move \"provider name\" <relative x> <relative y>");
+                        return;
+                    }
+                    if (!FindProvider(args.Parameters[1], args.Player, out INamedTileCollection provider))
+                        return;
+
+                    if (!Int32.TryParse(args.Parameters[2], out int x)
+                        || !Int32.TryParse(args.Parameters[3], out int y))
+                    {
+                        args.Player.SendErrorMessage("Invalid coordinates.");
+                        return;
+                    }
+
+                    provider.Move(x, y, true);
+                    break;
+                }
+                case "i":
                 case "info":
                 {
                     if (args.Parameters.Count != 2)
@@ -364,9 +387,11 @@ Entities: {provider.Entities.Count}");
                 default:
                 {
                     args.Player.SendSuccessMessage("/fake subcommands:");
-                    args.Player.SendInfoMessage("/fake info \"provider name\"");
-                    args.Player.SendInfoMessage("/fake tp \"provider name\"");
-                    args.Player.SendInfoMessage("/fake list [page]");
+                    args.Player.SendInfoMessage(
+@"/fake info ""provider name""
+/fake tp ""provider name""
+/fake move ""provider name"" <relative x> <relative y>
+/fake list [page]");
                     break;
                 }
             }
