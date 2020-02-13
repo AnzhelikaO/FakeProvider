@@ -49,7 +49,7 @@
       <HintPath>_References\TerrariaServer.exe</HintPath>
     </Reference>
     <Reference Include="TShockAPI">
-      <HintPath>..\..\..\..\source\repos\TUITicTacToe\_References\TShockAPI.dll</HintPath>
+      <HintPath>_References\TShockAPI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

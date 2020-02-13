@@ -357,7 +357,8 @@ namespace FakeProvider
                     args.Player.SendInfoMessage(
 $@"Fake provider '{provider.Name}' ({provider.GetType().Name})
 Position and size: {provider.XYWH()}
-Enabled: {provider.Enabled}");
+Enabled: {provider.Enabled}
+Entities: {provider.Entities.Count}");
                     break;
                 }
                 default:
