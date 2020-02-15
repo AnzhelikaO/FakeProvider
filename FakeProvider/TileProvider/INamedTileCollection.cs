@@ -36,6 +36,7 @@ namespace FakeProvider
         void SetTop(bool Draw = true);
         void Update();
         void Clear();
+        void ClearEntities();
         void CopyFrom(INamedTileCollection provider);
 
 

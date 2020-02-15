@@ -240,6 +240,14 @@ namespace FakeProvider
                 for (int y = 0; y < Height; y++)
                     this[x, y].ClearEverything();
 
+            ClearEntities();
+        }
+
+        #endregion
+        #region ClearEntities
+
+        public void ClearEntities()
+        {
             foreach (var entity in Entities)
                 RemoveEntity(entity);
         }
