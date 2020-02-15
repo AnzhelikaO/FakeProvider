@@ -364,6 +364,7 @@ namespace FakeProvider
                     }
 
                     provider.Move(x, y, true);
+                    args.Player.SendSuccessMessage($"Fake provider '{provider.Name}' moved to ({x}, {y}).");
                     break;
                 }
                 case "la":
@@ -384,6 +385,7 @@ namespace FakeProvider
                     }
 
                     provider.SetLayer(layer, true);
+                    args.Player.SendSuccessMessage($"Fake provider '{provider.Name}' layer set to {layer}.");
                     break;
                 }
                 case "i":
