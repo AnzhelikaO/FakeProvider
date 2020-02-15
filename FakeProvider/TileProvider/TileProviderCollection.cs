@@ -271,10 +271,11 @@ namespace FakeProvider
                             providers.Enqueue(provider);
                     }
 
-                for (int i = X; i < X + Width; i++)
-                    for (int j = Y; j < Y + Height; j++)
-                        if (ProviderIndexes[i, j] == RemoveIndex)
-                            ProviderIndexes[i, j] = 0;
+                if (RemoveIndex >= 0)
+                    for (int i = X; i < X + Width; i++)
+                        for (int j = Y; j < Y + Height; j++)
+                            if (ProviderIndexes[i, j] == RemoveIndex)
+                                ProviderIndexes[i, j] = 0;
 
                 // We are updating all the stuff only after tiles update since signs,
                 // chests and entities apply only in case the tile on top is from this provider.

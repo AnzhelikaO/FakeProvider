@@ -226,8 +226,18 @@ namespace FakeProvider
 
         public void SetLayer(int Layer, bool Draw = true)
         {
-            this.Layer = Layer;
-            SetTop(Draw);
+            int oldLayer = this.Layer;
+            if (Layer != oldLayer)
+            {
+                this.Layer = Layer;
+                ProviderCollection.PlaceProviderOnTopOfLayer(this);
+                if (Layer > oldLayer)
+                    ProviderCollection.UpdateProviderReferences(this);
+                else
+                    ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height, -1);
+                if (Draw)
+                    this.Draw();
+            }
         }
 
         #endregion
