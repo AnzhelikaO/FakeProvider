@@ -225,6 +225,15 @@ namespace FakeProvider
         }
 
         #endregion
+        #region SetLayer
+
+        public void SetLayer(int Layer, bool Draw = true)
+        {
+            this.Layer = Layer;
+            SetTop(Draw);
+        }
+
+        #endregion
         #region Update
 
         public void Update()

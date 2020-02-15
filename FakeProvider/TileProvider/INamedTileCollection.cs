@@ -34,6 +34,7 @@ namespace FakeProvider
         void Enable(bool Draw = true);
         void Disable(bool Draw = true);
         void SetTop(bool Draw = true);
+        void SetLayer(int Layer, bool Draw = true);
         void Update();
         void Clear();
         void ClearEntities();
