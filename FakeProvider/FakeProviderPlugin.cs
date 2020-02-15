@@ -366,6 +366,26 @@ namespace FakeProvider
                     provider.Move(x, y, true);
                     break;
                 }
+                case "la":
+                case "layer":
+                {
+                    if (args.Parameters.Count != 3)
+                    {
+                        args.Player.SendErrorMessage("/fake layer \"provider name\" <layer>");
+                        return;
+                    }
+                    if (!FindProvider(args.Parameters[1], args.Player, out INamedTileCollection provider))
+                        return;
+
+                    if (!Int32.TryParse(args.Parameters[2], out int layer))
+                    {
+                        args.Player.SendErrorMessage("Invalid layer.");
+                        return;
+                    }
+
+                    provider.SetLayer(layer, true);
+                    break;
+                }
                 case "i":
                 case "info":
                 {
