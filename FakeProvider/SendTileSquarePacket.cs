@@ -127,6 +127,7 @@ namespace FakeProvider
                     bb16[7] = tile.inActive();
                     bb17[0] = tile.wire2();
                     bb17[1] = tile.wire3();
+                    //TODO: Allowing clearing paint crashes client somehow...
                     if (tile.active() && tile.color() > 0) // Allow clearing paint
                     {
                         bb17[2] = true;
