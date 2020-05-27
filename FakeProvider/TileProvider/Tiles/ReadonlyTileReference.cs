@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using OTAPI.Tile;
 using Terraria;
+using Terraria.DataStructures;
 #endregion
 namespace FakeProvider
 {
@@ -70,7 +71,7 @@ namespace FakeProvider
         #endregion
         #region wall
 
-        public byte wall
+        public ushort wall
         {
             get => Data[X, Y].wall;
             set { }
@@ -162,6 +163,11 @@ namespace FakeProvider
 
         #endregion
 
+        #region Clear
+
+        public void Clear(TileDataType types) { }
+
+        #endregion
         #region ClearEverything
 
         public void ClearEverything() { }
@@ -249,6 +255,14 @@ namespace FakeProvider
                 ((byte)(ActNum * oldColor.B)),
                 oldColor.A
             );
+        }
+
+        public void actColor(ref Vector3 oldColor)
+        {
+            if (!inActive())
+                return;
+
+            oldColor *= (float)ActNum;
         }
 
         #endregion

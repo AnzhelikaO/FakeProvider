@@ -297,7 +297,7 @@ namespace FakeProvider
             else if (foundProviders.Count > 1)
             {
                 if (player != null)
-                    TShock.Utils.SendMultipleMatchError(player, foundProviders);
+                    player.SendMultipleMatchError(foundProviders);
                 return false;
             }
             else
@@ -454,7 +454,8 @@ Entities: {provider.Entities.Count}");
 
         private static void LoadWorldDirect(bool loadFromCloud)
         {
-            WorldFile.IsWorldOnCloud = loadFromCloud;
+            Main.lockMenuBGChange = true;
+            WorldFile._isWorldOnCloud = loadFromCloud;
             Main.checkXMas();
             Main.checkHalloween();
             bool flag = loadFromCloud && SocialAPI.Cloud != null;
@@ -466,13 +467,13 @@ Entities: {provider.Entities.Count}");
                     {
                         if (Main.worldPathName.Substring(i, 1) == (Path.DirectorySeparatorChar.ToString() ?? ""))
                         {
-                            Directory.CreateDirectory(Main.worldPathName.Substring(0, i));
+                            Terraria.Utils.TryCreatingDirectory(Main.worldPathName.Substring(0, i));
                             break;
                         }
                     }
                 }
                 WorldGen.clearWorld();
-                Main.ActiveWorldFileData = WorldFile.CreateMetadata((Main.worldName == "") ? "World" : Main.worldName, flag, Main.expertMode);
+                Main.ActiveWorldFileData = WorldFile.CreateMetadata((Main.worldName == "") ? "World" : Main.worldName, flag, Main.GameMode);
                 string text = (Main.AutogenSeedName ?? "").Trim();
                 if (text.Length == 0)
                 {
@@ -482,8 +483,8 @@ Entities: {provider.Entities.Count}");
                 {
                     Main.ActiveWorldFileData.SetSeed(text);
                 }
-                WorldGen.generateWorld(Main.ActiveWorldFileData.Seed, Main.AutogenProgress);
-                WorldFile.saveWorld();
+                WorldGen.GenerateWorld(Main.ActiveWorldFileData.Seed, Main.AutogenProgress);
+                WorldFile.SaveWorld();
             }
             using (MemoryStream memoryStream = new MemoryStream(FileUtilities.ReadAllBytes(Main.worldPathName, flag)))
             {
@@ -493,12 +494,11 @@ Entities: {provider.Entities.Count}");
                     {
                         WorldGen.loadFailed = false;
                         WorldGen.loadSuccess = false;
-                        int num = WorldFile.versionNumber = binaryReader.ReadInt32();
+                        int num = WorldFile._versionNumber = binaryReader.ReadInt32();
                         int num2;
                         if (num <= 87)
                         {
-                            // Not supported
-                            num2 = WorldFile.LoadWorld_Version1(binaryReader);
+                            num2 = WorldFile.LoadWorld_Version1_Old_BeforeRelease88(binaryReader);
                         }
                         else
                         {
@@ -515,6 +515,7 @@ Entities: {provider.Entities.Count}");
                                 Main.ActiveWorldFileData.CreationTime = DateTime.Now;
                             }
                         }
+                        WorldFile.CheckSavedOreTiers();
                         binaryReader.Close();
                         memoryStream.Close();
                         if (num2 != 0)
@@ -529,6 +530,8 @@ Entities: {provider.Entities.Count}");
                         {
                             return;
                         }
+                        WorldFile.ConvertOldTileEntities();
+                        WorldFile.ClearTempTiles();
                         WorldGen.gen = true;
                         WorldGen.waterLine = Main.maxTilesY;
                         Liquid.QuickWater(2, -1, -1);
@@ -553,7 +556,6 @@ Entities: {provider.Entities.Count}");
                             {
                                 num6 = num5;
                             }
-
                             SetStatusText(string.Concat(new object[]
                             {
                                 Lang.gen[27].Value,
@@ -569,12 +571,11 @@ Entities: {provider.Entities.Count}");
                         WorldGen.WaterCheck();
                         WorldGen.gen = false;
                         NPC.setFireFlyChance();
-                        Main.InitLifeBytes();
                         if (Main.slimeRainTime > 0.0)
                         {
                             Main.StartSlimeRain(false);
                         }
-                        NPC.setWorldMonsters();
+                        NPC.SetWorldSpecificMonstersByWorldID();
                     }
                     catch (Exception value)
                     {
@@ -595,7 +596,7 @@ Entities: {provider.Entities.Count}");
             }
 
             EventInfo eventOnWorldLoad = typeof(WorldFile).GetEvent("OnWorldLoad", BindingFlags.Public | BindingFlags.Static);
-            eventOnWorldLoad.GetRaiseMethod()?.Invoke(null, new object[] { });
+                eventOnWorldLoad.GetRaiseMethod()?.Invoke(null, new object[] { });
             //if (WorldFile.OnWorldLoad != null)
                 //WorldFile.OnWorldLoad();
         }
@@ -641,7 +642,6 @@ Entities: {provider.Entities.Count}");
             // ======================
 
             WorldFile.LoadWorldTiles(reader, importance);
-
             if (reader.BaseStream.Position != (long)array[2])
             {
                 return 5;
@@ -661,9 +661,9 @@ Entities: {provider.Entities.Count}");
             {
                 return 5;
             }
-            if (WorldFile.versionNumber >= 116)
+            if (WorldFile._versionNumber >= 116)
             {
-                if (WorldFile.versionNumber < 122)
+                if (WorldFile._versionNumber < 122)
                 {
                     WorldFile.LoadDummies(reader);
                     if (reader.BaseStream.Position != (long)array[6])
@@ -680,7 +680,7 @@ Entities: {provider.Entities.Count}");
                     }
                 }
             }
-            if (WorldFile.versionNumber >= 170)
+            if (WorldFile._versionNumber >= 170)
             {
                 WorldFile.LoadWeightedPressurePlates(reader);
                 if (reader.BaseStream.Position != (long)array[7])
@@ -688,10 +688,30 @@ Entities: {provider.Entities.Count}");
                     return 5;
                 }
             }
-            if (WorldFile.versionNumber >= 189)
+            if (WorldFile._versionNumber >= 189)
             {
                 WorldFile.LoadTownManager(reader);
                 if (reader.BaseStream.Position != (long)array[8])
+                {
+                    return 5;
+                }
+            }
+            if (WorldFile._versionNumber >= 210)
+            {
+                WorldFile.LoadBestiary(reader, WorldFile._versionNumber);
+                if (reader.BaseStream.Position != (long)array[9])
+                {
+                    return 5;
+                }
+            }
+            else
+            {
+                WorldFile.LoadBestiaryForVersionsBefore210();
+            }
+            if (WorldFile._versionNumber >= 220)
+            {
+                WorldFile.LoadCreativePowers(reader, WorldFile._versionNumber);
+                if (reader.BaseStream.Position != (long)array[10])
                 {
                     return 5;
                 }

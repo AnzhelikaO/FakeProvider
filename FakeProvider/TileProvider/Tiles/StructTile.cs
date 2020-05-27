@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace FakeProvider
 {
-    [StructLayout(LayoutKind.Sequential, Size = 13, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Size = 14, Pack = 1)]
     public struct StructTile
     {
-        public byte wall;
+        public ushort wall;
         public byte liquid;
         public byte bTileHeader;
         public byte bTileHeader2;

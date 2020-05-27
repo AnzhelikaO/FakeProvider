@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using OTAPI.Tile;
 using Terraria;
+using Terraria.DataStructures;
 #endregion
 namespace FakeProvider
 {
@@ -70,7 +71,7 @@ namespace FakeProvider
         #endregion
         #region wall
 
-        public byte wall
+        public ushort wall
         {
             get => Data[X, Y].wall;
             set => Data[X, Y].wall = value;
@@ -161,6 +162,57 @@ namespace FakeProvider
 
         #endregion
 
+        #region Clear
+
+        public void Clear(TileDataType types)
+        {
+            if ((types & TileDataType.Tile) != (TileDataType)0)
+            {
+                this.type = 0;
+                this.active(false);
+                this.frameX = 0;
+                this.frameY = 0;
+            }
+            if ((types & TileDataType.Wall) != (TileDataType)0)
+            {
+                this.wall = 0;
+                this.wallFrameX(0);
+                this.wallFrameY(0);
+            }
+            if ((types & TileDataType.TilePaint) != (TileDataType)0)
+            {
+                this.color(0);
+            }
+            if ((types & TileDataType.WallPaint) != (TileDataType)0)
+            {
+                this.wallColor(0);
+            }
+            if ((types & TileDataType.Liquid) != (TileDataType)0)
+            {
+                this.liquid = 0;
+                this.liquidType(0);
+                this.checkingLiquid(false);
+            }
+            if ((types & TileDataType.Slope) != (TileDataType)0)
+            {
+                this.slope(0);
+                this.halfBrick(false);
+            }
+            if ((types & TileDataType.Wiring) != (TileDataType)0)
+            {
+                this.wire(false);
+                this.wire2(false);
+                this.wire3(false);
+                this.wire4(false);
+            }
+            if ((types & TileDataType.Actuator) != (TileDataType)0)
+            {
+                this.actuator(false);
+                this.inActive(false);
+            }
+        }
+
+        #endregion
         #region ClearEverything
 
         public void ClearEverything()
@@ -272,6 +324,14 @@ namespace FakeProvider
                 ((byte)(ActNum * oldColor.B)),
                 oldColor.A
             );
+        }
+
+        public void actColor(ref Vector3 oldColor)
+        {
+            if (!inActive())
+                return;
+
+            oldColor *= (float)ActNum;
         }
 
         #endregion
