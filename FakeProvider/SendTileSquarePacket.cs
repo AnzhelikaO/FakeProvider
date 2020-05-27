@@ -68,97 +68,104 @@ namespace FakeProvider
         #endregion
         #region WriteTiles
 
-        private static void WriteTiles(BinaryWriter BinaryWriter,
-            int Size, int X, int Y, int TileChangeType = 0)
+        /// <param name="number">Size</param>
+        /// <param name="number2">X</param>
+        /// <param name="number3">Y</param>
+        /// <param name="number5">TileChangeType</param>
+        private static void WriteTiles(BinaryWriter binaryWriter,
+            int number, int number2, int number3, int number5 = 0)
         {
-            if (Size < 0)
+            int num4 = number;
+            int num5 = (int)number2;
+            int num6 = (int)number3;
+            if (num4 < 0)
             {
-                Size = 0;
+                num4 = 0;
             }
-            if (X < Size)
+            if (num5 < num4)
             {
-                X = Size;
+                num5 = num4;
             }
-            if (X >= Main.maxTilesX + Size)
+            if (num5 >= Main.maxTilesX + num4)
             {
-                X = Main.maxTilesX - Size - 1;
+                num5 = Main.maxTilesX - num4 - 1;
             }
-            if (Y < Size)
+            if (num6 < num4)
             {
-                Y = Size;
+                num6 = num4;
             }
-            if (Y >= Main.maxTilesY + Size)
+            if (num6 >= Main.maxTilesY + num4)
             {
-                Y = Main.maxTilesY - Size - 1;
+                num6 = Main.maxTilesY - num4 - 1;
             }
-            if (TileChangeType == 0)
+            if (number5 == 0)
             {
-                BinaryWriter.Write((ushort)(Size & 32767));
+                binaryWriter.Write((ushort)(num4 & 32767));
             }
             else
             {
-                BinaryWriter.Write((ushort)((Size & 32767) | 32768));
-                BinaryWriter.Write((byte)TileChangeType);
+                binaryWriter.Write((ushort)((num4 & 32767) | 32768));
+                binaryWriter.Write((byte)number5);
             }
-            BinaryWriter.Write((short)X);
-            BinaryWriter.Write((short)Y);
-            for (int num8 = X; num8 < X + Size; num8++)
+            binaryWriter.Write((short)num5);
+            binaryWriter.Write((short)num6);
+            for (int num7 = num5; num7 < num5 + num4; num7++)
             {
-                for (int num9 = Y; num9 < Y + Size; num9++)
+                for (int num8 = num6; num8 < num6 + num4; num8++)
                 {
-                    BitsByte bb11 = 0;
-                    BitsByte bb12 = 0;
-                    byte value = 0;
-                    byte value2 = 0;
-                    ITile tile = Main.tile[num8, num9];
-                    bb11[0] = tile.active();
-                    bb11[2] = (tile.wall > 0);
-                    bb11[3] = (tile.liquid > 0 && Main.netMode == 2);
-                    bb11[4] = tile.wire();
-                    bb11[5] = tile.halfBrick();
-                    bb11[6] = tile.actuator();
-                    bb11[7] = tile.inActive();
-                    bb12[0] = tile.wire2();
-                    bb12[1] = tile.wire3();
+                    BitsByte bb16 = 0;
+                    BitsByte bb17 = 0;
+                    byte b = 0;
+                    byte b2 = 0;
+                    ITile tile = Main.tile[num7, num8];
+                    bb16[0] = tile.active();
+                    bb16[2] = (tile.wall > 0);
+                    bb16[3] = (tile.liquid > 0 && Main.netMode == 2);
+                    bb16[4] = tile.wire();
+                    bb16[5] = tile.halfBrick();
+                    bb16[6] = tile.actuator();
+                    bb16[7] = tile.inActive();
+                    bb17[0] = tile.wire2();
+                    bb17[1] = tile.wire3();
+                    if (tile.active() && tile.color() > 0) // Allow clearing paint
+                    {
+                        bb17[2] = true;
+                        b = tile.color();
+                    }
+                    if (tile.wall > 0 && tile.wallColor() > 0) // Allow clearing paint
+                    {
+                        bb17[3] = true;
+                        b2 = tile.wallColor();
+                    }
+                    bb17 += (byte)(tile.slope() << 4);
+                    bb17[7] = tile.wire4();
+                    binaryWriter.Write(bb16);
+                    binaryWriter.Write(bb17);
+                    if (b > 0) // Allow clearing paint
+                    {
+                        binaryWriter.Write(b);
+                    }
+                    if (b2 > 0) // Allow clearing paint
+                    {
+                        binaryWriter.Write(b2);
+                    }
                     if (tile.active())
                     {
-                        bb12[2] = true;
-                        value = tile.color();
-                    }
-                    if (tile.wall > 0)
-                    {
-                        bb12[3] = true;
-                        value2 = tile.wallColor();
-                    }
-                    bb12 += (byte)(tile.slope() << 4);
-                    bb12[7] = tile.wire4();
-                    BinaryWriter.Write(bb11);
-                    BinaryWriter.Write(bb12);
-                    if (tile.active())
-                    {
-                        BinaryWriter.Write(value);
-                    }
-                    if (tile.wall > 0)
-                    {
-                        BinaryWriter.Write(value2);
-                    }
-                    if (tile.active())
-                    {
-                        BinaryWriter.Write(tile.type);
+                        binaryWriter.Write(tile.type);
                         if (Main.tileFrameImportant[(int)tile.type])
                         {
-                            BinaryWriter.Write(tile.frameX);
-                            BinaryWriter.Write(tile.frameY);
+                            binaryWriter.Write(tile.frameX);
+                            binaryWriter.Write(tile.frameY);
                         }
                     }
                     if (tile.wall > 0)
                     {
-                        BinaryWriter.Write(tile.wall);
+                        binaryWriter.Write(tile.wall);
                     }
                     if (tile.liquid > 0 && Main.netMode == 2)
                     {
-                        BinaryWriter.Write(tile.liquid);
-                        BinaryWriter.Write(tile.liquidType());
+                        binaryWriter.Write(tile.liquid);
+                        binaryWriter.Write(tile.liquidType());
                     }
                 }
             }
