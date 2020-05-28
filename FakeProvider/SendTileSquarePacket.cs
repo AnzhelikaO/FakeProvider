@@ -127,13 +127,12 @@ namespace FakeProvider
                     bb16[7] = tile.inActive();
                     bb17[0] = tile.wire2();
                     bb17[1] = tile.wire3();
-                    //TODO: Allowing clearing paint crashes client somehow...
-                    if (tile.active() && tile.color() > 0) // Allow clearing paint
+                    if (tile.active())// && tile.color() > 0) // Allow clearing paint
                     {
                         bb17[2] = true;
                         b = tile.color();
                     }
-                    if (tile.wall > 0 && tile.wallColor() > 0) // Allow clearing paint
+                    if (tile.wall > 0)// && tile.wallColor() > 0) // Allow clearing paint
                     {
                         bb17[3] = true;
                         b2 = tile.wallColor();
@@ -142,11 +141,13 @@ namespace FakeProvider
                     bb17[7] = tile.wire4();
                     binaryWriter.Write(bb16);
                     binaryWriter.Write(bb17);
-                    if (b > 0) // Allow clearing paint
+                    //if (b > 0) // Allow clearing paint
+                    if (tile.active()) // Allow clearing paint
                     {
                         binaryWriter.Write(b);
                     }
-                    if (b2 > 0) // Allow clearing paint
+                    //if (b2 > 0) // Allow clearing paint
+                    if (tile.wall > 0) // Allow clearing paint
                     {
                         binaryWriter.Write(b2);
                     }
