@@ -424,8 +424,8 @@ namespace FakeProvider
         public byte color() => (byte)(sTileHeader & 31);
         public void color(byte Color)
         {
-            if (Color > 30)
-                Color = 30;
+            if (Color > 31)
+                Color = 31;
             sTileHeader = (short)((sTileHeader & 65504) | Color);
         }
 
@@ -435,8 +435,8 @@ namespace FakeProvider
         public byte wallColor() => (byte)(bTileHeader & 31);
         public void wallColor(byte WallColor)
         {
-            if (WallColor > 30)
-                WallColor = 30;
+            if (WallColor > 31)
+                WallColor = 31;
             bTileHeader = (byte)((bTileHeader & 224) | WallColor);
         }
 
