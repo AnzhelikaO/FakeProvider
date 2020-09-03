@@ -413,6 +413,7 @@ Entities: {provider.Entities.Count}");
 @"/fake info ""provider name""
 /fake tp ""provider name""
 /fake move ""provider name"" <relative x> <relative y>
+/fake layer ""provider name"" <layer>
 /fake list [page]");
                     break;
                 }
