@@ -43,7 +43,7 @@ namespace FakeProvider
             {
                 bw.BaseStream.Position = 2L;
                 bw.Write((byte)PacketTypes.TileSendSquare);
-                WriteTiles(bw, Width, Height, X, Y, TileChangeType);
+                WriteTiles(bw, X, Y, Width, Height, TileChangeType);
                 long position = bw.BaseStream.Position;
                 bw.BaseStream.Position = 0L;
                 bw.Write((short)position);
