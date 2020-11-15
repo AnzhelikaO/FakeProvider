@@ -260,10 +260,10 @@ namespace FakeProvider
                     args.Handled = true;
                     if (args.text?._text?.Length > 0)
                         SendTileSquarePacket.Send(args.text._text.Select(c => (int)c), args.ignoreClient,
-                            args.number, (int)args.number2, (int)args.number3, (int)args.number4, args.number5);
+                            (int)args.number3, (int)args.number4, (int)args.number, (int)args.number2, args.number5);
                     else
                         SendTileSquarePacket.Send(args.remoteClient, args.ignoreClient,
-                            args.number, (int)args.number2, (int)args.number3, (int)args.number4, args.number5);
+                            (int)args.number3, (int)args.number4, (int)args.number, (int)args.number2, args.number5);
                     break;
             }
         }
