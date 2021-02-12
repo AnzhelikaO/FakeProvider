@@ -210,6 +210,8 @@ namespace FakeProvider
 
         private static HookResult OnPreSaveWorld(ref bool Cloud, ref bool ResetTime)
         {
+            if (FakeProviderAPI.World == null)
+                return HookResult.Continue;
             Main.maxTilesX = FakeProviderAPI.World.Width;
             Main.maxTilesY = FakeProviderAPI.World.Height;
             Main.worldSurface -= OffsetY;
@@ -224,6 +226,8 @@ namespace FakeProvider
 
         private static void OnPostSaveWorld(bool Cloud, bool ResetTime)
         {
+            if (FakeProviderAPI.World == null)
+                return;
             Main.maxTilesX = VisibleWidth;
             Main.maxTilesY = VisibleHeight;
             Main.worldSurface += OffsetY;
