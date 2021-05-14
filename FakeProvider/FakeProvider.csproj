@@ -58,10 +58,15 @@
     <Compile Include="Helper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TileProvider\Entities\FakeChest.cs" />
+    <Compile Include="TileProvider\Entities\FakeDisplayDoll.cs" />
+    <Compile Include="TileProvider\Entities\FakeFoodPlatter.cs" />
+    <Compile Include="TileProvider\Entities\FakeHatRack.cs" />
     <Compile Include="TileProvider\Entities\FakeItemFrame.cs" />
     <Compile Include="TileProvider\Entities\FakeLogicSensor.cs" />
     <Compile Include="TileProvider\Entities\FakeSign.cs" />
+    <Compile Include="TileProvider\Entities\FakeTeleportationPylon.cs" />
     <Compile Include="TileProvider\Entities\FakeTrainingDummy.cs" />
+    <Compile Include="TileProvider\Entities\FakeWeaponsRack.cs" />
     <Compile Include="TileProvider\Entities\IFake.cs" />
     <Compile Include="TileProvider\INamedTileCollection.cs" />
     <Compile Include="TileProvider\TileProvider.cs" />

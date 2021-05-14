@@ -345,6 +345,66 @@ namespace FakeProvider
         }
 
         #endregion
+        #region AddDisplayDoll
+
+        public FakeDisplayDoll AddDisplayDoll(int X, int Y, Item[] Items = null, Item[] Dyes = null)
+        {
+            FakeDisplayDoll doll = new FakeDisplayDoll(this, -1, X, Y, Items, Dyes);
+            lock (Locker)
+                _Entities.Add(doll);
+            UpdateEntity(doll);
+            return doll;
+        }
+
+        #endregion
+        #region AddFoodPlatter
+
+        public FakeFoodPlatter AddFoodPlatter(int X, int Y, Item Item = null)
+        {
+            FakeFoodPlatter foodPlatter = new FakeFoodPlatter(this, -1, X, Y, Item);
+            lock (Locker)
+                _Entities.Add(foodPlatter);
+            UpdateEntity(foodPlatter);
+            return foodPlatter;
+        }
+
+        #endregion
+        #region AddHatRack
+
+        public FakeHatRack AddHatRack(int X, int Y, Item[] Items = null, Item[] Dyes = null)
+        {
+            FakeHatRack rack = new FakeHatRack(this, -1, X, Y, Items, Dyes);
+            lock (Locker)
+                _Entities.Add(rack);
+            UpdateEntity(rack);
+            return rack;
+        }
+
+        #endregion
+        #region AddTeleportationPylon
+
+        public FakeTeleportationPylon AddTeleportationPylon(int X, int Y)
+        {
+            FakeTeleportationPylon pylon = new FakeTeleportationPylon(this, -1, X, Y);
+            lock (Locker)
+                _Entities.Add(pylon);
+            UpdateEntity(pylon);
+            return pylon;
+        }
+
+        #endregion
+        #region AddWeaponsRack
+
+        public FakeWeaponsRack AddWeaponsRack(int X, int Y, Item Item = null)
+        {
+            FakeWeaponsRack itemFrame = new FakeWeaponsRack(this, -1, X, Y, Item);
+            lock (Locker)
+                _Entities.Add(itemFrame);
+            UpdateEntity(itemFrame);
+            return itemFrame;
+        }
+
+        #endregion
         #region AddEntity
 
         public IFake AddEntity(IFake Entity) =>
@@ -386,7 +446,17 @@ namespace FakeProvider
                     ? (IFake)AddEntity(itemFrame, replace)
                     : Entity is TELogicSensor logicSensor
                         ? (IFake)AddEntity(logicSensor, replace)
-                        : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
+                        : Entity is TEDisplayDoll displayDoll
+                            ? (IFake)AddEntity(displayDoll, replace)
+                            : Entity is TEFoodPlatter foodPlatter
+                                ? (IFake)AddEntity(foodPlatter, replace)
+                                : Entity is TEHatRack hatRack
+                                    ? (IFake)AddEntity(hatRack, replace)
+                                    : Entity is TETeleportationPylon teleportationPylon
+                                        ? (IFake)AddEntity(teleportationPylon, replace)
+                                        : Entity is TEWeaponsRack weaponsRack
+                                            ? (IFake)AddEntity(weaponsRack, replace)
+                                            : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
 
         public FakeTrainingDummy AddEntity(TETrainingDummy Entity, bool replace = false)
         {
@@ -430,6 +500,86 @@ namespace FakeProvider
                 TileEntity.ByPosition.Remove(Entity.Position);
             }
             FakeLogicSensor fake = new FakeLogicSensor(this, replace ? Entity.ID : -1, x, y, Entity.logicCheck);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeDisplayDoll AddEntity(TEDisplayDoll Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
+            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeDisplayDoll fake = new FakeDisplayDoll(this, replace ? Entity.ID : -1, x, y, Entity._items, Entity._dyes);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeFoodPlatter AddEntity(TEFoodPlatter Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
+            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeFoodPlatter fake = new FakeFoodPlatter(this, replace ? Entity.ID : -1, x, y, Entity.item);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeHatRack AddEntity(TEHatRack Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
+            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeHatRack fake = new FakeHatRack(this, replace ? Entity.ID : -1, x, y, Entity._items, Entity._dyes);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeTeleportationPylon AddEntity(TETeleportationPylon Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
+            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeTeleportationPylon fake = new FakeTeleportationPylon(this, replace ? Entity.ID : -1, x, y);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeWeaponsRack AddEntity(TEWeaponsRack Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
+            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeWeaponsRack fake = new FakeWeaponsRack(this, replace ? Entity.ID : -1, x, y, Entity.item);
             lock (Locker)
                 _Entities.Add(fake);
             UpdateEntity(fake);
@@ -606,7 +756,7 @@ namespace FakeProvider
                         RemoveEntity(entity);
 
             (int x, int y, int width, int height) = XYWH(ProviderCollection.OffsetX, ProviderCollection.OffsetY);
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < Main.sign.Length; i++)
             {
                 Sign sign = Main.sign[i];
                 if (sign == null)
@@ -623,7 +773,7 @@ namespace FakeProvider
                 }
             }
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < Main.chest.Length; i++)
             {
                 Chest chest = Main.chest[i];
                 if (chest == null)
@@ -645,9 +795,14 @@ namespace FakeProvider
                 int entityX = entity.Position.X;
                 int entityY = entity.Position.Y;
 
-                if ((entity.GetType().Name == nameof(TETrainingDummy)      // <=> not FakeTrainingDummy or some other inherited type
-                        || entity.GetType().Name == nameof(TEItemFrame)    // <=> not FakeItemFrame or some other inherited type
-                        || entity.GetType().Name == nameof(TELogicSensor)) // <=> not FakeLogicSensor or some other inherited type
+                if ((entity.GetType().Name == nameof(TETrainingDummy)            // <=> not FakeTrainingDummy or some other inherited type
+                        || entity.GetType().Name == nameof(TEItemFrame)          // <=> not FakeItemFrame or some other inherited type
+                        || entity.GetType().Name == nameof(TELogicSensor)        // <=> not FakeLogicSensor or some other inherited type
+                        || entity.GetType().Name == nameof(TEDisplayDoll)        // <=> not FakeDisplayDoll or some other inherited type
+                        || entity.GetType().Name == nameof(TEFoodPlatter)        // <=> not FakeFoodPlatter or some other inherited type
+                        || entity.GetType().Name == nameof(TEHatRack)            // <=> not FakeHatRack or some other inherited type
+                        || entity.GetType().Name == nameof(TETeleportationPylon) // <=> not FakeTeleportationPylon or some other inherited type
+                        || entity.GetType().Name == nameof(TEWeaponsRack))       // <=> not FakeWeaponsRack or some other inherited type
                     && Helper.Inside(entityX, entityY, x, y, width, height)
                     && TileOnTop(entityX - this.X, entityY - this.Y))
                 {

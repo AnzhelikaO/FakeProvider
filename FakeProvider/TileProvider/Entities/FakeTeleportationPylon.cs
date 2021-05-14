@@ -5,7 +5,7 @@ using Terraria.ID;
 #endregion
 namespace FakeProvider
 {
-    public class FakeLogicSensor : TELogicSensor, IFake
+    public class FakeTeleportationPylon : TETeleportationPylon, IFake
     {
         #region Data
 
@@ -27,7 +27,7 @@ namespace FakeProvider
         }
         internal static ushort[] _TileTypes = new ushort[]
         {
-            TileID.LogicSensor
+            TileID.TeleportationPylon
         };
         public ushort[] TileTypes => _TileTypes;
         public int RelativeX { get; set; }
@@ -37,7 +37,7 @@ namespace FakeProvider
 
         #region Constructor
 
-        public FakeLogicSensor(INamedTileCollection Provider, int Index, int X, int Y, LogicCheckType LogicCheckType)
+        public FakeTeleportationPylon(INamedTileCollection Provider, int Index, int X, int Y)
         {
             this.Provider = Provider;
             this.ID = Index;
@@ -45,7 +45,6 @@ namespace FakeProvider
             this.RelativeY = Y;
             this.Position = new Point16(X, Y);
             this.type = _myEntityID;
-            this.logicCheck = LogicCheckType;
         }
 
         #endregion

@@ -1,11 +1,12 @@
 ﻿#region Using
+using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent.Tile_Entities;
 using Terraria.ID;
 #endregion
 namespace FakeProvider
 {
-    public class FakeLogicSensor : TELogicSensor, IFake
+    public class FakeDisplayDoll : TEDisplayDoll, IFake
     {
         #region Data
 
@@ -27,7 +28,7 @@ namespace FakeProvider
         }
         internal static ushort[] _TileTypes = new ushort[]
         {
-            TileID.LogicSensor
+            TileID.DisplayDoll
         };
         public ushort[] TileTypes => _TileTypes;
         public int RelativeX { get; set; }
@@ -37,7 +38,7 @@ namespace FakeProvider
 
         #region Constructor
 
-        public FakeLogicSensor(INamedTileCollection Provider, int Index, int X, int Y, LogicCheckType LogicCheckType)
+        public FakeDisplayDoll(INamedTileCollection Provider, int Index, int X, int Y, Item[] Items = null, Item[] Dyes = null)
         {
             this.Provider = Provider;
             this.ID = Index;
@@ -45,7 +46,12 @@ namespace FakeProvider
             this.RelativeY = Y;
             this.Position = new Point16(X, Y);
             this.type = _myEntityID;
-            this.logicCheck = LogicCheckType;
+            this._items = Items ?? new Item[8];
+            for (int i = 0; i < 8; i++)
+                this._items[i] = this._items[i] ?? new Item();
+            this._dyes = Dyes ?? new Item[8];
+            for (int i = 0; i < 8; i++)
+                this._dyes[i] = this._dyes[i] ?? new Item();
         }
 
         #endregion

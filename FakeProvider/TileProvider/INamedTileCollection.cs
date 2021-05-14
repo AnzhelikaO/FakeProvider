@@ -46,6 +46,11 @@ namespace FakeProvider
         FakeTrainingDummy AddTrainingDummy(int X, int Y);
         FakeItemFrame AddItemFrame(int X, int Y, Item Item = null);
         FakeLogicSensor AddLogicSensor(int X, int Y, TELogicSensor.LogicCheckType LogicCheckType);
+        FakeDisplayDoll AddDisplayDoll(int X, int Y, Item[] Items = null, Item[] Dyes = null);
+        FakeFoodPlatter AddFoodPlatter(int X, int Y, Item Item = null);
+        FakeHatRack AddHatRack(int X, int Y, Item[] Items = null, Item[] Dyes = null);
+        FakeTeleportationPylon AddTeleportationPylon(int X, int Y);
+        FakeWeaponsRack AddWeaponsRack(int X, int Y, Item Item = null);
         IFake AddEntity(IFake Entity);
         FakeSign AddEntity(Sign Entity, bool replace = false);
         FakeChest AddEntity(Chest Entity, bool replace = false);
@@ -53,6 +58,11 @@ namespace FakeProvider
         FakeTrainingDummy AddEntity(TETrainingDummy Entity, bool replace = false);
         FakeItemFrame AddEntity(TEItemFrame Entity, bool replace = false);
         FakeLogicSensor AddEntity(TELogicSensor Entity, bool replace = false);
+        FakeDisplayDoll AddEntity(TEDisplayDoll Entity, bool replace = false);
+        FakeFoodPlatter AddEntity(TEFoodPlatter Entity, bool replace = false);
+        FakeHatRack AddEntity(TEHatRack Entity, bool replace = false);
+        FakeTeleportationPylon AddEntity(TETeleportationPylon Entity, bool replace = false);
+        FakeWeaponsRack AddEntity(TEWeaponsRack Entity, bool replace = false);
 
         void RemoveEntity(IFake Entity);
         void UpdateEntities();
