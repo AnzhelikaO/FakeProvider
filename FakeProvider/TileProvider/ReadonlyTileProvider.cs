@@ -746,7 +746,17 @@ namespace FakeProvider
                     ? FakeItemFrame._TileTypes
                     : Entity is TELogicSensor
                         ? FakeLogicSensor._TileTypes
-                        : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
+                        : Entity is TEDisplayDoll
+                            ? FakeDisplayDoll._TileTypes
+                            : Entity is TEFoodPlatter
+                                ? FakeFoodPlatter._TileTypes
+                                : Entity is TEHatRack
+                                    ? FakeHatRack._TileTypes
+                                    : Entity is TETeleportationPylon
+                                        ? FakeTeleportationPylon._TileTypes
+                                        : Entity is TEWeaponsRack
+                                            ? FakeWeaponsRack._TileTypes
+                                            : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
 
         #endregion
         #region ScanEntities
