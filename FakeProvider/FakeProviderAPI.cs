@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using TShockAPI;
 
 namespace FakeProvider
 {
@@ -171,6 +172,7 @@ namespace FakeProvider
                 .SetValue(null, result);
 
             Personal[PlayerIndex].Add(result);
+            result.Enable(false);
 
             return result;
         }
@@ -187,6 +189,7 @@ namespace FakeProvider
                 .SetValue(null, result);
 
             Personal[PlayerIndex].Add(result);
+            result.Enable(false);
 
             return result;
         }
@@ -203,6 +206,7 @@ namespace FakeProvider
                 .SetValue(null, result);
 
             Personal[PlayerIndex].Add(result);
+            result.Enable(false);
 
             return result;
         }
