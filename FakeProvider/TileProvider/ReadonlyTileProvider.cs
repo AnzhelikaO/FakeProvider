@@ -287,6 +287,52 @@ namespace FakeProvider
         }
 
         #endregion
+        #region HasCollision
+
+        public bool HasCollision(int X, int Y, int Width, int Height) =>
+            (X < (this.X + this.Width)) && (this.X < (X + Width))
+                && (Y < (this.Y + this.Height)) && (this.Y < (Y + Height));
+
+        #endregion
+        #region Intersect
+
+        private void Intersect(int X, int Y, int Width, int Height,
+            out int RX, out int RY, out int RWidth, out int RHeight)
+        {
+            int ex1 = this.X + this.Width;
+            int ex2 = X + Width;
+            int ey1 = this.Y + this.Height;
+            int ey2 = Y + Height;
+            int maxSX = (this.X > X) ? this.X : X;
+            int maxSY = (this.Y > Y) ? this.Y : Y;
+            int minEX = (ex1 < ex2) ? ex1 : ex2;
+            int minEY = (ey1 < ey2) ? ey1 : ey2;
+            RX = maxSX;
+            RY = maxSY;
+            RWidth = minEX - maxSX;
+            RHeight = minEY - maxSY;
+        }
+
+        #endregion
+        #region Apply
+
+        public void Apply(ITile[,] Tiles, int X, int Y)
+        {
+            Intersect(X, Y, Tiles.GetLength(0), Tiles.GetLength(1),
+                out int x1, out int y1, out int w, out int h);
+            int x2 = x1 + w;
+            int y2 = y1 + h;
+
+            for (int i = x1; i < x2; i++)
+                for (int j = y1; j < y2; j++)
+                {
+                    ITile tile = Tile[i - this.X, j - this.Y];
+                    if (tile != null)
+                        Tiles[i - X, j - Y] = tile;
+                }
+        }
+
+        #endregion
 
         #region AddSign
 

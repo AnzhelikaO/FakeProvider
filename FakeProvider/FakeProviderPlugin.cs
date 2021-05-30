@@ -14,6 +14,7 @@ using TerrariaApi.Server;
 using OTAPI.Callbacks.Terraria;
 using System.Collections.Generic;
 using TShockAPI;
+using Terraria.Net.Sockets;
 #endregion
 namespace FakeProvider
 {
@@ -129,14 +130,19 @@ namespace FakeProvider
                 ServerApi.Hooks.GetType().GetMethod("InvokeNetSendBytes", BindingFlags.NonPublic | BindingFlags.Instance));
 
             AllPlayers = new int[Main.maxPlayers];
+            FakeProviderAPI.Personal = new Dictionary<int, List<INamedTileCollection>>();
             for (int i = 0; i < Main.maxPlayers; i++)
+            {
                 AllPlayers[i] = i;
+                FakeProviderAPI.Personal.Add(i, new List<INamedTileCollection>());
+            }
 
             Hooks.World.IO.PreLoadWorld += OnPreLoadWorld;
             Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
             Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
             Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
+            ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
 
             Commands.ChatCommands.AddRange(CommandList);
         }
@@ -153,6 +159,7 @@ namespace FakeProvider
                 Hooks.World.IO.PreSaveWorld -= OnPreSaveWorld;
                 Hooks.World.IO.PostSaveWorld -= OnPostSaveWorld;
                 ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
+                ServerApi.Hooks.ServerLeave.Deregister(this, OnServerLeave);
             }
             base.Dispose(Disposing);
         }
@@ -270,6 +277,14 @@ namespace FakeProvider
                             (int)args.number3, (int)args.number4, (int)args.number, (int)args.number2, args.number5);
                     break;
             }
+        }
+
+        #endregion
+        #region OnServerLeave
+
+        private static void OnServerLeave(LeaveEventArgs args)
+        {
+            FakeProviderAPI.Personal[args.Who].Clear();
         }
 
         #endregion
@@ -722,6 +737,25 @@ Entities: {provider.Entities.Count}");
                 }
             }
             return WorldFile.LoadFooter(reader);
+        }
+
+        #endregion
+        #region SendTo
+
+        internal static void SendTo(List<RemoteClient> clients, byte[] data)
+        {
+            foreach (RemoteClient client in clients)
+                try
+                {
+                    if (NetSendBytes(client, data, 0, data.Length))
+                        continue;
+
+                    client.Socket.AsyncSend(data, 0, data.Length,
+                        new SocketSendCallback(client.ServerWriteCallBack), null);
+                }
+                catch (IOException) { }
+                catch (ObjectDisposedException) { }
+                catch (InvalidOperationException) { }
         }
 
         #endregion
