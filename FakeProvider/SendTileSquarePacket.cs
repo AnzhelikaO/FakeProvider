@@ -126,12 +126,12 @@ namespace FakeProvider
 					bb17[7] = tile.inActive();
 					bb18[0] = tile.wire2();
 					bb18[1] = tile.wire3();
-					if (tile.active() && tile.color() > 0)
+					if (tile.active())// && tile.color() > 0) // Allow clearing paint
 					{
 						bb18[2] = true;
 						b = tile.color();
 					}
-					if (tile.wall > 0 && tile.wallColor() > 0)
+					if (tile.wall > 0)// && tile.wallColor() > 0) // Allow clearing paint
 					{
 						bb18[3] = true;
 						b2 = tile.wallColor();
@@ -140,11 +140,13 @@ namespace FakeProvider
 					bb18[7] = tile.wire4();
 					binaryWriter.Write(bb17);
 					binaryWriter.Write(bb18);
-					if (b > 0)
+					//if (b > 0) // Allow clearing paint
+					if (tile.active()) // Allow clearing paint
 					{
 						binaryWriter.Write(b);
 					}
-					if (b2 > 0)
+					//if (b2 > 0) // Allow clearing paint
+					if (tile.wall > 0) // Allow clearing paint
 					{
 						binaryWriter.Write(b2);
 					}
