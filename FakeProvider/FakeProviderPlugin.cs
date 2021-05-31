@@ -749,6 +749,8 @@ Entities: {provider.Entities.Count}");
 			Console.WriteLine("[FakeProvider] Loading World using FastLoadWorld");
 			try
 			{
+				System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+				sw.Start();
 				WorldGen.loadFailed = false;
 				WorldGen.loadSuccess = true;
 
@@ -761,8 +763,6 @@ Entities: {provider.Entities.Count}");
 				{
 					tiles = new Span<StructTile>(p, length);
 				}
-				System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-				sw.Start();
 				//TODO: see if we want these
 				//Main.checkXMas();
 				//Main.checkHalloween();
@@ -823,7 +823,7 @@ Entities: {provider.Entities.Count}");
 						{
 							#region FileMetadata.Read(reader, FileType.World)
 							FileType expectedType = FileType.World;
-							FileMetadata fileMetadata = new FileMetadata();
+							Main.WorldFileMetadata = new FileMetadata();
 							#region fileMetadata.Read()
 							ulong fileMetadatanum = reader.ReadUInt64();
 
@@ -846,14 +846,14 @@ Entities: {provider.Entities.Count}");
 							{
 								throw new FormatException("Found invalid file type.");
 							}
-							fileMetadata.Type = fileType;
-							fileMetadata.Revision = reader.ReadUInt32();
+							Main.WorldFileMetadata.Type = fileType;
+							Main.WorldFileMetadata.Revision = reader.ReadUInt32();
 							ulong fileMetadataNum2 = reader.ReadUInt64();
-							fileMetadata.IsFavorite = (fileMetadataNum2 & 1) == 1;
+							Main.WorldFileMetadata.IsFavorite = (fileMetadataNum2 & 1) == 1;
 							#endregion
-							if (fileMetadata.Type != expectedType)
+							if (Main.WorldFileMetadata.Type != expectedType)
 							{
-								throw new FormatException("Expected type \"" + Enum.GetName(typeof(FileType), expectedType) + "\" but found \"" + Enum.GetName(typeof(FileType), fileMetadata.Type) + "\".");
+								throw new FormatException("Expected type \"" + Enum.GetName(typeof(FileType), expectedType) + "\" but found \"" + Enum.GetName(typeof(FileType), Main.WorldFileMetadata.Type) + "\".");
 							}
 							#endregion
 						}
@@ -861,6 +861,7 @@ Entities: {provider.Entities.Count}");
 						{
 							Console.WriteLine(Terraria.Localization.Language.GetTextValue("Error.UnableToLoadWorld"));
 							Console.WriteLine(value);
+							Console.ReadLine();
 							return;
 						}
 					}
@@ -2905,6 +2906,8 @@ Entities: {provider.Entities.Count}");
 						Main.StartSlimeRain(announce: false);
 					}*/
 					NPC.SetWorldSpecificMonstersByWorldID();
+					sw.Stop();
+					Console.Write($"[FakeProvider] Loaded world in {sw.Elapsed}");
 				}
 				catch (Exception lastThrownLoadException)
 				{
