@@ -816,7 +816,7 @@ Entities: {provider.Entities.Count}");
 					#region LoadFileFormatHeader
 					bool[] importance = null;
 					int[] positions = null;
-					Console.WriteLine($"vNumber1UNSAFE: {versionNumber}");
+					Console.WriteLine($"WorldVersion: {versionNumber}");
 					if (versionNumber >= 135)
 					{
 						try
@@ -908,7 +908,8 @@ Entities: {provider.Entities.Count}");
 					{
 						positionString += $"{positions[str]} ";
 					}
-					Console.WriteLine($"{Main.worldName} positions: {positionString}");
+					//Header byte counts, TODO: readd fail checks with these?
+					//Console.WriteLine($"{Main.worldName} positions: {positionString}");
 					if (versionNumber >= 179)
 					{
 						string seed = ((versionNumber != 179) ? reader.ReadString() : reader.ReadInt32().ToString());
@@ -2321,7 +2322,7 @@ Entities: {provider.Entities.Count}");
 						}
 					}*/
 					WORLDLOAD_END:
-					Console.WriteLine($"left WORLDLOAD at {debugPointerString}");
+					//Console.WriteLine($"left WORLDLOAD at {debugPointerString}");
 					#region CheckSavedOreTiers
 
 					//CheckSavedOreTiers();
