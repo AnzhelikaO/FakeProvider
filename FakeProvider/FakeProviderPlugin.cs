@@ -816,7 +816,7 @@ Entities: {provider.Entities.Count}");
 					#region LoadFileFormatHeader
 					bool[] importance = null;
 					int[] positions = null;
-					Console.WriteLine($"WorldVersion: {versionNumber}");
+					Console.WriteLine($"[FakeProvider] WorldVersion: {versionNumber}");
 					if (versionNumber >= 135)
 					{
 						try
@@ -1185,9 +1185,7 @@ Entities: {provider.Entities.Count}");
 						}
 						if (versionNumber >= 238)
 						{
-							reader.ReadBoolean();
-							//TODO: add on TSAPI update
-							//Main.tenthAnniversaryWorld = reader.ReadBoolean();
+							Main.tenthAnniversaryWorld = reader.ReadBoolean();
 						}
 					}
 					else
