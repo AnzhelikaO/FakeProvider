@@ -30,6 +30,7 @@ namespace FakeProvider
         public ReadOnlyCollection<IFake> Entities => new ReadOnlyCollection<IFake>(_Entities);
         private object Locker = new object();
         private bool ScanCompleted = false;
+        StructTile[,] INamedTileCollection.Data { get => Data; set => Data = value; }
 
         #endregion
         #region Constructor

@@ -13,9 +13,10 @@ namespace FakeProvider
         IProviderTile this[int x, int y] { get; set; }
         IProviderTile GetIncapsulatedTile(int X, int Y);
         void SetIncapsulatedTile(int X, int Y, ITile Tile);
-        INamedTileCollection Tile { get; }
+        INamedTileCollection Tile { get; } //TODO: Remove
 
         TileProviderCollection ProviderCollection { get; }
+        StructTile[,] Data { get; set; }
         string Name { get; }
         int X { get; }
         int Y { get; }

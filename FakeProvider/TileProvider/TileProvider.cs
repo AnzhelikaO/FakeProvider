@@ -16,6 +16,7 @@ namespace FakeProvider
 
         public TileProviderCollection ProviderCollection { get; internal set; }
         private StructTile[,] Data;
+        StructTile[,] INamedTileCollection.Data { get => Data; set => Data = value; }
         public INamedTileCollection Tile => this;
         public string Name { get; private set; }
         public int X { get; private set; }
