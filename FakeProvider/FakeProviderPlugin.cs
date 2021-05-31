@@ -2912,11 +2912,12 @@ Entities: {provider.Entities.Count}");
 				catch (Exception lastThrownLoadException)
 				{
 					Console.WriteLine($"{lastThrownLoadException.Message}: {lastThrownLoadException.StackTrace}");
-					Console.ReadLine();
 					WorldGen.loadFailed = true;
 					WorldGen.loadSuccess = false;
 					try
 					{
+						Console.WriteLine($"Error on FastLoadWorld: Falling back to vanilla LoadWorld");
+						LoadWorldDirect(false);
 						reader.Close();
 					}
 					catch
@@ -2928,8 +2929,8 @@ Entities: {provider.Entities.Count}");
 			catch (Exception ex)
 			{
 				Console.WriteLine($"{ex.Message}: {ex.StackTrace}");
-				Console.ReadLine();
-				throw (ex);
+				Console.WriteLine($"Error on FastLoadWorld: Falling back to vanilla LoadWorld");
+				LoadWorldDirect(false);
 			}
 
 		}
