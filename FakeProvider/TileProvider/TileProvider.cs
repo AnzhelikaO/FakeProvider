@@ -26,11 +26,13 @@ namespace FakeProvider
         public int Order { get; internal set; } = -1;
         public int Layer { get; private set; }
         public bool Enabled { get; private set; } = false;
+        public HashSet<int> Observers { get; private set; }
         private List<IFake> _Entities = new List<IFake>();
         public ReadOnlyCollection<IFake> Entities => new ReadOnlyCollection<IFake>(_Entities.ToList());
         private object Locker = new object();
 
         #endregion
+
         #region Constructor
 
         internal TileProvider() { }
@@ -38,7 +40,7 @@ namespace FakeProvider
         #endregion
         #region Initialize
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer, HashSet<int> Observers = null)
         {
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
@@ -47,9 +49,10 @@ namespace FakeProvider
             this.Width = Width;
             this.Height = Height;
             this.Layer = Layer;
+            this.Observers = Observers;
         }
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer, HashSet<int> Observers = null)
         {
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
@@ -58,6 +61,7 @@ namespace FakeProvider
             this.Width = Width;
             this.Height = Height;
             this.Layer = Layer;
+            this.Observers = Observers;
 
             for (int i = X; i < X + Width; i++)
                 for (int j = Y; j < Y + Height; j++)
@@ -68,7 +72,7 @@ namespace FakeProvider
                 }
         }
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer, HashSet<int> Observers = null)
         {
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
@@ -77,6 +81,7 @@ namespace FakeProvider
             this.Width = Width;
             this.Height = Height;
             this.Layer = Layer;
+            this.Observers = Observers;
 
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)

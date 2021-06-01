@@ -1,6 +1,7 @@
 ﻿#region Using
 using OTAPI.Tile;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Terraria;
 using Terraria.DataStructures;
@@ -23,6 +24,7 @@ namespace FakeProvider
         int Order { get; }
         int Layer { get; }
         bool Enabled { get; }
+        HashSet<int> Observers { get; }
         ReadOnlyCollection<IFake> Entities { get; }
 
         (int X, int Y, int Width, int Height) XYWH(int DeltaX = 0, int DeltaY = 0);

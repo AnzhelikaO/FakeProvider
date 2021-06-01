@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent.Tile_Entities;
@@ -39,10 +40,11 @@ namespace FakeProvider
 					clients.Add(client);
             }
 
-			Dictionary<HashSet<RemoteClient>, List<INamedTileCollection>> clientGroups = FakeProviderAPI.GroupBy(clients, X, Y, Width, Height);
+			IEnumerable<IGrouping<IEnumerable<RemoteClient>, INamedTileCollection>> clientGroups =
+				FakeProviderAPI.GroupBy(clients, X, Y, Width, Height);
 
-			foreach (var pair in clientGroups)
-				FakeProviderPlugin.SendTo(pair.Key, Generate(pair.Value, X, Y, Width, Height));
+			foreach (var group in clientGroups)
+				FakeProviderPlugin.SendTo(group.Key, Generate(group, X, Y, Width, Height));
 		}
 
 		#endregion

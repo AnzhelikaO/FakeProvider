@@ -130,12 +130,9 @@ namespace FakeProvider
                 ServerApi.Hooks.GetType().GetMethod("InvokeNetSendBytes", BindingFlags.NonPublic | BindingFlags.Instance));
 
             AllPlayers = new int[Main.maxPlayers];
-            FakeProviderAPI.Personal = new Dictionary<int, List<INamedTileCollection>>();
+            FakeProviderAPI.Personal = new List<INamedTileCollection>();
             for (int i = 0; i < Main.maxPlayers; i++)
-            {
                 AllPlayers[i] = i;
-                FakeProviderAPI.Personal.Add(i, new List<INamedTileCollection>());
-            }
 
             Hooks.World.IO.PreLoadWorld += OnPreLoadWorld;
             Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;

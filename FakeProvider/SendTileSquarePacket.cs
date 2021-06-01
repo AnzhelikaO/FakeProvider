@@ -3,6 +3,7 @@ using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Terraria;
 using Terraria.Net.Sockets;
 #endregion
@@ -35,10 +36,11 @@ namespace FakeProvider
 					clients.Add(client);
             }
 
-			Dictionary<HashSet<RemoteClient>, List<INamedTileCollection>> clientGroups = FakeProviderAPI.GroupBy(clients, X, Y, Width, Height);
+			IEnumerable<IGrouping<IEnumerable<RemoteClient>, INamedTileCollection>> clientGroups =
+				FakeProviderAPI.GroupBy(clients, X, Y, Width, Height);
 
-			foreach (var pair in clientGroups)
-				FakeProviderPlugin.SendTo(pair.Key, Generate(pair.Value, X, Y, Width, Height, TileChangeType));
+			foreach (var group in clientGroups)
+				FakeProviderPlugin.SendTo(group.Key, Generate(group, X, Y, Width, Height, TileChangeType));
 		}
 
         #endregion

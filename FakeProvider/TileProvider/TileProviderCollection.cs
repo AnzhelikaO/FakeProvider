@@ -142,7 +142,7 @@ namespace FakeProvider
         #endregion
         #region Remove
 
-        public bool Remove(string Name, bool Draw = true, bool Cleanup = true)
+        public bool Remove(string Name, bool Draw = true, bool Cleanup = false)
         {
             if (Name == VoidProviderName)
                 throw new InvalidOperationException("You cannot remove void provider.");

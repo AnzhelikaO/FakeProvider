@@ -53,6 +53,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ObserversEqualityComparer.cs" />
     <Compile Include="FakeProviderPlugin.cs" />
     <Compile Include="FakeProviderAPI.cs" />
     <Compile Include="Helper.cs" />

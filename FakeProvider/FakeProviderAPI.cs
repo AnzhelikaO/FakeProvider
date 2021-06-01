@@ -17,7 +17,8 @@ namespace FakeProvider
         public const string WorldProviderName = "__world__";
         public static TileProviderCollection Tile { get; internal set; }
         public static INamedTileCollection World { get; internal set; }
-        public static Dictionary<int, List<INamedTileCollection>> Personal { get; internal set; }
+        public static List<INamedTileCollection> Personal { get; internal set; }
+        private static ObserversEqualityComparer OEC = new ObserversEqualityComparer();
 
         #endregion
 
@@ -161,66 +162,55 @@ namespace FakeProvider
         #endregion
         #region CreatePersonalTileProvider
 
-        public static INamedTileCollection CreatePersonalTileProvider(string Name, int PlayerIndex, int X, int Y, int Width, int Height, int Layer = 0)
+        public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, int Layer = 0)
         {
             Type newType = Helper.CreateType();
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, Layer);
+            ((dynamic)result).Initialize(Name, X, Y, Width, Height, Layer, Players);
             typeof(TileReference<>)
                 .MakeGenericType(newType)
                 .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
                 .SetValue(null, result);
 
-            Personal[PlayerIndex].Add(result);
+            Personal.Add(result);
             result.Enable(false);
 
             return result;
         }
 
-        public static INamedTileCollection CreatePersonalTileProvider(string Name, int PlayerIndex, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
         {
             Type newType = Helper.CreateType();
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
+            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer, Players);
             typeof(TileReference<>)
                 .MakeGenericType(newType)
                 .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
                 .SetValue(null, result);
 
-            Personal[PlayerIndex].Add(result);
+            Personal.Add(result);
             result.Enable(false);
 
             return result;
         }
 
-        public static INamedTileCollection CreatePersonalTileProvider(string Name, int PlayerIndex, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
         {
             Type newType = Helper.CreateType();
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
+            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer, Players);
             typeof(TileReference<>)
                 .MakeGenericType(newType)
                 .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
                 .SetValue(null, result);
 
-            Personal[PlayerIndex].Add(result);
+            Personal.Add(result);
             result.Enable(false);
 
             return result;
-        }
-
-        #endregion
-        #region CollidesPersonal
-
-        public static bool CollidesPersonal(int PlayerIndex, int X, int Y, int Width, int Height)
-        {
-            foreach (INamedTileCollection provider in Personal[PlayerIndex])
-                if (provider.HasCollision(X, Y, Width, Height))
-                    return true;
-            return false;
         }
 
         #endregion
@@ -246,10 +236,12 @@ namespace FakeProvider
         #endregion
         #region GroupBy
 
-        public static Dictionary<HashSet<RemoteClient>, List<INamedTileCollection>> GroupBy(List<RemoteClient> Clients, int X, int Y, int Width, int Height)
-        {
-            throw new NotImplementedException();
-        }
+        public static IEnumerable<IGrouping<IEnumerable<RemoteClient>, INamedTileCollection>> GroupBy(
+                List<RemoteClient> Clients, int X, int Y, int Width, int Height) =>
+            Personal.Where(provider => provider.Enabled && provider.HasCollision(X, Y, Width, Height))
+                .GroupBy(provider => provider.Observers
+                    .Where(index => Clients.Contains(Netplay.Clients[index]))
+                    .Select(index => Netplay.Clients[index]), OEC);
 
         #endregion
     }
