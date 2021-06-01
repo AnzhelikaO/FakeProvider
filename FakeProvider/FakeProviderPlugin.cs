@@ -281,7 +281,7 @@ namespace FakeProvider
 
         private static void OnServerLeave(LeaveEventArgs args)
         {
-            FakeProviderAPI.Personal[args.Who].Clear();
+            //FakeProviderAPI.Personal.All(provider => provider.Observers.re)
         }
 
         #endregion

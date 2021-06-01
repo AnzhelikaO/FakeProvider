@@ -214,12 +214,27 @@ namespace FakeProvider
         }
 
         #endregion
+        #region SelectObservers
+
+        public static HashSet<int> SelectObservers(int player = -1, int except = -1)
+        {
+            HashSet<int> result = new HashSet<int>();
+            if (player >= 0)
+                result.Add(player);
+            else
+                for (int i = 0; i < 255; i++)
+                    result.Add(i);
+            result.Remove(except);
+            return result;
+        }
+
+        #endregion
         #region ApplyPersonal
 
         public static (ITileCollection tiles, int sx, int sy) ApplyPersonal(IEnumerable<INamedTileCollection> Providers, int X, int Y, int Width, int Height)
         {
             if (Providers.Count() == 0)
-                return (Main.tile, X, Y);
+                return (Tile, X, Y);
 
             TileCollection result = new TileCollection(new ITile[Width, Height]);
 

@@ -40,8 +40,7 @@ namespace FakeProvider
 					clients.Add(client);
             }
 
-			IEnumerable<IGrouping<IEnumerable<RemoteClient>, INamedTileCollection>> clientGroups =
-				FakeProviderAPI.GroupBy(clients, X, Y, Width, Height);
+			var clientGroups = FakeProviderAPI.GroupBy(clients, X, Y, Width, Height);
 
 			foreach (var group in clientGroups)
 				FakeProviderPlugin.SendTo(group.Key, Generate(group, X, Y, Width, Height));
