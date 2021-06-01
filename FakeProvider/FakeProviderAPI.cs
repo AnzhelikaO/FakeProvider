@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Terraria;
 using TShockAPI;
 
 namespace FakeProvider
@@ -225,19 +226,29 @@ namespace FakeProvider
         #endregion
         #region ApplyPersonal
 
-        public static ITile[,] ApplyPersonal(int PlayerIndex, int X, int Y, int Width, int Height)
+        public static (ITileCollection tiles, int sx, int sy) ApplyPersonal(IEnumerable<INamedTileCollection> Providers, int X, int Y, int Width, int Height)
         {
-            ITile[,] result = new ITile[Width, Height];
+            if (Providers.Count() == 0)
+                return (Main.tile, X, Y);
+
+            TileCollection result = new TileCollection(new ITile[Width, Height]);
 
             for (int x = 0; x < Width; x++)
                 for (int y = 0; y < Height; y++)
                     result[x, y] = Tile[X + x, Y + y];
 
-            foreach (INamedTileCollection provider in Personal[PlayerIndex])
-                if (provider.Enabled && provider.HasCollision(X, Y, Width, Height))
-                    provider.Apply(result, X, Y);
+            foreach (INamedTileCollection provider in Providers)
+                provider.Apply(result, X, Y);
 
-            return result;
+            return (result, 0, 0);
+        }
+
+        #endregion
+        #region GroupBy
+
+        public static Dictionary<HashSet<RemoteClient>, List<INamedTileCollection>> GroupBy(List<RemoteClient> Clients, int X, int Y, int Width, int Height)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

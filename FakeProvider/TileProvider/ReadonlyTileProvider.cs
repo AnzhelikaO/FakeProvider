@@ -316,9 +316,9 @@ namespace FakeProvider
         #endregion
         #region Apply
 
-        public void Apply(ITile[,] Tiles, int X, int Y)
+        public void Apply(ITileCollection Tiles, int X, int Y)
         {
-            Intersect(X, Y, Tiles.GetLength(0), Tiles.GetLength(1),
+            Intersect(X, Y, Tiles.Width, Tiles.Height,
                 out int x1, out int y1, out int w, out int h);
             int x2 = x1 + w;
             int y2 = y1 + h;

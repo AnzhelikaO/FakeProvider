@@ -40,7 +40,7 @@ namespace FakeProvider
         void ClearEntities();
         void CopyFrom(INamedTileCollection provider);
         bool HasCollision(int X, int Y, int Width, int Height);
-        void Apply(ITile[,] Tiles, int X, int Y);
+        void Apply(ITileCollection Tiles, int X, int Y);
 
 
         FakeSign AddSign(int X, int Y, string Text);

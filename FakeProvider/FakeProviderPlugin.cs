@@ -742,7 +742,7 @@ Entities: {provider.Entities.Count}");
         #endregion
         #region SendTo
 
-        internal static void SendTo(List<RemoteClient> clients, byte[] data)
+        internal static void SendTo(IEnumerable<RemoteClient> clients, byte[] data)
         {
             foreach (RemoteClient client in clients)
                 try
