@@ -135,19 +135,19 @@ namespace FakeProvider
                     lock (Locker)
                     {
                         if (Provider.Observers != null)
-                        {
                             AddPersonal(Provider);
-                            return;
+                        else
+                        {
+                            if (Order.Any(p => (p.Name == Provider.Name)))
+                                throw new ArgumentException($"Tile collection '{Provider.Name}' " +
+                                    "is already in use. Name must be unique.");
+                            PlaceProviderOnTopOfLayer(Provider);
+                            int index = GetEmptyIndex();
+                            _Providers[index] = Provider;
+                            Provider.ProviderCollection = this;
+                            Provider.Index = index;
+                            Provider.Enable(false);
                         }
-                        if (Order.Any(p => (p.Name == Provider.Name)))
-                            throw new ArgumentException($"Tile collection '{Provider.Name}' " +
-                                "is already in use. Name must be unique.");
-                        PlaceProviderOnTopOfLayer(Provider);
-                        int index = GetEmptyIndex();
-                        _Providers[index] = Provider;
-                        Provider.ProviderCollection = this;
-                        Provider.Index = index;
-                        Provider.Enable(false);
                     }
                 }
                 else
@@ -183,22 +183,19 @@ namespace FakeProvider
                 throw new InvalidOperationException("You cannot remove void provider.");
 
             lock (Locker)
-                using (TileProvider provider = Order.FirstOrDefault(p => (p.Name == Name)))
+            {
+                if (Order.FirstOrDefault(p => (p.Name == Name)) is TileProvider provider)
                 {
-                    if (provider == null)
-                    {
-                        using (TileProvider provider2 = Personal.FirstOrDefault(p => (p.Name == Name)))
-                        {
-                            if (provider2 == null)
-                                return false;
-                            provider2.Disable(Draw);
-                            Personal.Remove(provider2);
-                        }
-                    }
                     provider.Disable(Draw);
                     Order.Remove(provider);
                     _Providers[provider.Index] = null;
                 }
+                else if (Personal.FirstOrDefault(p => (p.Name == Name)) is TileProvider provider2)
+                {
+                    provider2.Disable(Draw);
+                    Personal.Remove(provider2);
+                }
+            }
             if (Cleanup)
                 GC.Collect();
             return true;
