@@ -126,7 +126,7 @@ namespace FakeProvider
 
         #region Add
         //TODO: Optimize
-        internal void Add(dynamic Provider)
+        internal void Add(TileProvider Provider)
         {
             lock (FakeProviderPlugin.ProvidersToAdd)
             {
@@ -158,7 +158,7 @@ namespace FakeProvider
         #endregion
         #region AddPersonal
 
-        internal void AddPersonal(dynamic Provider)
+        internal void AddPersonal(TileProvider Provider)
         {
             lock (Locker)
             {
@@ -264,10 +264,7 @@ namespace FakeProvider
                     order = Order.Count;
                 Order.Insert(order, Provider);
                 for (int i = order; i < Order.Count; i++)
-                {
-                    dynamic provider = Order[i];
-                    provider.Order = i;
-                }
+                    Order[i].Order = i;
             }
         }
 
