@@ -2,7 +2,7 @@
 {
     public interface IFake
     {
-        INamedTileCollection Provider { get; }
+        TileProvider Provider { get; }
         int Index { get; set; }
         int RelativeX { get; set; }
         int RelativeY { get; set; }

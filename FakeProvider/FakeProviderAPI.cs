@@ -16,14 +16,14 @@ namespace FakeProvider
 
         public const string WorldProviderName = "__world__";
         public static TileProviderCollection Tile { get; internal set; }
-        public static INamedTileCollection World { get; internal set; }
+        public static TileProvider World { get; internal set; }
         private static ObserversEqualityComparer OEC = new ObserversEqualityComparer();
 
         #endregion
 
         #region CreateTileProvider
 
-        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
+        public static TileProvider CreateTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer);
@@ -31,7 +31,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        public static TileProvider CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
@@ -39,7 +39,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        public static TileProvider CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
@@ -50,7 +50,7 @@ namespace FakeProvider
         #endregion
         #region CreatePersonalTileProvider
 
-        public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, int Layer = 0)
+        public static TileProvider CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, int Layer = 0)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, Players);
@@ -58,7 +58,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        public static TileProvider CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom, Players);
@@ -66,7 +66,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        public static TileProvider CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom, Players);
@@ -92,7 +92,7 @@ namespace FakeProvider
         #endregion
         #region ApplyPersonal
 
-        public static (ITileCollection tiles, int sx, int sy) ApplyPersonal(IEnumerable<INamedTileCollection> Providers, int X, int Y, int Width, int Height)
+        public static (ITileCollection tiles, int sx, int sy) ApplyPersonal(IEnumerable<TileProvider> Providers, int X, int Y, int Width, int Height)
         {
             if (Providers.Count() == 0)
                 return (Tile, X, Y);
@@ -103,7 +103,7 @@ namespace FakeProvider
                 for (int y = 0; y < Height; y++)
                     result[x, y] = Tile[X + x, Y + y];
 
-            foreach (INamedTileCollection provider in Providers)
+            foreach (TileProvider provider in Providers)
                 provider?.Apply(result, X, Y);
 
             return (result, 0, 0);
@@ -113,10 +113,10 @@ namespace FakeProvider
         #region GroupBy
 
         // TODO: Optimize
-        public static IEnumerable<IGrouping<IEnumerable<INamedTileCollection>, RemoteClient>> GroupByPersonal(
+        public static IEnumerable<IGrouping<IEnumerable<TileProvider>, RemoteClient>> GroupByPersonal(
                 List<RemoteClient> Clients, int X, int Y, int Width, int Height)
         {
-            IEnumerable<INamedTileCollection> personal = Tile.CollidePersonal(X, Y, Width, Height);
+            IEnumerable<TileProvider> personal = Tile.CollidePersonal(X, Y, Width, Height);
             return Clients.GroupBy(client =>
                 personal.Where(provider =>
                     provider.Observers.Contains(client.Id))

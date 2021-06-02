@@ -47,7 +47,7 @@ namespace FakeProvider
 		#endregion
 		#region Generate
 
-		private static byte[] Generate(IEnumerable<INamedTileCollection> providers, int X, int Y, int Width, int Height)
+		private static byte[] Generate(IEnumerable<TileProvider> providers, int X, int Y, int Width, int Height)
 		{
 
 			byte[] data;
@@ -69,7 +69,7 @@ namespace FakeProvider
 		#endregion
 		#region CompressTileBlock
 
-		private static int CompressTileBlock(IEnumerable<INamedTileCollection> providers,
+		private static int CompressTileBlock(IEnumerable<TileProvider> providers,
 			BinaryWriter writer, int xStart, int yStart, short width, short height)
 		{
 			if (xStart < 0)
@@ -129,7 +129,7 @@ namespace FakeProvider
 		#endregion
 		#region CompressTileBlock_Inner
 
-		private static void CompressTileBlock_Inner(IEnumerable<INamedTileCollection> providers,
+		private static void CompressTileBlock_Inner(IEnumerable<TileProvider> providers,
 			BinaryWriter writer, int xStart, int yStart, int width, int height)
 		{
 			short[] array = new short[8000];

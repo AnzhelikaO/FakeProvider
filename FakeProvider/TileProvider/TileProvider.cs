@@ -10,14 +10,12 @@ using Terraria.GameContent.Tile_Entities;
 #endregion
 namespace FakeProvider
 {
-    public sealed class TileProvider : INamedTileCollection
+    public sealed class TileProvider : ITileCollection, IDisposable
     {
         #region Data
 
         public TileProviderCollection ProviderCollection { get; internal set; }
-        private StructTile[,] Data;
-        StructTile[,] INamedTileCollection.Data { get => Data; set => Data = value; }
-        public INamedTileCollection Tile => this;
+        internal StructTile[,] Data;
         public string Name { get; private set; }
         public int X { get; private set; }
         public int Y { get; private set; }
@@ -283,7 +281,7 @@ namespace FakeProvider
         #endregion
         #region CopyFrom
 
-        public void CopyFrom(INamedTileCollection provider)
+        public void CopyFrom(TileProvider provider)
         {
             Clear();
             SetXYWH(provider.X, provider.Y, provider.Width, provider.Height);
@@ -335,7 +333,7 @@ namespace FakeProvider
             for (int i = x1; i < x2; i++)
                 for (int j = y1; j < y2; j++)
                 {
-                    ITile tile = Tile[i - this.X, j - this.Y];
+                    ITile tile = this[i - this.X, j - this.Y];
                     if (tile != null)
                         Tiles[i - X, j - Y] = tile;
                 }

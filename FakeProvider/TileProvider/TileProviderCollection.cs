@@ -12,13 +12,13 @@ namespace FakeProvider
         #region Data
 
         public const string VoidProviderName = "__void__";
-        private INamedTileCollection[] _Providers = new INamedTileCollection[10];
-        private List<INamedTileCollection> Order = new List<INamedTileCollection>();
+        private TileProvider[] _Providers = new TileProvider[10];
+        private List<TileProvider> Order = new List<TileProvider>();
         // TODO: Personal order
-        private List<INamedTileCollection> Personal = new List<INamedTileCollection>();
+        private List<TileProvider> Personal = new List<TileProvider>();
 
         /// <summary> List of all registered providers. </summary>
-        public INamedTileCollection[] Providers
+        public TileProvider[] Providers
         {
             get
             {
@@ -40,7 +40,7 @@ namespace FakeProvider
         public int OffsetY { get; internal protected set; }
         /// <summary> Tile to be visible outside of all providers. </summary>
         protected object Locker { get; set; } = new object();
-        internal protected INamedTileCollection Void { get; set; }
+        internal protected TileProvider Void { get; set; }
         public ITile VoidTile { get; protected set; }
 
         #endregion
@@ -104,7 +104,7 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                foreach (INamedTileCollection provider in Order)
+                foreach (TileProvider provider in Order)
                     provider.Dispose();
             }
         }
@@ -113,7 +113,7 @@ namespace FakeProvider
 
         #region operator[]
 
-        public INamedTileCollection this[string Name]
+        public TileProvider this[string Name]
         {
             get
             {
@@ -183,11 +183,11 @@ namespace FakeProvider
                 throw new InvalidOperationException("You cannot remove void provider.");
 
             lock (Locker)
-                using (INamedTileCollection provider = Order.FirstOrDefault(p => (p.Name == Name)))
+                using (TileProvider provider = Order.FirstOrDefault(p => (p.Name == Name)))
                 {
                     if (provider == null)
                     {
-                        using (INamedTileCollection provider2 = Personal.FirstOrDefault(p => (p.Name == Name)))
+                        using (TileProvider provider2 = Personal.FirstOrDefault(p => (p.Name == Name)))
                         {
                             if (provider2 == null)
                                 return false;
@@ -207,10 +207,10 @@ namespace FakeProvider
         #endregion
         #region Clear
 
-        public void Clear(INamedTileCollection except = null)
+        public void Clear(TileProvider except = null)
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in Order.ToArray())
+                foreach (TileProvider provider in Order.ToArray())
                     if (provider != except)
                         Remove(provider.Name, true, false);
             GC.Collect();
@@ -223,7 +223,7 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                INamedTileCollection provider = Order.FirstOrDefault(p => (p.Name == Name));
+                TileProvider provider = Order.FirstOrDefault(p => (p.Name == Name));
                 if (provider == null)
                     return false;
                 provider.SetTop(Draw);
@@ -234,7 +234,7 @@ namespace FakeProvider
         #endregion
         #region CollidePersonal
 
-        public IEnumerable<INamedTileCollection> CollidePersonal(int X, int Y, int Width, int Height) =>
+        public IEnumerable<TileProvider> CollidePersonal(int X, int Y, int Width, int Height) =>
             Personal.Where(provider => provider.Enabled && provider.HasCollision(X, Y, Width, Height));
 
         #endregion
@@ -254,7 +254,7 @@ namespace FakeProvider
         #endregion
         #region PlaceProviderOnTopOfLayer
 
-        internal void PlaceProviderOnTopOfLayer(INamedTileCollection Provider)
+        internal void PlaceProviderOnTopOfLayer(TileProvider Provider)
         {
             lock (Locker)
             {
@@ -274,7 +274,7 @@ namespace FakeProvider
         #endregion
         #region Intersect
 
-        internal static void Intersect(INamedTileCollection Provider, int X, int Y, int Width, int Height,
+        internal static void Intersect(TileProvider Provider, int X, int Y, int Width, int Height,
             out int RX, out int RY, out int RWidth, out int RHeight)
         {
             int ex1 = Provider.X + Provider.Width;
@@ -302,8 +302,8 @@ namespace FakeProvider
             {
                 (X, Y, Width, Height) = Clamp(X, Y, Width, Height);
 
-                Queue<INamedTileCollection> providers = new Queue<INamedTileCollection>();
-                foreach (INamedTileCollection provider in Order)
+                Queue<TileProvider> providers = new Queue<TileProvider>();
+                foreach (TileProvider provider in Order)
                     if (provider.Enabled)
                     {
                         ushort providerIndex = (ushort)provider.Index;
@@ -330,7 +330,7 @@ namespace FakeProvider
                 // chests and entities apply only in case the tile on top is from this provider.
                 while (providers.Count > 0)
                 {
-                    INamedTileCollection provider = providers.Dequeue();
+                    TileProvider provider = providers.Dequeue();
                     provider.UpdateEntities();
                 }
             }
@@ -339,7 +339,7 @@ namespace FakeProvider
         #endregion
         #region UpdateProviderReferences
 
-        public void UpdateProviderReferences(INamedTileCollection Provider)
+        public void UpdateProviderReferences(TileProvider Provider)
         {
             if (!Provider.Enabled || !FakeProviderPlugin.ProvidersLoaded || Provider.Observers != null)
                 return;
@@ -356,12 +356,12 @@ namespace FakeProvider
                 for (int i = 0; i < width; i++)
                     for (int j = 0; j < height; j++)
                     {
-                        INamedTileCollection provider = _Providers[ProviderIndexes[x + i, y + j]];
+                        TileProvider provider = _Providers[ProviderIndexes[x + i, y + j]];
                         if (provider[x + i, y + j] == null || provider.Order <= order || !provider.Enabled)
                             ProviderIndexes[x + i, y + j] = providerIndex;
                     }
 
-                foreach (INamedTileCollection provider in Order)
+                foreach (TileProvider provider in Order)
                 {
                     Intersect(provider, x, y, width, height,
                         out int x2, out int y2, out int width2, out int height2);
@@ -377,7 +377,7 @@ namespace FakeProvider
         public void HideEntities()
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in Order)
+                foreach (TileProvider provider in Order)
                     if (provider.Name != FakeProviderAPI.WorldProviderName)
                         provider.HideEntities();
         }
@@ -388,7 +388,7 @@ namespace FakeProvider
         public void UpdateEntities()
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in Order)
+                foreach (TileProvider provider in Order)
                     if (provider.Name != FakeProviderAPI.WorldProviderName)
                         provider.UpdateEntities();
         }
@@ -396,10 +396,10 @@ namespace FakeProvider
         #endregion
         #region ScanRectangle
 
-        public void ScanRectangle(int X, int Y, int Width, int Height, INamedTileCollection IgnoreProvider = null)
+        public void ScanRectangle(int X, int Y, int Width, int Height, TileProvider IgnoreProvider = null)
         {
             lock (Locker)
-                foreach (INamedTileCollection provider in Order)
+                foreach (TileProvider provider in Order)
                     if (provider != IgnoreProvider)
                     {
                         Intersect(provider, X, Y, Width, Height, out int x, out int y, out int width, out int height);

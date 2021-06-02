@@ -43,7 +43,7 @@ namespace FakeProvider
         #endregion
         #region Generate
 
-        private static byte[] Generate(IEnumerable<INamedTileCollection> providers,
+        private static byte[] Generate(IEnumerable<TileProvider> providers,
 			int X, int Y, int Width, int Height, int TileChangeType)
         {
 
@@ -70,7 +70,7 @@ namespace FakeProvider
 		/// <param name="number2">X</param>
 		/// <param name="number3">Y</param>
 		/// <param name="number5">TileChangeType</param>
-		private static void WriteTiles(IEnumerable<INamedTileCollection> providers,
+		private static void WriteTiles(IEnumerable<TileProvider> providers,
 			BinaryWriter binaryWriter, int number, int number2, int number3, int number4, int number5 = 0)
 		{
 			int sx = number;

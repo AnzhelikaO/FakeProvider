@@ -10,7 +10,7 @@ namespace FakeProvider
     {
         #region Data
 
-        public INamedTileCollection Provider { get; }
+        public TileProvider Provider { get; }
         public int Index
         {
             get => ID;
@@ -38,7 +38,7 @@ namespace FakeProvider
 
         #region Constructor
 
-        public FakeHatRack(INamedTileCollection Provider, int Index, int X, int Y, Item[] Items = null, Item[] Dyes = null)
+        public FakeHatRack(TileProvider Provider, int Index, int X, int Y, Item[] Items = null, Item[] Dyes = null)
         {
             this.Provider = Provider;
             this.ID = Index;

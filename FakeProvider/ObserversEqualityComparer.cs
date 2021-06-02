@@ -7,10 +7,10 @@ using Terraria;
 
 namespace FakeProvider
 {
-    public class ObserversEqualityComparer : IEqualityComparer<IEnumerable<INamedTileCollection>>
+    public class ObserversEqualityComparer : IEqualityComparer<IEnumerable<TileProvider>>
     {
-        public bool Equals(IEnumerable<INamedTileCollection> b1, IEnumerable<INamedTileCollection> b2) =>
+        public bool Equals(IEnumerable<TileProvider> b1, IEnumerable<TileProvider> b2) =>
             b1 == b2 || Enumerable.SequenceEqual(b1, b2);
-        public int GetHashCode(IEnumerable<INamedTileCollection> bx) => 0;
+        public int GetHashCode(IEnumerable<TileProvider> bx) => 0;
     }
 }

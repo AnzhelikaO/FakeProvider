@@ -8,7 +8,7 @@ namespace FakeProvider
     {
         #region Data
 
-        public INamedTileCollection Provider { get; }
+        public TileProvider Provider { get; }
         public int Index { get; set; }
         public int X
         {
@@ -34,7 +34,7 @@ namespace FakeProvider
 
         #region Constructor
 
-        public FakeChest(INamedTileCollection Provider, int Index, int X, int Y, Item[] Items = null)
+        public FakeChest(TileProvider Provider, int Index, int X, int Y, Item[] Items = null)
         {
             this.Provider = Provider;
             this.Index = Index;

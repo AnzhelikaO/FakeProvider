@@ -9,12 +9,12 @@ using Terraria.GameContent.Tile_Entities;
 #endregion
 namespace FakeProvider
 {
-    public interface INamedTileCollection : ITileCollection, IDisposable
+    public interface TileProvider2 : ITileCollection, IDisposable
     {
         ITile this[int x, int y] { get; set; }
         ITile GetIncapsulatedTile(int X, int Y);
         void SetIncapsulatedTile(int X, int Y, ITile Tile);
-        INamedTileCollection Tile { get; } //TODO: Remove
+        TileProvider2 Tile { get; } //TODO: Remove
 
         TileProviderCollection ProviderCollection { get; }
         StructTile[,] Data { get; set; }
@@ -41,7 +41,7 @@ namespace FakeProvider
         void Update();
         void Clear();
         void ClearEntities();
-        void CopyFrom(INamedTileCollection provider);
+        void CopyFrom(TileProvider2 provider);
         bool HasCollision(int X, int Y, int Width, int Height);
         void Apply(ITileCollection Tiles, int X, int Y);
 

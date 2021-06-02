@@ -46,7 +46,7 @@ namespace FakeProvider
         public static bool FastWorldLoad { get; private set; }
 
 
-        internal static List<INamedTileCollection> ProvidersToAdd = new List<INamedTileCollection>();
+        internal static List<TileProvider> ProvidersToAdd = new List<TileProvider>();
         internal static bool ProvidersLoaded = false;
         public static Command[] CommandList = new Command[]
         {
@@ -209,7 +209,7 @@ namespace FakeProvider
                 ProvidersToAdd.Remove(FakeProviderAPI.World);
                 FakeProviderAPI.World.ScanEntities();
 
-                foreach (INamedTileCollection provider in ProvidersToAdd)
+                foreach (TileProvider provider in ProvidersToAdd)
                     FakeProviderAPI.Tile.Add(provider);
                 ProvidersToAdd.Clear();
             }
@@ -317,12 +317,12 @@ namespace FakeProvider
         #endregion
         #region FindProvider
 
-        public static bool FindProvider(string name, TSPlayer player, out INamedTileCollection found)
+        public static bool FindProvider(string name, TSPlayer player, out TileProvider found)
         {
             found = null;
-            List<INamedTileCollection> foundProviders = new List<INamedTileCollection>();
+            List<TileProvider> foundProviders = new List<TileProvider>();
             string lowerName = name.ToLower();
-            foreach (INamedTileCollection provider in FakeProviderAPI.Tile.Providers)
+            foreach (TileProvider provider in FakeProviderAPI.Tile.Providers)
             {
                 if (provider == null)
                     continue;
@@ -382,7 +382,7 @@ namespace FakeProvider
                         args.Player.SendErrorMessage("/fake tp \"provider name\"");
                         return;
                     }
-                    if (!FindProvider(args.Parameters[1], args.Player, out INamedTileCollection provider))
+                    if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
                         return;
 
                     args.Player.Teleport((provider.X + provider.Width / 2) * 16,
@@ -398,7 +398,7 @@ namespace FakeProvider
                         args.Player.SendErrorMessage("/fake move \"provider name\" <relative x> <relative y>");
                         return;
                     }
-                    if (!FindProvider(args.Parameters[1], args.Player, out INamedTileCollection provider))
+                    if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
                         return;
 
                     if (!Int32.TryParse(args.Parameters[2], out int x)
@@ -420,7 +420,7 @@ namespace FakeProvider
                         args.Player.SendErrorMessage("/fake layer \"provider name\" <layer>");
                         return;
                     }
-                    if (!FindProvider(args.Parameters[1], args.Player, out INamedTileCollection provider))
+                    if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
                         return;
 
                     if (!Int32.TryParse(args.Parameters[2], out int layer))
@@ -441,7 +441,7 @@ namespace FakeProvider
                         args.Player.SendErrorMessage("/fake info \"provider name\"");
                         return;
                     }
-                    if (!FindProvider(args.Parameters[1], args.Player, out INamedTileCollection provider))
+                    if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
                         return;
 
                     args.Player.SendInfoMessage(
