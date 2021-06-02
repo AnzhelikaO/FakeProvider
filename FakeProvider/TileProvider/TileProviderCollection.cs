@@ -27,7 +27,7 @@ namespace FakeProvider
             }
         }
         /// <summary> <see cref="ProviderIndexes"/>[X, Y] is an index of provider at point (X, Y). </summary>
-        private ushort[,] ProviderIndexes;
+        internal ushort[,] ProviderIndexes;
         /// <summary> World width visible by client. </summary>
         public int Width { get; protected set; }
         /// <summary> World height visible by client. </summary>
@@ -41,7 +41,7 @@ namespace FakeProvider
         /// <summary> Tile to be visible outside of all providers. </summary>
         protected object Locker { get; set; } = new object();
         internal protected INamedTileCollection Void { get; set; }
-        public IProviderTile VoidTile { get; protected set; }
+        public ITile VoidTile { get; protected set; }
 
         #endregion
         #region Constructor
@@ -92,8 +92,8 @@ namespace FakeProvider
         #region GetTileSafe
 
         // Offset????
-        public IProviderTile GetTileSafe(int X, int Y) => X >= 0 && Y >= 0 && X < Width && Y < Height
-            ? (IProviderTile)this[X, Y]
+        public ITile GetTileSafe(int X, int Y) => X >= 0 && Y >= 0 && X < Width && Y < Height
+            ? this[X, Y]
             : VoidTile;
 
         #endregion
@@ -344,9 +344,9 @@ namespace FakeProvider
                 for (int i = 0; i < width; i++)
                     for (int j = 0; j < height; j++)
                     {
-                        ushort providerIndexOnTop = ProviderIndexes[x + i, y + j];
-                        IProviderTile tile = _Providers[providerIndexOnTop][x + i, y + j];
-                        if (tile == null || tile.Provider.Order <= order || !tile.Provider.Enabled)
+                        INamedTileCollection provider = _Providers[ProviderIndexes[x + i, y + j]];
+                        ITile tile = provider[x + i, y + j];
+                        if (tile == null || provider.Order <= order || !provider.Enabled)
                             ProviderIndexes[x + i, y + j] = providerIndex;
                     }
 

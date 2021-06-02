@@ -6,7 +6,7 @@ using Terraria.DataStructures;
 #endregion
 namespace FakeProvider
 {
-    public sealed class TileReference<T> : IProviderTile
+    public sealed class TileReference<T> : ITile
     {
         #region Constants
 
@@ -23,9 +23,6 @@ namespace FakeProvider
         #endregion
 
         #region Data
-
-        private static INamedTileCollection _Provider;
-        public INamedTileCollection Provider => _Provider;
 
         private StructTile[,] Data;
         public int X { get; }

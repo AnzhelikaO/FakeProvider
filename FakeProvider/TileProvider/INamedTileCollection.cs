@@ -11,8 +11,8 @@ namespace FakeProvider
 {
     public interface INamedTileCollection : ITileCollection, IDisposable
     {
-        IProviderTile this[int x, int y] { get; set; }
-        IProviderTile GetIncapsulatedTile(int X, int Y);
+        ITile this[int x, int y] { get; set; }
+        ITile GetIncapsulatedTile(int X, int Y);
         void SetIncapsulatedTile(int X, int Y, ITile Tile);
         INamedTileCollection Tile { get; } //TODO: Remove
 

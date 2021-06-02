@@ -43,7 +43,6 @@ namespace FakeProvider
         public static int OffsetY { get; private set; }
         public static int VisibleWidth { get; private set; }
         public static int VisibleHeight { get; private set; }
-        public static bool ReadonlyWorld { get; private set; }
         public static bool FastWorldLoad { get; private set; }
 
 
@@ -121,8 +120,6 @@ namespace FakeProvider
 
 #warning TODO: rockLevel, surfaceLevel, cavernLevel or whatever
 
-            // WARNING: stack overflow exception sometimes
-            ReadonlyWorld = args.Any(x => (x.ToLower() == "-readonlyworld"));
 			// WARNING: has not been heavily tested
 			FastWorldLoad = args.Any(x => (x.ToLower() == "-fastworldload"));
 
@@ -487,12 +484,8 @@ Entities: {provider.Entities.Count}");
             FakeProviderAPI.Tile = new TileProviderCollection();
             FakeProviderAPI.Tile.Initialize(VisibleWidth, VisibleHeight, 0, 0);
 
-            if (ReadonlyWorld)
-                FakeProviderAPI.World = FakeProviderAPI.CreateReadonlyTileProvider(FakeProviderAPI.WorldProviderName, 0, 0,
-                    maxTilesX, maxTilesY, Int32.MinValue + 1);
-            else
-                FakeProviderAPI.World = FakeProviderAPI.CreateTileProvider(FakeProviderAPI.WorldProviderName, 0, 0,
-                    maxTilesX, maxTilesY, Int32.MinValue + 1);
+            FakeProviderAPI.World = FakeProviderAPI.CreateTileProvider(FakeProviderAPI.WorldProviderName, 0, 0,
+                maxTilesX, maxTilesY, Int32.MinValue + 1);
 
             using (IDisposable previous = Main.tile as IDisposable)
                 Main.tile = FakeProviderAPI.World;

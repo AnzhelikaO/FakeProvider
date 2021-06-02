@@ -87,7 +87,6 @@
     <Compile Include="TileProvider\TileProvider.cs" />
     <Compile Include="TileProvider\TileProviderCollection.cs" />
     <Compile Include="TileProvider\Tiles\ReadonlyTileReference.cs" />
-    <Compile Include="TileProvider\Tiles\IProviderTile.cs" />
     <Compile Include="TileProvider\ReadonlyTileProvider.cs" />
     <Compile Include="TileProvider\Tiles\StructTile.cs" />
     <Compile Include="SendSectionPacket.cs" />

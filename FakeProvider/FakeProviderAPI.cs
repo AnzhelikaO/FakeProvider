@@ -29,10 +29,6 @@ namespace FakeProvider
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
             ((dynamic)result).Initialize(Name, X, Y, Width, Height, Layer);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
             lock (FakeProviderPlugin.ProvidersToAdd)
             {
                 if (FakeProviderPlugin.ProvidersLoaded)
@@ -49,10 +45,6 @@ namespace FakeProvider
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
             ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
             lock (FakeProviderPlugin.ProvidersToAdd)
             {
                 if (FakeProviderPlugin.ProvidersLoaded)
@@ -69,10 +61,6 @@ namespace FakeProvider
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
             ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
             lock (FakeProviderPlugin.ProvidersToAdd)
             {
                 if (FakeProviderPlugin.ProvidersLoaded)
@@ -92,14 +80,6 @@ namespace FakeProvider
             Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
             ((dynamic)result).Initialize(Name, X, Y, Width, Height, Layer);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            typeof(ReadonlyTileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
             lock (FakeProviderPlugin.ProvidersToAdd)
             {
                 if (FakeProviderPlugin.ProvidersLoaded)
@@ -116,14 +96,6 @@ namespace FakeProvider
             Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
             ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            typeof(ReadonlyTileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
             lock (FakeProviderPlugin.ProvidersToAdd)
             {
                 if (FakeProviderPlugin.ProvidersLoaded)
@@ -140,14 +112,6 @@ namespace FakeProvider
             Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
             ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
-            typeof(ReadonlyTileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
             lock (FakeProviderPlugin.ProvidersToAdd)
             {
                 if (FakeProviderPlugin.ProvidersLoaded)
@@ -167,10 +131,6 @@ namespace FakeProvider
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
             ((dynamic)result).Initialize(Name, X, Y, Width, Height, Layer, Players);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
 
             Tile.AddPersonal(result);
             result.Enable(false);
@@ -184,10 +144,6 @@ namespace FakeProvider
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
             ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer, Players);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
 
             Tile.AddPersonal(result);
             result.Enable(false);
@@ -201,10 +157,6 @@ namespace FakeProvider
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
             INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
             ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer, Players);
-            typeof(TileReference<>)
-                .MakeGenericType(newType)
-                .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, result);
 
             Tile.AddPersonal(result);
             result.Enable(false);

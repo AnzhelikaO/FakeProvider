@@ -103,7 +103,7 @@ namespace FakeProvider
             set => new TileReference<T>(Data, X, Y).CopyFrom(value);
         }
 
-        public IProviderTile this[int X, int Y]
+        public ITile this[int X, int Y]
         {
             get => new TileReference<T>(Data, X, Y);
             set => new TileReference<T>(Data, X, Y).CopyFrom(value);
@@ -112,7 +112,7 @@ namespace FakeProvider
         #endregion
         #region GetIncapsulatedTile
 
-        public IProviderTile GetIncapsulatedTile(int X, int Y) =>
+        public ITile GetIncapsulatedTile(int X, int Y) =>
             new ReadonlyTileReference<T>(Data, X - this.X, Y - this.Y);
 
         #endregion
@@ -123,7 +123,7 @@ namespace FakeProvider
         #endregion
         #region GetTileSafe
 
-        public IProviderTile GetTileSafe(int X, int Y) => X >= 0 && Y >= 0 && X < Width && Y < Height
+        public ITile GetTileSafe(int X, int Y) => X >= 0 && Y >= 0 && X < Width && Y < Height
             ? this[X, Y]
             : ProviderCollection.VoidTile;
 
@@ -895,7 +895,7 @@ namespace FakeProvider
         #region TileOnTop
 
         private bool TileOnTop(int X, int Y) =>
-            ProviderCollection.GetTileSafe(this.X + X, this.Y + Y).Provider == this;
+            ProviderCollection.ProviderIndexes[this.X + X, this.Y + Y] == Index;
 
         #endregion
 
