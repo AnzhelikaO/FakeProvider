@@ -10,7 +10,7 @@ using Terraria.GameContent.Tile_Entities;
 #endregion
 namespace FakeProvider
 {
-    public sealed class TileProvider<T> : INamedTileCollection
+    public sealed class TileProvider : INamedTileCollection
     {
         #region Data
 
@@ -53,7 +53,7 @@ namespace FakeProvider
             this.Observers = Observers;
         }
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer, HashSet<int> Observers = null)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer, ITileCollection CopyFrom, HashSet<int> Observers = null)
         {
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
@@ -73,7 +73,7 @@ namespace FakeProvider
                 }
         }
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer, HashSet<int> Observers = null)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer, ITile[,] CopyFrom, HashSet<int> Observers = null)
         {
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
@@ -99,27 +99,27 @@ namespace FakeProvider
 
         ITile ITileCollection.this[int X, int Y]
         {
-            get => new TileReference<T>(Data, X, Y);
-            set => new TileReference<T>(Data, X, Y).CopyFrom(value);
+            get => new TileReference(Data, X, Y);
+            set => new TileReference(Data, X, Y).CopyFrom(value);
         }
 
         public ITile this[int X, int Y]
         {
-            get => new TileReference<T>(Data, X, Y);
-            set => new TileReference<T>(Data, X, Y).CopyFrom(value);
+            get => new TileReference(Data, X, Y);
+            set => new TileReference(Data, X, Y).CopyFrom(value);
         }
 
         #endregion
         #region GetIncapsulatedTile
 
         public ITile GetIncapsulatedTile(int X, int Y) =>
-            new TileReference<T>(Data, X - this.X, Y - this.Y);
+            new TileReference(Data, X - this.X, Y - this.Y);
 
         #endregion
         #region SetIncapsulatedTile
 
         public void SetIncapsulatedTile(int X, int Y, ITile Tile) =>
-            new TileReference<T>(Data, X - this.X, Y - this.Y).CopyFrom(Tile);
+            new TileReference(Data, X - this.X, Y - this.Y).CopyFrom(Tile);
 
         #endregion
         #region GetTileSafe

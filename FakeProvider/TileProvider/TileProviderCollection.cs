@@ -132,17 +132,30 @@ namespace FakeProvider
         //TODO: Optimize
         internal void Add(dynamic Provider)
         {
-            lock (Locker)
+            lock (FakeProviderPlugin.ProvidersToAdd)
             {
-                if (Order.Any(p => (p.Name == Provider.Name)))
-                    throw new ArgumentException($"Tile collection '{Provider.Name}' " +
-                        "is already in use. Name must be unique.");
-                PlaceProviderOnTopOfLayer(Provider);
-                int index = GetEmptyIndex();
-                _Providers[index] = Provider;
-                Provider.ProviderCollection = this;
-                Provider.Index = index;
-                Provider.Enable(false);
+                if (FakeProviderPlugin.ProvidersLoaded)
+                {
+                    lock (Locker)
+                    {
+                        if (Provider.Observers != null)
+                        {
+                            AddPersonal(Provider);
+                            return;
+                        }
+                        if (Order.Any(p => (p.Name == Provider.Name)))
+                            throw new ArgumentException($"Tile collection '{Provider.Name}' " +
+                                "is already in use. Name must be unique.");
+                        PlaceProviderOnTopOfLayer(Provider);
+                        int index = GetEmptyIndex();
+                        _Providers[index] = Provider;
+                        Provider.ProviderCollection = this;
+                        Provider.Index = index;
+                        Provider.Enable(false);
+                    }
+                }
+                else
+                    FakeProviderPlugin.ProvidersToAdd.Add(Provider);
             }
         }
 

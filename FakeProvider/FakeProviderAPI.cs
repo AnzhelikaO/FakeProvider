@@ -25,49 +25,25 @@ namespace FakeProvider
 
         public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
         {
-            Type newType = Helper.CreateType();
-            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, Layer);
-            lock (FakeProviderPlugin.ProvidersToAdd)
-            {
-                if (FakeProviderPlugin.ProvidersLoaded)
-                    Tile.Add(result);
-                else
-                    FakeProviderPlugin.ProvidersToAdd.Add(result);
-            }
+            TileProvider result = new TileProvider();
+            result.Initialize(Name, X, Y, Width, Height, Layer);
+            Tile.Add(result);
             return result;
         }
 
         public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
         {
-            Type newType = Helper.CreateType();
-            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
-            lock (FakeProviderPlugin.ProvidersToAdd)
-            {
-                if (FakeProviderPlugin.ProvidersLoaded)
-                    Tile.Add(result);
-                else
-                    FakeProviderPlugin.ProvidersToAdd.Add(result);
-            }
+            TileProvider result = new TileProvider();
+            result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
+            Tile.Add(result);
             return result;
         }
 
         public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
         {
-            Type newType = Helper.CreateType();
-            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
-            lock (FakeProviderPlugin.ProvidersToAdd)
-            {
-                if (FakeProviderPlugin.ProvidersLoaded)
-                    Tile.Add(result);
-                else
-                    FakeProviderPlugin.ProvidersToAdd.Add(result);
-            }
+            TileProvider result = new TileProvider();
+            result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
+            Tile.Add(result);
             return result;
         }
 
@@ -76,49 +52,25 @@ namespace FakeProvider
 
         public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
         {
-            Type newType = Helper.CreateType();
-            Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, Layer);
-            lock (FakeProviderPlugin.ProvidersToAdd)
-            {
-                if (FakeProviderPlugin.ProvidersLoaded)
-                    Tile.Add(result);
-                else
-                    FakeProviderPlugin.ProvidersToAdd.Add(result);
-            }
+            ReadonlyTileProvider result = new ReadonlyTileProvider();
+            result.Initialize(Name, X, Y, Width, Height, Layer);
+            Tile.Add(result);
             return result;
         }
 
         public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
         {
-            Type newType = Helper.CreateType();
-            Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
-            lock (FakeProviderPlugin.ProvidersToAdd)
-            {
-                if (FakeProviderPlugin.ProvidersLoaded)
-                    Tile.Add(result);
-                else
-                    FakeProviderPlugin.ProvidersToAdd.Add(result);
-            }
+            ReadonlyTileProvider result = new ReadonlyTileProvider();
+            result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
+            Tile.Add(result);
             return result;
         }
 
         public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
         {
-            Type newType = Helper.CreateType();
-            Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer);
-            lock (FakeProviderPlugin.ProvidersToAdd)
-            {
-                if (FakeProviderPlugin.ProvidersLoaded)
-                    Tile.Add(result);
-                else
-                    FakeProviderPlugin.ProvidersToAdd.Add(result);
-            }
+            ReadonlyTileProvider result = new ReadonlyTileProvider();
+            result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
+            Tile.Add(result);
             return result;
         }
 
@@ -127,40 +79,25 @@ namespace FakeProvider
 
         public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, int Layer = 0)
         {
-            Type newType = Helper.CreateType();
-            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, Layer, Players);
-
-            Tile.AddPersonal(result);
-            result.Enable(false);
-
+            TileProvider result = new TileProvider();
+            result.Initialize(Name, X, Y, Width, Height, Layer, Players);
+            Tile.Add(result);
             return result;
         }
 
         public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
         {
-            Type newType = Helper.CreateType();
-            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer, Players);
-
-            Tile.AddPersonal(result);
-            result.Enable(false);
-
+            TileProvider result = new TileProvider();
+            result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom, Players);
+            Tile.Add(result);
             return result;
         }
 
         public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
         {
-            Type newType = Helper.CreateType();
-            Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
-            INamedTileCollection result = (INamedTileCollection)Activator.CreateInstance(tileProviderType, true);
-            ((dynamic)result).Initialize(Name, X, Y, Width, Height, CopyFrom, Layer, Players);
-
-            Tile.AddPersonal(result);
-            result.Enable(false);
-
+            TileProvider result = new TileProvider();
+            result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom, Players);
+            Tile.Add(result);
             return result;
         }
 
