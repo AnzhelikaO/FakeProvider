@@ -130,7 +130,6 @@ namespace FakeProvider
                 ServerApi.Hooks.GetType().GetMethod("InvokeNetSendBytes", BindingFlags.NonPublic | BindingFlags.Instance));
 
             AllPlayers = new int[Main.maxPlayers];
-            FakeProviderAPI.Personal = new List<INamedTileCollection>();
             for (int i = 0; i < Main.maxPlayers; i++)
                 AllPlayers[i] = i;
 

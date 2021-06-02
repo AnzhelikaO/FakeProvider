@@ -17,7 +17,6 @@ namespace FakeProvider
         public const string WorldProviderName = "__world__";
         public static TileProviderCollection Tile { get; internal set; }
         public static INamedTileCollection World { get; internal set; }
-        public static List<INamedTileCollection> Personal { get; internal set; }
         private static ObserversEqualityComparer OEC = new ObserversEqualityComparer();
 
         #endregion
@@ -173,7 +172,7 @@ namespace FakeProvider
                 .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
                 .SetValue(null, result);
 
-            Personal.Add(result);
+            Tile.AddPersonal(result);
             result.Enable(false);
 
             return result;
@@ -190,7 +189,7 @@ namespace FakeProvider
                 .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
                 .SetValue(null, result);
 
-            Personal.Add(result);
+            Tile.AddPersonal(result);
             result.Enable(false);
 
             return result;
@@ -207,7 +206,7 @@ namespace FakeProvider
                 .GetField("_Provider", BindingFlags.NonPublic | BindingFlags.Static)
                 .SetValue(null, result);
 
-            Personal.Add(result);
+            Tile.AddPersonal(result);
             result.Enable(false);
 
             return result;
@@ -243,7 +242,7 @@ namespace FakeProvider
                     result[x, y] = Tile[X + x, Y + y];
 
             foreach (INamedTileCollection provider in Providers)
-                provider.Apply(result, X, Y);
+                provider?.Apply(result, X, Y);
 
             return (result, 0, 0);
         }
@@ -251,12 +250,16 @@ namespace FakeProvider
         #endregion
         #region GroupBy
 
-        public static IEnumerable<IGrouping<IEnumerable<RemoteClient>, INamedTileCollection>> GroupBy(
-                List<RemoteClient> Clients, int X, int Y, int Width, int Height) =>
-            Personal.Where(provider => provider.Enabled && provider.HasCollision(X, Y, Width, Height))
-                .GroupBy(provider => provider.Observers
-                    .Where(index => Clients.Contains(Netplay.Clients[index]))
-                    .Select(index => Netplay.Clients[index]), OEC);
+        // TODO: Optimize
+        public static IEnumerable<IGrouping<IEnumerable<INamedTileCollection>, RemoteClient>> GroupByPersonal(
+                List<RemoteClient> Clients, int X, int Y, int Width, int Height)
+        {
+            IEnumerable<INamedTileCollection> personal = Tile.CollidePersonal(X, Y, Width, Height);
+            return Clients.GroupBy(client =>
+                personal.Where(provider =>
+                    provider.Observers.Contains(client.Id))
+                , OEC);
+        }
 
         #endregion
     }

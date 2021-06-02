@@ -40,10 +40,8 @@ namespace FakeProvider
 					clients.Add(client);
             }
 
-			var clientGroups = FakeProviderAPI.GroupBy(clients, X, Y, Width, Height);
-
-			foreach (var group in clientGroups)
-				FakeProviderPlugin.SendTo(group.Key, Generate(group, X, Y, Width, Height));
+			foreach (var group in FakeProviderAPI.GroupByPersonal(clients, X, Y, Width, Height))
+				FakeProviderPlugin.SendTo(group, Generate(group.Key, X, Y, Width, Height));
 		}
 
 		#endregion
@@ -58,7 +56,7 @@ namespace FakeProvider
 			{
 				bw.BaseStream.Position = 2L;
 				bw.Write((byte)PacketTypes.TileSendSection);
-				CompressTileBlock(providers, X, Y, (short)Width, (short)Height, bw);
+				CompressTileBlock(providers, bw, X, Y, (short)Width, (short)Height);
 				long position = bw.BaseStream.Position;
 				bw.BaseStream.Position = 0L;
 				bw.Write((short)position);
@@ -71,8 +69,8 @@ namespace FakeProvider
 		#endregion
 		#region CompressTileBlock
 
-		private static int CompressTileBlock(IEnumerable<INamedTileCollection> providers, int xStart, int yStart,
-			short width, short height, BinaryWriter writer)
+		private static int CompressTileBlock(IEnumerable<INamedTileCollection> providers,
+			BinaryWriter writer, int xStart, int yStart, short width, short height)
 		{
 			if (xStart < 0)
 			{
@@ -131,8 +129,8 @@ namespace FakeProvider
 		#endregion
 		#region CompressTileBlock_Inner
 
-		private static void CompressTileBlock_Inner(IEnumerable<INamedTileCollection> providers, BinaryWriter writer,
-			int xStart, int yStart, int width, int height)
+		private static void CompressTileBlock_Inner(IEnumerable<INamedTileCollection> providers,
+			BinaryWriter writer, int xStart, int yStart, int width, int height)
 		{
 			short[] array = new short[8000];
 			short[] array2 = new short[1000];

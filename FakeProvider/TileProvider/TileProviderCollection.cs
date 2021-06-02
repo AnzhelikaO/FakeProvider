@@ -14,6 +14,9 @@ namespace FakeProvider
         public const string VoidProviderName = "__void__";
         private INamedTileCollection[] _Providers = new INamedTileCollection[10];
         private List<INamedTileCollection> Order = new List<INamedTileCollection>();
+        // TODO: Personal order
+        private List<INamedTileCollection> Personal = new List<INamedTileCollection>();
+
         /// <summary> List of all registered providers. </summary>
         public INamedTileCollection[] Providers
         {
@@ -140,6 +143,25 @@ namespace FakeProvider
         }
 
         #endregion
+        #region AddPersonal
+
+        internal void AddPersonal(dynamic Provider)
+        {
+            lock (Locker)
+            {
+                if (Order.Any(p => (p.Name == Provider.Name)))
+                    throw new ArgumentException($"Tile collection '{Provider.Name}' " +
+                        "is already in use. Name must be unique.");
+                Personal.Add(Provider);
+                //int index = GetEmptyIndex();
+                //_Providers[index] = Provider;
+                Provider.ProviderCollection = this;
+                //Provider.Index = index;
+                Provider.Enable(false);
+            }
+        }
+
+        #endregion
         #region Remove
 
         public bool Remove(string Name, bool Draw = true, bool Cleanup = false)
@@ -151,7 +173,15 @@ namespace FakeProvider
                 using (INamedTileCollection provider = Order.FirstOrDefault(p => (p.Name == Name)))
                 {
                     if (provider == null)
-                        return false;
+                    {
+                        using (INamedTileCollection provider2 = Personal.FirstOrDefault(p => (p.Name == Name)))
+                        {
+                            if (provider2 == null)
+                                return false;
+                            provider2.Disable(Draw);
+                            Personal.Remove(provider2);
+                        }
+                    }
                     provider.Disable(Draw);
                     Order.Remove(provider);
                     _Providers[provider.Index] = null;
@@ -187,6 +217,12 @@ namespace FakeProvider
                 return true;
             }
         }
+
+        #endregion
+        #region CollidePersonal
+
+        public IEnumerable<INamedTileCollection> CollidePersonal(int X, int Y, int Width, int Height) =>
+            Personal.Where(provider => provider.Enabled && provider.HasCollision(X, Y, Width, Height));
 
         #endregion
 

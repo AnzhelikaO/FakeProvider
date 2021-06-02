@@ -36,24 +36,15 @@ namespace FakeProvider
 					clients.Add(client);
             }
 
-			var clientGroups = FakeProviderAPI.GroupBy(clients, X, Y, Width, Height);
-
-			foreach (var a in clientGroups)
-            {
-				Console.Write($"{a.Key}: ");
-				foreach (var b in a)
-					Console.Write($"{b}, ");
-				Console.WriteLine();
-            }
-
-			foreach (var group in clientGroups)
-				FakeProviderPlugin.SendTo(group.Key, Generate(group, X, Y, Width, Height, TileChangeType));
+			foreach (var group in FakeProviderAPI.GroupByPersonal(clients, X, Y, Width, Height))
+				FakeProviderPlugin.SendTo(group, Generate(group.Key, X, Y, Width, Height, TileChangeType));
 		}
 
         #endregion
         #region Generate
 
-        private static byte[] Generate(IEnumerable<INamedTileCollection> providers, int X, int Y, int Width, int Height, int TileChangeType)
+        private static byte[] Generate(IEnumerable<INamedTileCollection> providers,
+			int X, int Y, int Width, int Height, int TileChangeType)
         {
 
 			byte[] data;
@@ -79,8 +70,8 @@ namespace FakeProvider
 		/// <param name="number2">X</param>
 		/// <param name="number3">Y</param>
 		/// <param name="number5">TileChangeType</param>
-		private static void WriteTiles(IEnumerable<INamedTileCollection> providers, BinaryWriter binaryWriter,
-            int number, int number2, int number3, int number4, int number5 = 0)
+		private static void WriteTiles(IEnumerable<INamedTileCollection> providers,
+			BinaryWriter binaryWriter, int number, int number2, int number3, int number4, int number5 = 0)
 		{
 			int sx = number;
 			int sy = (int)number2;
