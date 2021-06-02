@@ -31,7 +31,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static TileProvider CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        public static TileProvider CreateTileProvider(string Name, int X, int Y, int Width, int Height, int Layer, ITileCollection CopyFrom)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
@@ -39,7 +39,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static TileProvider CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        public static TileProvider CreateTileProvider(string Name, int X, int Y, int Width, int Height, int Layer, ITile[,] CopyFrom)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
@@ -58,7 +58,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static TileProvider CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        public static TileProvider CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, int Layer, ITileCollection CopyFrom)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom, Players);
@@ -66,7 +66,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static TileProvider CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        public static TileProvider CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, int Layer, ITile[,] CopyFrom)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom, Players);

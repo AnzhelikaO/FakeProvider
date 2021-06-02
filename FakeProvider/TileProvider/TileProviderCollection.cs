@@ -63,8 +63,8 @@ namespace FakeProvider
             this.OffsetY = OffsetY;
 
             ProviderIndexes = new ushort[this.Width, this.Height];
-            Void = FakeProviderAPI.CreateTileProvider(VoidProviderName, 0, 0, 1, 1,
-                new ITile[,] { { new Terraria.Tile() } }, Int32.MinValue);
+            Void = FakeProviderAPI.CreateTileProvider(VoidProviderName, 0, 0, 1, 1, Int32.MinValue,
+                new ITile[,] { { new Terraria.Tile() } });
             VoidTile = Void[0, 0];
         }
 
