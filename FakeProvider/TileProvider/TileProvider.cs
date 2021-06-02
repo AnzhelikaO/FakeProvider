@@ -212,7 +212,8 @@ namespace FakeProvider
                     // Remove signs, chests, entities
                     HideEntities();
                     // Showing tiles, signs, chests and entities under the provider
-                    ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height, Index);
+                    if (Observers == null)
+                        ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height, Index);
                 }
                 if (Draw)
                     this.Draw(true);
@@ -235,6 +236,8 @@ namespace FakeProvider
 
         public void SetLayer(int Layer, bool Draw = true)
         {
+            if (Observers != null)
+                return;
             int oldLayer = this.Layer;
             if (Layer != oldLayer)
             {

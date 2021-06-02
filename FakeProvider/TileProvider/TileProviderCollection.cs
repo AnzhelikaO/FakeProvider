@@ -78,7 +78,11 @@ namespace FakeProvider
             {
                 X -= OffsetX;
                 Y -= OffsetY;
-                return _Providers[ProviderIndexes[X, Y]].GetIncapsulatedTile(X, Y);
+                ushort index = ProviderIndexes[X, Y];
+                if (index == 0)
+                    return VoidTile;
+                
+                return _Providers[index].GetIncapsulatedTile(X, Y);
             }
             set
             {
@@ -328,16 +332,15 @@ namespace FakeProvider
 
         public void UpdateProviderReferences(INamedTileCollection Provider)
         {
-            if (!Provider.Enabled || !FakeProviderPlugin.ProvidersLoaded)
+            if (!Provider.Enabled || !FakeProviderPlugin.ProvidersLoaded || Provider.Observers != null)
                 return;
             lock (Locker)
             {
-                ushort providerIndex = (ushort)Provider.Index;
-
                 // Scanning rectangle where this provider is/will appear.
                 ScanRectangle(Provider.X, Provider.Y, Provider.Width, Provider.Height, Provider);
 
                 // Update tiles
+                ushort providerIndex = (ushort)Provider.Index;
                 int order = Provider.Order;
                 (int x, int y, int width, int height) = Provider.ClampXYWH();
 
@@ -345,8 +348,7 @@ namespace FakeProvider
                     for (int j = 0; j < height; j++)
                     {
                         INamedTileCollection provider = _Providers[ProviderIndexes[x + i, y + j]];
-                        ITile tile = provider[x + i, y + j];
-                        if (tile == null || provider.Order <= order || !provider.Enabled)
+                        if (provider[x + i, y + j] == null || provider.Order <= order || !provider.Enabled)
                             ProviderIndexes[x + i, y + j] = providerIndex;
                     }
 
