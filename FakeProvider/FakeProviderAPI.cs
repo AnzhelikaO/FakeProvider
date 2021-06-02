@@ -48,33 +48,6 @@ namespace FakeProvider
         }
 
         #endregion
-        #region CreateReadonlyTileProvider
-
-        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, int Layer = 0)
-        {
-            ReadonlyTileProvider result = new ReadonlyTileProvider();
-            result.Initialize(Name, X, Y, Width, Height, Layer);
-            Tile.Add(result);
-            return result;
-        }
-
-        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
-        {
-            ReadonlyTileProvider result = new ReadonlyTileProvider();
-            result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
-            Tile.Add(result);
-            return result;
-        }
-
-        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
-        {
-            ReadonlyTileProvider result = new ReadonlyTileProvider();
-            result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
-            Tile.Add(result);
-            return result;
-        }
-
-        #endregion
         #region CreatePersonalTileProvider
 
         public static INamedTileCollection CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, int Layer = 0)

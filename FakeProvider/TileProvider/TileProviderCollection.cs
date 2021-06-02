@@ -63,7 +63,7 @@ namespace FakeProvider
             this.OffsetY = OffsetY;
 
             ProviderIndexes = new ushort[this.Width, this.Height];
-            Void = FakeProviderAPI.CreateReadonlyTileProvider(VoidProviderName, 0, 0, 1, 1,
+            Void = FakeProviderAPI.CreateTileProvider(VoidProviderName, 0, 0, 1, 1,
                 new ITile[,] { { new Terraria.Tile() } }, Int32.MinValue);
             VoidTile = Void[0, 0];
         }
@@ -78,11 +78,7 @@ namespace FakeProvider
             {
                 X -= OffsetX;
                 Y -= OffsetY;
-                ushort index = ProviderIndexes[X, Y];
-                if (index == 0)
-                    return VoidTile;
-                
-                return _Providers[index].GetIncapsulatedTile(X, Y);
+                return _Providers[ProviderIndexes[X, Y]].GetIncapsulatedTile(X, Y);
             }
             set
             {
