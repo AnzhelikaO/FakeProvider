@@ -126,7 +126,6 @@ namespace FakeProvider
 			AssemblyName assemblyName = new AssemblyName("FakeProviderRuntimeAssembly");
             AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain
                 .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-            Helper.ModuleBuilder = assemblyBuilder.DefineDynamicModule("FakeProviderRuntimeModule");
         }
 
         #endregion
