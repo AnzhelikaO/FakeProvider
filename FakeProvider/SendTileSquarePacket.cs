@@ -3,6 +3,7 @@ using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Terraria;
 using Terraria.Net.Sockets;
 #endregion
@@ -31,92 +32,90 @@ namespace FakeProvider
                 if ((i < 0) || (i >= Main.maxPlayers))
                     throw new ArgumentOutOfRangeException(nameof(Who));
                 RemoteClient client = Netplay.Clients[i];
-                if (NetMessage.buffer[i].broadcast && client.IsConnected() && client.SectionRange(Width, X, Y))
-                    clients.Add(client);
-            }
-            if (clients.Count == 0)
-                return;
-
-            byte[] data;
-            using (MemoryStream ms = new MemoryStream())
-            using (BinaryWriter bw = new BinaryWriter(ms))
-            {
-                bw.BaseStream.Position = 2L;
-                bw.Write((byte)PacketTypes.TileSendSquare);
-                WriteTiles(bw, X, Y, Width, Height, TileChangeType);
-                long position = bw.BaseStream.Position;
-                bw.BaseStream.Position = 0L;
-                bw.Write((short)position);
-                bw.BaseStream.Position = position;
-                data = ms.ToArray();
+				if (NetMessage.buffer[i].broadcast && client.IsConnected() && client.SectionRange(Width, X, Y))
+					clients.Add(client);
             }
 
-            foreach (RemoteClient client in clients)
-                try
-                {
-                    if (FakeProviderPlugin.NetSendBytes(client, data, 0, data.Length))
-                        continue;
+			foreach (var group in FakeProviderAPI.GroupByPersonal(clients, X, Y, Width, Height))
+				FakeProviderPlugin.SendTo(group, Generate(group.Key, X, Y, Width, Height, TileChangeType));
+		}
 
-                    client.Socket.AsyncSend(data, 0, data.Length,
-                        new SocketSendCallback(client.ServerWriteCallBack), null);
-                }
-                catch (IOException) { }
-                catch (ObjectDisposedException) { }
-                catch (InvalidOperationException) { }
-        }
+        #endregion
+        #region Generate
+
+        private static byte[] Generate(IEnumerable<INamedTileCollection> providers,
+			int X, int Y, int Width, int Height, int TileChangeType)
+        {
+
+			byte[] data;
+			using (MemoryStream ms = new MemoryStream())
+			using (BinaryWriter bw = new BinaryWriter(ms))
+			{
+				bw.BaseStream.Position = 2L;
+				bw.Write((byte)PacketTypes.TileSendSquare);
+				WriteTiles(providers, bw, X, Y, Width, Height, TileChangeType);
+				long position = bw.BaseStream.Position;
+				bw.BaseStream.Position = 0L;
+				bw.Write((short)position);
+				bw.BaseStream.Position = position;
+				data = ms.ToArray();
+			}
+			return data;
+		}
 
         #endregion
         #region WriteTiles
 
-        /// <param name="number">Size</param>
-        /// <param name="number2">X</param>
-        /// <param name="number3">Y</param>
-        /// <param name="number5">TileChangeType</param>
-        private static void WriteTiles(BinaryWriter binaryWriter,
-            int number, int number2, int number3, int number4, int number5 = 0)
+		/// <param name="number">Size</param>
+		/// <param name="number2">X</param>
+		/// <param name="number3">Y</param>
+		/// <param name="number5">TileChangeType</param>
+		private static void WriteTiles(IEnumerable<INamedTileCollection> providers,
+			BinaryWriter binaryWriter, int number, int number2, int number3, int number4, int number5 = 0)
 		{
-			int num4 = number;
-			int num5 = (int)number2;
-			int num6 = (int)number3;
-			if (num6 < 0)
+			int sx = number;
+			int sy = (int)number2;
+			int width = (int)number3;
+			if (width < 0)
 			{
-				num6 = 0;
+				width = 0;
 			}
-			int num7 = (int)number4;
-			if (num7 < 0)
+			int height = (int)number4;
+			if (height < 0)
 			{
-				num7 = 0;
+				height = 0;
 			}
-			if (num4 < num6)
+			if (sx < width)
 			{
-				num4 = num6;
+				sx = width;
 			}
-			if (num4 >= Main.maxTilesX + num6)
+			if (sx >= Main.maxTilesX + width)
 			{
-				num4 = Main.maxTilesX - num6 - 1;
+				sx = Main.maxTilesX - width - 1;
 			}
-			if (num5 < num7)
+			if (sy < height)
 			{
-				num5 = num7;
+				sy = height;
 			}
-			if (num5 >= Main.maxTilesY + num7)
+			if (sy >= Main.maxTilesY + height)
 			{
-				num5 = Main.maxTilesY - num7 - 1;
+				sy = Main.maxTilesY - height - 1;
 			}
-			binaryWriter.Write((short)num4);
-			binaryWriter.Write((short)num5);
-			binaryWriter.Write((byte)num6);
-			binaryWriter.Write((byte)num7);
+			binaryWriter.Write((short)sx);
+			binaryWriter.Write((short)sy);
+			binaryWriter.Write((byte)width);
+			binaryWriter.Write((byte)height);
 			binaryWriter.Write((byte)number5);
-			for (int num8 = num4; num8 < num4 + num6; num8++)
+			(ITileCollection tiles, int _sx, int _sy) = FakeProviderAPI.ApplyPersonal(providers, sx, sy, width, height);
+			for (int x = _sx; x < _sx + width; x++)
 			{
-				for (int num9 = num5; num9 < num5 + num7; num9++)
+				for (int y = _sy; y < _sy + height; y++)
 				{
 					BitsByte bb17 = 0;
 					BitsByte bb18 = 0;
 					byte b = 0;
 					byte b2 = 0;
-					ITile tile = Main.tile[num8, num9];
+					ITile tile = tiles[x, y];
 					bb17[0] = tile.active();
 					bb17[2] = (tile.wall > 0);
 					bb17[3] = (tile.liquid > 0 && Main.netMode == 2);

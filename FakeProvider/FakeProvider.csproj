@@ -67,6 +67,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ObserversEqualityComparer.cs" />
     <Compile Include="FakeProviderPlugin.cs" />
     <Compile Include="FakeProviderAPI.cs" />
     <Compile Include="Helper.cs" />
@@ -91,6 +92,7 @@
     <Compile Include="TileProvider\Tiles\StructTile.cs" />
     <Compile Include="SendSectionPacket.cs" />
     <Compile Include="SendTileSquarePacket.cs" />
+    <Compile Include="TileProvider\Tiles\TileCollection.cs" />
     <Compile Include="TileProvider\Tiles\TileReference.cs" />
     <Compile Include="UnsafeBinaryReader.cs" />
   </ItemGroup>

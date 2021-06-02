@@ -23,6 +23,7 @@ using Microsoft.Xna.Framework;
 using static Terraria.GameContent.Creative.CreativePowers;
 using Terraria.ID;
 using System.Runtime.CompilerServices;
+using Terraria.Net.Sockets;
 #endregion
 namespace FakeProvider
 {
@@ -150,6 +151,7 @@ namespace FakeProvider
             Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
             Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
+            ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
 
             Commands.ChatCommands.AddRange(CommandList);
         }
@@ -166,6 +168,7 @@ namespace FakeProvider
                 Hooks.World.IO.PreSaveWorld -= OnPreSaveWorld;
                 Hooks.World.IO.PostSaveWorld -= OnPostSaveWorld;
                 ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
+                ServerApi.Hooks.ServerLeave.Deregister(this, OnServerLeave);
             }
             base.Dispose(Disposing);
         }
@@ -287,7 +290,34 @@ namespace FakeProvider
         }
 
         #endregion
+        #region OnServerLeave
 
+        private static void OnServerLeave(LeaveEventArgs args)
+        {
+            //FakeProviderAPI.Personal.All(provider => provider.Observers.re)
+        }
+
+        #endregion
+
+        #region SendTo
+
+        internal static void SendTo(IEnumerable<RemoteClient> clients, byte[] data)
+        {
+            foreach (RemoteClient client in clients)
+                try
+                {
+                    if (NetSendBytes(client, data, 0, data.Length))
+                        continue;
+
+                    client.Socket.AsyncSend(data, 0, data.Length,
+                        new SocketSendCallback(client.ServerWriteCallBack), null);
+                }
+                catch (IOException) { }
+                catch (ObjectDisposedException) { }
+                catch (InvalidOperationException) { }
+        }
+
+        #endregion
         #region FindProvider
 
         public static bool FindProvider(string name, TSPlayer player, out INamedTileCollection found)

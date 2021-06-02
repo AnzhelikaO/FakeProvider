@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent.Tile_Entities;
@@ -28,112 +29,108 @@ namespace FakeProvider
                 return;
 
             List<RemoteClient> clients = new List<RemoteClient>();
-            foreach (int i in Who)
+			foreach (int i in Who)
             {
                 if (i == IgnoreIndex)
                     continue;
                 if ((i < 0) || (i >= Main.maxPlayers))
                     throw new ArgumentOutOfRangeException(nameof(Who));
                 RemoteClient client = Netplay.Clients[i];
-                if (client?.IsConnected() == true)
-                    clients.Add(client);
-            }
-            if (clients.Count == 0)
-                return;
-
-            byte[] data;
-            using (MemoryStream ms = new MemoryStream())
-            using (BinaryWriter bw = new BinaryWriter(ms))
-            {
-                bw.BaseStream.Position = 2L;
-                bw.Write((byte)PacketTypes.TileSendSection);
-                CompressTileBlock(X, Y, (short)Width, (short)Height, bw);
-                long position = bw.BaseStream.Position;
-                bw.BaseStream.Position = 0L;
-                bw.Write((short)position);
-                bw.BaseStream.Position = position;
-                data = ms.ToArray();
+				if (client?.IsConnected() == true)
+					clients.Add(client);
             }
 
-            foreach (RemoteClient client in clients)
-                try
-                {
-                    if (FakeProviderPlugin.NetSendBytes(client, data, 0, data.Length))
-                        continue;
+			foreach (var group in FakeProviderAPI.GroupByPersonal(clients, X, Y, Width, Height))
+				FakeProviderPlugin.SendTo(group, Generate(group.Key, X, Y, Width, Height));
+		}
 
-                    client.Socket.AsyncSend(data, 0, data.Length,
-                        new SocketSendCallback(client.ServerWriteCallBack), null);
-                }
-                catch (IOException) { }
-                catch (ObjectDisposedException) { }
-                catch (InvalidOperationException) { }
-        }
+		#endregion
+		#region Generate
 
-        #endregion
-        #region CompressTileBlock
+		private static byte[] Generate(IEnumerable<INamedTileCollection> providers, int X, int Y, int Width, int Height)
+		{
 
-        private static int CompressTileBlock(int xStart, int yStart,
-            short width, short height, BinaryWriter writer)
-        {
-            if (xStart < 0)
-            {
-                width += (short)xStart;
-                xStart = 0;
-            }
-            if (yStart < 0)
-            {
-                height += (short)yStart;
-                yStart = 0;
-            }
-            if ((xStart + width) > Main.maxTilesX)
-                width = (short)(Main.maxTilesX - xStart);
-            if ((yStart + height) > Main.maxTilesY)
-                height = (short)(Main.maxTilesY - yStart);
-            if ((width == 0) || (height == 0))
-                return 0; // WHAT???????????????????????
+			byte[] data;
+			using (MemoryStream ms = new MemoryStream())
+			using (BinaryWriter bw = new BinaryWriter(ms))
+			{
+				bw.BaseStream.Position = 2L;
+				bw.Write((byte)PacketTypes.TileSendSection);
+				CompressTileBlock(providers, bw, X, Y, (short)Width, (short)Height);
+				long position = bw.BaseStream.Position;
+				bw.BaseStream.Position = 0L;
+				bw.Write((short)position);
+				bw.BaseStream.Position = position;
+				data = ms.ToArray();
+			}
+			return data;
+		}
 
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream))
-                {
-                    binaryWriter.Write(xStart);
-                    binaryWriter.Write(yStart);
-                    binaryWriter.Write(width);
-                    binaryWriter.Write(height);
-                    //NetMessage.CompressTileBlock_Inner(binaryWriter, xStart, yStart, (int)width, (int)height);
-                    CompressTileBlock_Inner(binaryWriter, xStart, yStart, width, height);
-                    memoryStream.Position = 0L;
-                    MemoryStream memoryStream2 = new MemoryStream();
-                    using (DeflateStream deflateStream = new DeflateStream(memoryStream2, CompressionMode.Compress, true))
-                    {
-                        memoryStream.CopyTo(deflateStream);
-                        deflateStream.Flush();
-                        deflateStream.Close();
-                        deflateStream.Dispose();
-                    }
-                    bool flag = memoryStream.Length <= memoryStream2.Length;
-                    if (flag)
-                    {
-                        memoryStream.Position = 0L;
-                        writer.Write((byte)0);
-                        writer.Write(memoryStream.GetBuffer());
-                    }
-                    else
-                    {
-                        memoryStream2.Position = 0L;
-                        writer.Write((byte)1);
-                        writer.Write(memoryStream2.GetBuffer());
-                    }
-                }
-            }
-            return 0;
-        }
+		#endregion
+		#region CompressTileBlock
 
-        #endregion
-        #region CompressTileBlock_Inner
+		private static int CompressTileBlock(IEnumerable<INamedTileCollection> providers,
+			BinaryWriter writer, int xStart, int yStart, short width, short height)
+		{
+			if (xStart < 0)
+			{
+				width += (short)xStart;
+				xStart = 0;
+			}
+			if (yStart < 0)
+			{
+				height += (short)yStart;
+				yStart = 0;
+			}
+			if ((xStart + width) > Main.maxTilesX)
+				width = (short)(Main.maxTilesX - xStart);
+			if ((yStart + height) > Main.maxTilesY)
+				height = (short)(Main.maxTilesY - yStart);
+			if ((width == 0) || (height == 0))
+				return 0; // WHAT???????????????????????
 
-        private static void CompressTileBlock_Inner(BinaryWriter writer,
-            int xStart, int yStart, int width, int height)
+			using (MemoryStream memoryStream = new MemoryStream())
+			{
+				using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream))
+				{
+					binaryWriter.Write(xStart);
+					binaryWriter.Write(yStart);
+					binaryWriter.Write(width);
+					binaryWriter.Write(height);
+					//NetMessage.CompressTileBlock_Inner(binaryWriter, xStart, yStart, (int)width, (int)height);
+					CompressTileBlock_Inner(providers, binaryWriter, xStart, yStart, width, height);
+					memoryStream.Position = 0L;
+					MemoryStream memoryStream2 = new MemoryStream();
+					using (DeflateStream deflateStream = new DeflateStream(memoryStream2, CompressionMode.Compress, true))
+					{
+						memoryStream.CopyTo(deflateStream);
+						deflateStream.Flush();
+						deflateStream.Close();
+						deflateStream.Dispose();
+					}
+					bool flag = memoryStream.Length <= memoryStream2.Length;
+					if (flag)
+					{
+						memoryStream.Position = 0L;
+						writer.Write((byte)0);
+						writer.Write(memoryStream.GetBuffer());
+					}
+					else
+					{
+						memoryStream2.Position = 0L;
+						writer.Write((byte)1);
+						writer.Write(memoryStream2.GetBuffer());
+					}
+				}
+			}
+			return 0;
+		}
+
+		#endregion
+		#region CompressTileBlock_Inner
+
+		private static void CompressTileBlock_Inner(IEnumerable<INamedTileCollection> providers,
+			BinaryWriter writer, int xStart, int yStart, int width, int height)
 		{
 			short[] array = new short[8000];
 			short[] array2 = new short[1000];
@@ -147,11 +144,12 @@ namespace FakeProvider
 			byte b = 0;
 			byte[] array4 = new byte[15];
 			ITile tile = null;
-			for (int i = yStart; i < yStart + height; i++)
+			(ITileCollection tiles, int _sx, int _sy) = FakeProviderAPI.ApplyPersonal(providers, xStart, yStart, width, height);
+			for (int i = _sy; i < _sy + height; i++)
 			{
-				for (int j = xStart; j < xStart + width; j++)
+				for (int j = _sx; j < _sx + width; j++)
 				{
-					ITile tile2 = Main.tile[j, i];
+					ITile tile2 = tiles[j, i];
 					if (tile2.isTheSameAs(tile) && TileID.Sets.AllowsSaveCompressionBatching[(int)tile2.type])
 					{
 						num4 += 1;
@@ -482,6 +480,6 @@ namespace FakeProvider
 			}
 		}
 
-        #endregion
-    }
+		#endregion
+	}
 }

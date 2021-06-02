@@ -1,6 +1,7 @@
 ﻿#region Using
 using OTAPI.Tile;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Terraria;
 using Terraria.DataStructures;
@@ -24,6 +25,7 @@ namespace FakeProvider
         int Order { get; }
         int Layer { get; }
         bool Enabled { get; }
+        HashSet<int> Observers { get; }
         ReadOnlyCollection<IFake> Entities { get; }
 
         (int X, int Y, int Width, int Height) XYWH(int DeltaX = 0, int DeltaY = 0);
@@ -40,6 +42,8 @@ namespace FakeProvider
         void Clear();
         void ClearEntities();
         void CopyFrom(INamedTileCollection provider);
+        bool HasCollision(int X, int Y, int Width, int Height);
+        void Apply(ITileCollection Tiles, int X, int Y);
 
 
         FakeSign AddSign(int X, int Y, string Text);
