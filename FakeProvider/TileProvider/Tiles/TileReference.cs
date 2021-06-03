@@ -395,7 +395,7 @@ namespace FakeProvider
         #endregion
         #region skipLiquid
 
-        public bool skipLiquid() => false;// ((bTileHeader3 & 16) == 16);
+        public bool skipLiquid() => ((bTileHeader3 & 16) == 16);
         public void skipLiquid(bool SkipLiquid)
         {
             if (SkipLiquid)
