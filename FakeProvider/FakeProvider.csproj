@@ -67,7 +67,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FrameSectionPacket.cs" />
+    <Compile Include="Packets\FrameSectionPacket.cs" />
     <Compile Include="ObserversEqualityComparer.cs" />
     <Compile Include="FakeProviderPlugin.cs" />
     <Compile Include="FakeProviderAPI.cs" />
@@ -87,8 +87,8 @@
     <Compile Include="TileProvider\TileProvider.cs" />
     <Compile Include="TileProvider\TileProviderCollection.cs" />
     <Compile Include="TileProvider\Tiles\StructTile.cs" />
-    <Compile Include="SendSectionPacket.cs" />
-    <Compile Include="SendTileSquarePacket.cs" />
+    <Compile Include="Packets\SendSectionPacket.cs" />
+    <Compile Include="Packets\SendTileSquarePacket.cs" />
     <Compile Include="TileProvider\TileCollection.cs" />
     <Compile Include="TileProvider\Tiles\TileReference.cs" />
     <Compile Include="UnsafeBinaryReader.cs" />
