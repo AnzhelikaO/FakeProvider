@@ -3,6 +3,7 @@ using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ namespace FakeProvider
 		public short frameY;
 
 		ushort ITile.type { get => type; set => type = value; }
-		ushort ITile.wall { get => wall; set => wall = value; }
+		ushort ITile.wall { get => (ushort)(wall & 511); set => wall = (ushort)(value & 511 | this.wall & 65024); }
 		byte ITile.liquid { get => liquid; set => liquid = value; }
 		short ITile.sTileHeader { get => sTileHeader; set => sTileHeader = value; }
 		byte ITile.bTileHeader { get => bTileHeader; set => bTileHeader = value; }
@@ -43,6 +44,8 @@ namespace FakeProvider
 		byte ITile.bTileHeader3 { get => bTileHeader3; set => bTileHeader3 = value; }
 		short ITile.frameX { get => frameX; set => frameX = value; }
 		short ITile.frameY { get => frameY; set => frameY = value; }
+
+		internal byte flag7 { get => (byte)(this.wall >> 9); set => wall |= (ushort)(value << 9); }
 
 		public StructTile(StructTile copy)
 		{
@@ -86,7 +89,7 @@ namespace FakeProvider
 		public void CopyFrom(ITile from)
 		{
 			this.type = from.type;
-			this.wall = from.wall;
+			this.wall = (ushort)(from.wall & 511 | this.wall & 65024);
 			this.liquid = from.liquid;
 			this.sTileHeader = from.sTileHeader;
 			this.bTileHeader = from.bTileHeader;
@@ -385,7 +388,7 @@ namespace FakeProvider
 
 		public bool skipLiquid()
 		{
-			return (this.bTileHeader3 & 16) == 16;
+			return (this.bTileHeader3 & 16) == 16 && (flag7 & 1) == 0;
 		}
 
 		public void skipLiquid(bool skipLiquid)
@@ -534,7 +537,7 @@ namespace FakeProvider
 			}
 			if ((types & TileDataType.Wall) != (TileDataType)0)
 			{
-				this.wall = 0;
+				this.wall &= 65024;
 				this.wallFrameX(0);
 				this.wallFrameY(0);
 			}

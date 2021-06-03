@@ -57,6 +57,16 @@ namespace FakeProvider
 
         #endregion
 
+        #region Special7BitFlag
+
+        public byte Special7BitFlag
+        {
+            get => Data[X, Y].flag7;
+            set => Data[X, Y].flag7 = value;
+        }
+
+        #endregion
+
         #region type
 
         public ushort type
@@ -385,7 +395,7 @@ namespace FakeProvider
         #endregion
         #region skipLiquid
 
-        public bool skipLiquid() => ((bTileHeader3 & 16) == 16);
+        public bool skipLiquid() => false;// ((bTileHeader3 & 16) == 16);
         public void skipLiquid(bool SkipLiquid)
         {
             if (SkipLiquid)
