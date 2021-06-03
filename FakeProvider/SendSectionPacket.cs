@@ -36,6 +36,7 @@ namespace FakeProvider
                 if ((i < 0) || (i >= Main.maxPlayers))
                     throw new ArgumentOutOfRangeException(nameof(Who));
                 RemoteClient client = Netplay.Clients[i];
+				// Not checking NetMessage.buffer[i].broadcast since section packet (because of section packet on connection)
 				if (client?.IsConnected() == true)
 					clients.Add(client);
             }

@@ -67,6 +67,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FrameSectionPacket.cs" />
     <Compile Include="ObserversEqualityComparer.cs" />
     <Compile Include="FakeProviderPlugin.cs" />
     <Compile Include="FakeProviderAPI.cs" />

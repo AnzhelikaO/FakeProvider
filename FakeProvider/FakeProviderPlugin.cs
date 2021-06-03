@@ -270,12 +270,19 @@ namespace FakeProvider
                             args.number, (int)args.number2, (short)args.number3, (short)args.number4);
                     break;
                 case PacketTypes.TileFrameSection:
-#warning NotImplemented
-                    // TODO: sending to custom list of players with args.text
-                    break;
+					args.Handled = true;
+					// We allow sending packet to custom list of players by specifying it in text parameter
+					if (args.text?._text?.Length > 0)
+						FrameSectionPacket.Send(args.text._text.Select(c => (int)c), args.ignoreClient,
+							(short)args.number, (short)args.number2, (short)args.number3, (short)args.number4);
+					else
+						FrameSectionPacket.Send(args.remoteClient, args.ignoreClient,
+							(short)args.number, (short)args.number2, (short)args.number3, (short)args.number4);
+					break;
                 case PacketTypes.TileSendSquare:
                     args.Handled = true;
-                    if (args.text?._text?.Length > 0)
+					// We allow sending packet to custom list of players by specifying it in text parameter
+					if (args.text?._text?.Length > 0)
                         SendTileSquarePacket.Send(args.text._text.Select(c => (int)c), args.ignoreClient,
                             (int)args.number3, (int)args.number4, (int)args.number, (int)args.number2, args.number5);
                     else
