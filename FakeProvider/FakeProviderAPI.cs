@@ -124,5 +124,11 @@ namespace FakeProvider
         }
 
         #endregion
+        #region GetProviderAt
+
+        public static TileProvider GetProviderAt(int X, int Y) =>
+            Tile.Providers[Tile.ProviderIndexes[X, Y]];
+
+        #endregion
     }
 }
