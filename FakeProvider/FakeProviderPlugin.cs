@@ -24,6 +24,8 @@ using static Terraria.GameContent.Creative.CreativePowers;
 using Terraria.ID;
 using System.Runtime.CompilerServices;
 using Terraria.Net.Sockets;
+using System.Threading;
+using System.Diagnostics;
 #endregion
 namespace FakeProvider
 {
@@ -39,15 +41,15 @@ namespace FakeProvider
         internal static int[] AllPlayers;
         internal static Func<RemoteClient, byte[], int, int, bool> NetSendBytes;
 
-        public static int OffsetX { get; private set; }
-        public static int OffsetY { get; private set; }
-        public static int VisibleWidth { get; private set; }
+        public static int OffsetX { get; private set; } // Not supported
+		public static int OffsetY { get; private set; } // Not supported
+		public static int VisibleWidth { get; private set; }
         public static int VisibleHeight { get; private set; }
         public static bool FastWorldLoad { get; private set; }
 
-
         internal static List<TileProvider> ProvidersToAdd = new List<TileProvider>();
         internal static bool ProvidersLoaded = false;
+		private static FieldInfo StatusTextField;
         public static Command[] CommandList = new Command[]
         {
             new Command("FakeProvider.Control", FakeCommand, "fake")
@@ -61,10 +63,11 @@ namespace FakeProvider
         {
             Order = -1002;
             string[] args = Environment.GetCommandLineArgs();
-            #region Offset
+			int argumentIndex;
+			#region Offset
 
-            int offsetX = 0;
-            int argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-offsetx")));
+			/*int offsetX = 0;
+            argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-offsetx")));
             if (argumentIndex > -1)
             {
                 argumentIndex++;
@@ -83,12 +86,12 @@ namespace FakeProvider
                         || !int.TryParse(args[argumentIndex], out offsetY))
                     Console.WriteLine("Please provide a not negative offsetY integer value.");
             }
-            OffsetY = offsetY;
+            OffsetY = offsetY;*/
 
-            #endregion
-            #region VisibleWidth, VisibleHeight
+			#endregion
+			#region VisibleWidth, VisibleHeight
 
-            int visibleWidth = -1;
+			int visibleWidth = -1;
             argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-visiblewidth")));
             if (argumentIndex > -1)
             {
@@ -123,10 +126,8 @@ namespace FakeProvider
 			// WARNING: has not been heavily tested
 			FastWorldLoad = args.Any(x => (x.ToLower() == "-fastworldload"));
 
-			AssemblyName assemblyName = new AssemblyName("FakeProviderRuntimeAssembly");
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain
-                .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-        }
+			StatusTextField = typeof(Main).GetField("statusText", BindingFlags.NonPublic | BindingFlags.Static);
+		}
 
         #endregion
         #region Initialize
@@ -145,7 +146,7 @@ namespace FakeProvider
             Hooks.World.IO.PreLoadWorld += OnPreLoadWorld;
             Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
             Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
-            Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
+			Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
             ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
 
@@ -162,8 +163,8 @@ namespace FakeProvider
                 Hooks.World.IO.PreLoadWorld -= OnPreLoadWorld;
                 Hooks.World.IO.PostLoadWorld -= OnPostLoadWorld;
                 Hooks.World.IO.PreSaveWorld -= OnPreSaveWorld;
-                Hooks.World.IO.PostSaveWorld -= OnPostSaveWorld;
-                ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
+				Hooks.World.IO.PostSaveWorld -= OnPostSaveWorld;
+				ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnServerLeave);
             }
             base.Dispose(Disposing);
@@ -225,34 +226,47 @@ namespace FakeProvider
         {
             if (FakeProviderAPI.World == null)
                 return HookResult.Continue;
-            Main.maxTilesX = FakeProviderAPI.World.Width;
-            Main.maxTilesY = FakeProviderAPI.World.Height;
-            Main.worldSurface -= OffsetY;
-            Main.rockLayer -= OffsetY;
-            Main.tile = FakeProviderAPI.World;
-            FakeProviderAPI.Tile.HideEntities();
-            return HookResult.Continue;
+
+			/*
+			Main.maxTilesX = FakeProviderAPI.World.Width;
+			Main.maxTilesY = FakeProviderAPI.World.Height;
+			Main.worldSurface -= OffsetY;
+			Main.rockLayer -= OffsetY;
+			Main.tile = FakeProviderAPI.World;
+			FakeProviderAPI.Tile.HideEntities();*/
+
+			try
+            {
+				Console.WriteLine("FAKE SAVING");
+				SaveWorld(ref Cloud, ref ResetTime);
+				Console.WriteLine("FAKE SAVING END");
+			}
+			catch (Exception e)
+            {
+				Console.WriteLine(e);
+            }
+
+			return HookResult.Cancel;
         }
 
-        #endregion
-        #region OnPostSaveWorld
+		#endregion
+		#region OnPostSaveWorld
+		private static void OnPostSaveWorld(bool Cloud, bool ResetTime)
+		{
+			Console.WriteLine("POST SAVE HOOK");
+			/*if (FakeProviderAPI.World == null)
+				return;
+			Main.maxTilesX = VisibleWidth;
+			Main.maxTilesY = VisibleHeight;
+			Main.worldSurface += OffsetY;
+			Main.rockLayer += OffsetY;
+			Main.tile = FakeProviderAPI.Tile;
+			FakeProviderAPI.Tile.UpdateEntities();*/
+		}
+		#endregion
+		#region OnSendData
 
-        private static void OnPostSaveWorld(bool Cloud, bool ResetTime)
-        {
-            if (FakeProviderAPI.World == null)
-                return;
-            Main.maxTilesX = VisibleWidth;
-            Main.maxTilesY = VisibleHeight;
-            Main.worldSurface += OffsetY;
-            Main.rockLayer += OffsetY;
-            Main.tile = FakeProviderAPI.Tile;
-            FakeProviderAPI.Tile.UpdateEntities();
-        }
-
-        #endregion
-        #region OnSendData
-
-        private static void OnSendData(SendDataEventArgs args)
+		private static void OnSendData(SendDataEventArgs args)
         {
             if (args.Handled)
                 return;
@@ -473,9 +487,663 @@ Entities: {provider.Entities.Count}");
 
         #endregion
 
-        #region CreateCustomTileProvider
+        #region SaveWorld
 
-        private static void CreateCustomTileProvider()
+        private static void SaveWorld(ref bool Cloud, ref bool ResetTime)
+        {
+			Console.WriteLine("FAKE 1");
+			SaveWorldDirect(Cloud, ResetTime);
+			SaveWorldEnd(Cloud, ResetTime);
+		}
+
+		#endregion
+		#region SaveWorldEnd
+
+		private static void SaveWorldEnd(bool useCloudSaving, bool resetTime)
+		{
+			Hooks.World.IO.PostSaveWorldHandler postSaveWorld = Hooks.World.IO.PostSaveWorld;
+			if (postSaveWorld != null)
+			{
+				postSaveWorld(useCloudSaving, resetTime);
+			}
+		}
+
+		#endregion
+		#region SetStatusText
+
+		private static void SetStatusText(string text)
+		{
+			Hooks.Game.StatusTextHandler statusTextWrite = Hooks.Game.StatusTextWrite;
+			HookResult? hookResult = (statusTextWrite != null) ? new HookResult?(statusTextWrite(ref text)) : null;
+			bool flag = hookResult != null && hookResult.Value == HookResult.Cancel;
+			if (!flag)
+			{
+				StatusTextField.SetValue(null, text);
+			}
+		}
+
+		#endregion
+		#region SaveWorldDirect
+
+		private static void SaveWorldDirect(bool useCloudSaving, bool resetTime = false)
+		{
+			Console.WriteLine("FAKE 2");
+			if (useCloudSaving && SocialAPI.Cloud == null)
+			{
+				return;
+			}
+			if (Main.worldName == "")
+			{
+				Main.worldName = "World";
+			}
+			while (WorldGen.IsGeneratingHardMode)
+			{
+				SetStatusText(Lang.gen[48].Value);
+			}
+			if (Monitor.TryEnter(WorldFile.IOLock))
+			{
+				try
+				{
+					FileUtilities.ProtectedInvoke(delegate
+					{
+						InternalSaveWorld(useCloudSaving, resetTime);
+					});
+					return;
+				}
+				finally
+				{
+					Monitor.Exit(WorldFile.IOLock);
+				}
+				return;
+			}
+		}
+
+		#endregion
+		#region InternalSaveWorld
+
+		public static void InternalSaveWorld(bool useCloudSaving, bool resetTime)
+		{
+			Console.WriteLine("FAKE 3");
+			Terraria.Utils.TryCreatingDirectory(Main.WorldPath);
+			if (Main.skipMenu)
+			{
+				return;
+			}
+			if (WorldFile._hasCache)
+			{
+				WorldFile.SetTempToCache();
+			}
+			else
+			{
+				WorldFile.SetTempToOngoing();
+			}
+			if (resetTime)
+			{
+				WorldFile.ResetTempsToDayTime();
+			}
+			if (Main.worldPathName == null)
+			{
+				return;
+			}
+			new Stopwatch().Start();
+			byte[] array;
+			int num;
+			using (MemoryStream memoryStream = new MemoryStream(7000000))
+			{
+				using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream))
+				{
+					SaveWorld_Version2(binaryWriter);
+				}
+				array = memoryStream.ToArray();
+				num = array.Length;
+			}
+			byte[] array2 = null;
+			if (FileUtilities.Exists(Main.worldPathName, useCloudSaving))
+			{
+				array2 = FileUtilities.ReadAllBytes(Main.worldPathName, useCloudSaving);
+			}
+			FileUtilities.Write(Main.worldPathName, array, num, useCloudSaving);
+			Console.WriteLine($"ACTUAL FILE SAVE {Main.worldPathName}, {array.Length}");
+			array = FileUtilities.ReadAllBytes(Main.worldPathName, useCloudSaving);
+			string text = null;
+			using (MemoryStream memoryStream2 = new MemoryStream(array, 0, num, false))
+			{
+				using (BinaryReader binaryReader = new BinaryReader(memoryStream2))
+				{
+					if (!Main.validateSaves || WorldFile.ValidateWorld(binaryReader))
+					{
+						if (array2 != null)
+						{
+							text = Main.worldPathName + ".bak";
+							SetStatusText(Lang.gen[50].Value);
+						}
+						WorldFile.DoRollingBackups(text);
+					}
+					else
+					{
+						text = Main.worldPathName;
+					}
+				}
+			}
+			if (text != null && array2 != null)
+			{
+				FileUtilities.WriteAllBytes(text, array2, useCloudSaving);
+			}
+		}
+
+		#endregion
+		#region SaveWorld_Version2
+
+		public static void SaveWorld_Version2(BinaryWriter writer)
+		{
+			Console.WriteLine("FAKE 4");
+			int[] pointers = new int[]
+			{
+				WorldFile.SaveFileFormatHeader(writer),
+				SaveWorldHeader(writer),
+				SaveWorldTiles(writer),
+				SaveChests(writer),
+				SaveSigns(writer),
+				WorldFile.SaveNPCs(writer),
+				SaveTileEntities(writer),
+				WorldFile.SaveWeightedPressurePlates(writer),
+				WorldFile.SaveTownManager(writer),
+				WorldFile.SaveBestiary(writer),
+				WorldFile.SaveCreativePowers(writer)
+			};
+			WorldFile.SaveFooter(writer);
+			WorldFile.SaveHeaderPointers(writer, pointers);
+		}
+
+		#endregion
+		#region SaveWorldHeader
+
+		private static int SaveWorldHeader(BinaryWriter writer)
+		{
+			writer.Write(Main.worldName);
+			writer.Write(Main.ActiveWorldFileData.SeedText);
+			writer.Write(Main.ActiveWorldFileData.WorldGeneratorVersion);
+			writer.Write(Main.ActiveWorldFileData.UniqueId.ToByteArray());
+			writer.Write(Main.worldID);
+			writer.Write((int)Main.leftWorld);
+			writer.Write((int)Main.rightWorld);
+			writer.Write((int)Main.topWorld);
+			writer.Write((int)Main.bottomWorld);
+			writer.Write((int)FakeProviderAPI.World.Height); //
+			writer.Write((int)FakeProviderAPI.World.Width); //
+			writer.Write(Main.GameMode);
+			writer.Write(Main.drunkWorld);
+			writer.Write(Main.getGoodWorld);
+			writer.Write(Main.tenthAnniversaryWorld);
+			writer.Write(Main.ActiveWorldFileData.CreationTime.ToBinary());
+			writer.Write((byte)Main.moonType);
+			writer.Write(Main.treeX[0]);
+			writer.Write(Main.treeX[1]);
+			writer.Write(Main.treeX[2]);
+			writer.Write(Main.treeStyle[0]);
+			writer.Write(Main.treeStyle[1]);
+			writer.Write(Main.treeStyle[2]);
+			writer.Write(Main.treeStyle[3]);
+			writer.Write(Main.caveBackX[0]);
+			writer.Write(Main.caveBackX[1]);
+			writer.Write(Main.caveBackX[2]);
+			writer.Write(Main.caveBackStyle[0]);
+			writer.Write(Main.caveBackStyle[1]);
+			writer.Write(Main.caveBackStyle[2]);
+			writer.Write(Main.caveBackStyle[3]);
+			writer.Write(Main.iceBackStyle);
+			writer.Write(Main.jungleBackStyle);
+			writer.Write(Main.hellBackStyle);
+			writer.Write(Main.spawnTileX);
+			writer.Write(Main.spawnTileY);
+			writer.Write(Main.worldSurface);
+			writer.Write(Main.rockLayer);
+			writer.Write(WorldFile._tempTime);
+			writer.Write(WorldFile._tempDayTime);
+			writer.Write(WorldFile._tempMoonPhase);
+			writer.Write(WorldFile._tempBloodMoon);
+			writer.Write(WorldFile._tempEclipse);
+			writer.Write(Main.dungeonX);
+			writer.Write(Main.dungeonY);
+			writer.Write(WorldGen.crimson);
+			writer.Write(NPC.downedBoss1);
+			writer.Write(NPC.downedBoss2);
+			writer.Write(NPC.downedBoss3);
+			writer.Write(NPC.downedQueenBee);
+			writer.Write(NPC.downedMechBoss1);
+			writer.Write(NPC.downedMechBoss2);
+			writer.Write(NPC.downedMechBoss3);
+			writer.Write(NPC.downedMechBossAny);
+			writer.Write(NPC.downedPlantBoss);
+			writer.Write(NPC.downedGolemBoss);
+			writer.Write(NPC.downedSlimeKing);
+			writer.Write(NPC.savedGoblin);
+			writer.Write(NPC.savedWizard);
+			writer.Write(NPC.savedMech);
+			writer.Write(NPC.downedGoblins);
+			writer.Write(NPC.downedClown);
+			writer.Write(NPC.downedFrost);
+			writer.Write(NPC.downedPirates);
+			writer.Write(WorldGen.shadowOrbSmashed);
+			writer.Write(WorldGen.spawnMeteor);
+			writer.Write((byte)WorldGen.shadowOrbCount);
+			writer.Write(WorldGen.altarCount);
+			writer.Write(Main.hardMode);
+			writer.Write(Main.invasionDelay);
+			writer.Write(Main.invasionSize);
+			writer.Write(Main.invasionType);
+			writer.Write(Main.invasionX);
+			writer.Write(Main.slimeRainTime);
+			writer.Write((byte)Main.sundialCooldown);
+			writer.Write(WorldFile._tempRaining);
+			writer.Write(WorldFile._tempRainTime);
+			writer.Write(WorldFile._tempMaxRain);
+			writer.Write(WorldGen.SavedOreTiers.Cobalt);
+			writer.Write(WorldGen.SavedOreTiers.Mythril);
+			writer.Write(WorldGen.SavedOreTiers.Adamantite);
+			writer.Write((byte)WorldGen.treeBG1);
+			writer.Write((byte)WorldGen.corruptBG);
+			writer.Write((byte)WorldGen.jungleBG);
+			writer.Write((byte)WorldGen.snowBG);
+			writer.Write((byte)WorldGen.hallowBG);
+			writer.Write((byte)WorldGen.crimsonBG);
+			writer.Write((byte)WorldGen.desertBG);
+			writer.Write((byte)WorldGen.oceanBG);
+			writer.Write((int)Main.cloudBGActive);
+			writer.Write((short)Main.numClouds);
+			writer.Write(Main.windSpeedTarget);
+			writer.Write(Main.anglerWhoFinishedToday.Count);
+			for (int i = 0; i < Main.anglerWhoFinishedToday.Count; i++)
+			{
+				writer.Write(Main.anglerWhoFinishedToday[i]);
+			}
+			writer.Write(NPC.savedAngler);
+			writer.Write(Main.anglerQuest);
+			writer.Write(NPC.savedStylist);
+			writer.Write(NPC.savedTaxCollector);
+			writer.Write(NPC.savedGolfer);
+			writer.Write(Main.invasionSizeStart);
+			writer.Write(WorldFile._tempCultistDelay);
+			writer.Write((short)668);
+			for (int j = 0; j < 668; j++)
+			{
+				writer.Write(NPC.killCount[j]);
+			}
+			writer.Write(Main.fastForwardTime);
+			writer.Write(NPC.downedFishron);
+			writer.Write(NPC.downedMartians);
+			writer.Write(NPC.downedAncientCultist);
+			writer.Write(NPC.downedMoonlord);
+			writer.Write(NPC.downedHalloweenKing);
+			writer.Write(NPC.downedHalloweenTree);
+			writer.Write(NPC.downedChristmasIceQueen);
+			writer.Write(NPC.downedChristmasSantank);
+			writer.Write(NPC.downedChristmasTree);
+			writer.Write(NPC.downedTowerSolar);
+			writer.Write(NPC.downedTowerVortex);
+			writer.Write(NPC.downedTowerNebula);
+			writer.Write(NPC.downedTowerStardust);
+			writer.Write(NPC.TowerActiveSolar);
+			writer.Write(NPC.TowerActiveVortex);
+			writer.Write(NPC.TowerActiveNebula);
+			writer.Write(NPC.TowerActiveStardust);
+			writer.Write(NPC.LunarApocalypseIsUp);
+			writer.Write(WorldFile._tempPartyManual);
+			writer.Write(WorldFile._tempPartyGenuine);
+			writer.Write(WorldFile._tempPartyCooldown);
+			writer.Write(WorldFile.TempPartyCelebratingNPCs.Count);
+			for (int k = 0; k < WorldFile.TempPartyCelebratingNPCs.Count; k++)
+			{
+				writer.Write(WorldFile.TempPartyCelebratingNPCs[k]);
+			}
+			writer.Write(WorldFile._tempSandstormHappening);
+			writer.Write(WorldFile._tempSandstormTimeLeft);
+			writer.Write(WorldFile._tempSandstormSeverity);
+			writer.Write(WorldFile._tempSandstormIntendedSeverity);
+			writer.Write(NPC.savedBartender);
+			DD2Event.Save(writer);
+			writer.Write((byte)WorldGen.mushroomBG);
+			writer.Write((byte)WorldGen.underworldBG);
+			writer.Write((byte)WorldGen.treeBG2);
+			writer.Write((byte)WorldGen.treeBG3);
+			writer.Write((byte)WorldGen.treeBG4);
+			writer.Write(NPC.combatBookWasUsed);
+			writer.Write(WorldFile._tempLanternNightCooldown);
+			writer.Write(WorldFile._tempLanternNightGenuine);
+			writer.Write(WorldFile._tempLanternNightManual);
+			writer.Write(WorldFile._tempLanternNightNextNightIsGenuine);
+			WorldGen.TreeTops.Save(writer);
+			writer.Write(Main.forceHalloweenForToday);
+			writer.Write(Main.forceXMasForToday);
+			writer.Write(WorldGen.SavedOreTiers.Copper);
+			writer.Write(WorldGen.SavedOreTiers.Iron);
+			writer.Write(WorldGen.SavedOreTiers.Silver);
+			writer.Write(WorldGen.SavedOreTiers.Gold);
+			writer.Write(NPC.boughtCat);
+			writer.Write(NPC.boughtDog);
+			writer.Write(NPC.boughtBunny);
+			writer.Write(NPC.downedEmpressOfLight);
+			writer.Write(NPC.downedQueenSlime);
+			return (int)writer.BaseStream.Position;
+		}
+
+
+		#endregion
+		#region SaveWorldTiles
+
+		private static int SaveWorldTiles(BinaryWriter writer)
+		{
+			Console.WriteLine("FAKE 5");
+			byte[] array = new byte[15];
+			for (int i = 0; i < FakeProviderAPI.World.Width; i++) //
+			{
+				float num = (float)i / (float)FakeProviderAPI.World.Width; //
+				SetStatusText(Lang.gen[49].Value + " " + ((int)(num * 100f + 1f)).ToString() + "%");
+				for (int j = 0; j < FakeProviderAPI.World.Height; j++) //
+				{
+					ITile tile = FakeProviderAPI.World[i, j]; //
+					if (i == 2103 && j == 338)
+						Console.WriteLine($"YOUR TILE: {tile.active()}, {tile.type}");
+					int num2 = 3;
+					byte b3;
+					byte b2;
+					byte b = b2 = (b3 = 0);
+					bool flag = false;
+					if (tile.active())
+					{
+						flag = true;
+					}
+					if (flag)
+					{
+						b2 |= 2;
+						array[num2] = (byte)tile.type;
+						num2++;
+						if (tile.type > 255)
+						{
+							array[num2] = (byte)(tile.type >> 8);
+							num2++;
+							b2 |= 32;
+						}
+						if (Main.tileFrameImportant[(int)tile.type])
+						{
+							array[num2] = (byte)(tile.frameX & 255);
+							num2++;
+							array[num2] = (byte)(((int)tile.frameX & 65280) >> 8);
+							num2++;
+							array[num2] = (byte)(tile.frameY & 255);
+							num2++;
+							array[num2] = (byte)(((int)tile.frameY & 65280) >> 8);
+							num2++;
+						}
+						if (tile.color() != 0)
+						{
+							b3 |= 8;
+							array[num2] = tile.color();
+							num2++;
+						}
+					}
+					if (tile.wall != 0)
+					{
+						b2 |= 4;
+						array[num2] = (byte)tile.wall;
+						num2++;
+						if (tile.wallColor() != 0)
+						{
+							b3 |= 16;
+							array[num2] = tile.wallColor();
+							num2++;
+						}
+					}
+					if (tile.liquid != 0)
+					{
+						if (tile.lava())
+						{
+							b2 |= 16;
+						}
+						else if (tile.honey())
+						{
+							b2 |= 24;
+						}
+						else
+						{
+							b2 |= 8;
+						}
+						array[num2] = tile.liquid;
+						num2++;
+					}
+					if (tile.wire())
+					{
+						b |= 2;
+					}
+					if (tile.wire2())
+					{
+						b |= 4;
+					}
+					if (tile.wire3())
+					{
+						b |= 8;
+					}
+					int num3;
+					if (tile.halfBrick())
+					{
+						num3 = 16;
+					}
+					else if (tile.slope() != 0)
+					{
+						num3 = (int)(tile.slope() + 1) << 4;
+					}
+					else
+					{
+						num3 = 0;
+					}
+					b |= (byte)num3;
+					if (tile.actuator())
+					{
+						b3 |= 2;
+					}
+					if (tile.inActive())
+					{
+						b3 |= 4;
+					}
+					if (tile.wire4())
+					{
+						b3 |= 32;
+					}
+					if (tile.wall > 255)
+					{
+						array[num2] = (byte)(tile.wall >> 8);
+						num2++;
+						b3 |= 64;
+					}
+					int num4 = 2;
+					if (b3 != 0)
+					{
+						b |= 1;
+						array[num4] = b3;
+						num4--;
+					}
+					if (b != 0)
+					{
+						b2 |= 1;
+						array[num4] = b;
+						num4--;
+					}
+					short num5 = 0;
+					int num6 = j + 1;
+					int num7 = FakeProviderAPI.World.Height - j - 1; //
+					while (num7 > 0 && tile.isTheSameAs(FakeProviderAPI.World[i, num6]) && TileID.Sets.AllowsSaveCompressionBatching[(int)tile.type]) //
+					{
+						num5 += 1;
+						num7--;
+						num6++;
+					}
+					j += (int)num5;
+					if (num5 > 0)
+					{
+						array[num2] = (byte)(num5 & 255);
+						num2++;
+						if (num5 > 255)
+						{
+							b2 |= 128;
+							array[num2] = (byte)(((int)num5 & 65280) >> 8);
+							num2++;
+						}
+						else
+						{
+							b2 |= 64;
+						}
+					}
+					array[num4] = b2;
+					writer.Write(array, num4, num2 - num4);
+				}
+			}
+			return (int)writer.BaseStream.Position;
+		}
+
+
+		#endregion
+		#region SaveChests
+
+		private static int SaveChests(BinaryWriter writer)
+		{
+			short num = 0;
+			for (int i = 0; i < 8000; i++)
+			{
+				Chest chest = Main.chest[i];
+				if (chest != null)
+				{
+					if (chest is IFake fchest && fchest.Provider != FakeProviderAPI.World) //
+						continue; //
+					bool flag = false;
+					for (int j = chest.x; j <= chest.x + 1; j++)
+					{
+						for (int k = chest.y; k <= chest.y + 1; k++)
+						{
+							if (j < 0 || k < 0 || j >= FakeProviderAPI.World.Width || k >= FakeProviderAPI.World.Height) //
+							{
+								flag = true;
+								break;
+							}
+							ITile tile = FakeProviderAPI.World[j, k]; //
+							if (!tile.active() || !Main.tileContainer[(int)tile.type])
+							{
+								flag = true;
+								break;
+							}
+						}
+					}
+					if (flag)
+					{
+						Main.chest[i] = null;
+					}
+					else
+					{
+						num += 1;
+					}
+				}
+			}
+			writer.Write(num);
+			writer.Write((short)40);
+			for (int i = 0; i < 8000; i++)
+			{
+				Chest chest = Main.chest[i];
+				
+				if (chest != null)
+				{
+					if (chest is IFake fchest && fchest.Provider != FakeProviderAPI.World) //
+						continue; //
+					writer.Write(chest.x);
+					writer.Write(chest.y);
+					writer.Write(chest.name);
+					for (int l = 0; l < 40; l++)
+					{
+						Item item = chest.item[l];
+						if (item == null)
+						{
+							writer.Write((short)0);
+						}
+						else
+						{
+							if (item.stack > item.maxStack)
+							{
+								item.stack = item.maxStack;
+							}
+							if (item.stack < 0)
+							{
+								item.stack = 1;
+							}
+							writer.Write((short)item.stack);
+							if (item.stack > 0)
+							{
+								writer.Write(item.netID);
+								writer.Write(item.prefix);
+							}
+						}
+					}
+				}
+			}
+			return (int)writer.BaseStream.Position;
+		}
+
+
+		#endregion
+		#region SaveSigns
+
+		private static int SaveSigns(BinaryWriter writer)
+		{
+			short num = 0;
+			for (int i = 0; i < 1000; i++)
+			{
+				Sign sign = Main.sign[i];
+				if (sign != null && sign.text != null)
+				{
+					if (sign is IFake fsign && fsign.Provider != FakeProviderAPI.World) //
+						continue; //
+					num += 1;
+				}
+			}
+			writer.Write(num);
+			for (int j = 0; j < 1000; j++)
+			{
+				Sign sign = Main.sign[j];
+				if (sign != null && sign.text != null)
+				{
+					if (sign is IFake fsign && fsign.Provider != FakeProviderAPI.World) //
+						continue; //
+					writer.Write(sign.text);
+					writer.Write(sign.x);
+					writer.Write(sign.y);
+				}
+			}
+			return (int)writer.BaseStream.Position;
+		}
+
+
+		#endregion
+		#region SaveTileEntities
+
+		private static int SaveTileEntities(BinaryWriter writer)
+		{
+			object entityCreationLock = TileEntity.EntityCreationLock;
+			lock (entityCreationLock)
+			{
+				writer.Write(TileEntity.ByID.Count);
+				foreach (KeyValuePair<int, TileEntity> keyValuePair in TileEntity.ByID)
+				{
+					if (keyValuePair.Value is IFake fentity && fentity.Provider != FakeProviderAPI.World) //
+						continue; //
+					TileEntity.Write(writer, keyValuePair.Value, false);
+				}
+			}
+			return (int)writer.BaseStream.Position;
+		}
+
+
+		#endregion
+
+		#region CreateCustomTileProvider
+
+		private static void CreateCustomTileProvider()
         {
             int maxTilesX = Main.maxTilesX;
             int maxTilesY = Main.maxTilesY;
@@ -647,20 +1315,6 @@ Entities: {provider.Entities.Count}");
                 eventOnWorldLoad.GetRaiseMethod()?.Invoke(null, new object[] { });
             //if (WorldFile.OnWorldLoad != null)
                 //WorldFile.OnWorldLoad();
-        }
-
-        #endregion
-        #region SetStatusText
-
-        private static void SetStatusText(string text)
-        {
-            Hooks.Game.StatusTextHandler statusTextWrite = Hooks.Game.StatusTextWrite;
-            HookResult? hookResult = (statusTextWrite != null) ? new HookResult?(statusTextWrite(ref text)) : null;
-            bool flag = hookResult != null && hookResult.Value == HookResult.Cancel;
-            if (!flag)
-            {
-                typeof(Main).GetField("statusText", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, text);
-            }
         }
 
         #endregion
