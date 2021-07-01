@@ -610,7 +610,16 @@ Entities: {provider.Entities.Count}");
 			{
 				using (BinaryReader binaryReader = new BinaryReader(memoryStream2))
 				{
-					if (!Main.validateSaves || WorldFile.ValidateWorld(binaryReader))
+					bool valid;
+					try
+					{
+						valid = !Main.validateSaves || WorldFile.ValidateWorld(binaryReader);
+					}
+					catch (Exception e)
+					{
+						valid = false;
+					}
+					if (valid)
 					{
 						if (array2 != null)
 						{
@@ -622,6 +631,7 @@ Entities: {provider.Entities.Count}");
 					else
 					{
 						text = Main.worldPathName;
+						Console.WriteLine("Failed to validate world on save");
 					}
 				}
 			}
@@ -1244,7 +1254,7 @@ Entities: {provider.Entities.Count}");
                         }
                         if (WorldGen.loadFailed || !WorldGen.loadSuccess)
                         {
-                            return;
+							throw new InvalidDataException("Failed loading world");
                         }
                         WorldFile.ConvertOldTileEntities();
                         WorldFile.ClearTempTiles();
@@ -1305,9 +1315,9 @@ Entities: {provider.Entities.Count}");
                         }
                         catch
                         {
-                        }
-                        return;
-                    }
+						}
+						throw new InvalidDataException("Failed loading world");
+					}
                 }
             }
 
