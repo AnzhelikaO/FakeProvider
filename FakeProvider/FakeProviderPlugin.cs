@@ -40,6 +40,8 @@ namespace FakeProvider
         public override Version Version => Assembly.GetExecutingAssembly().GetName().Version;
         internal static int[] AllPlayers;
         internal static Func<RemoteClient, byte[], int, int, bool> NetSendBytes;
+		private static long LoadWorldSize;
+		public static string Debug;
 
         public static int OffsetX { get; private set; } // Not supported
 		public static int OffsetY { get; private set; } // Not supported
@@ -146,7 +148,6 @@ namespace FakeProvider
             Hooks.World.IO.PreLoadWorld += OnPreLoadWorld;
             Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
             Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
-			Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
             ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
 
@@ -163,7 +164,6 @@ namespace FakeProvider
                 Hooks.World.IO.PreLoadWorld -= OnPreLoadWorld;
                 Hooks.World.IO.PostLoadWorld -= OnPostLoadWorld;
                 Hooks.World.IO.PreSaveWorld -= OnPreSaveWorld;
-				Hooks.World.IO.PostSaveWorld -= OnPostSaveWorld;
 				ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnServerLeave);
             }
@@ -227,19 +227,10 @@ namespace FakeProvider
             if (FakeProviderAPI.World == null)
                 return HookResult.Continue;
 
-			/*
-			Main.maxTilesX = FakeProviderAPI.World.Width;
-			Main.maxTilesY = FakeProviderAPI.World.Height;
-			Main.worldSurface -= OffsetY;
-			Main.rockLayer -= OffsetY;
-			Main.tile = FakeProviderAPI.World;
-			FakeProviderAPI.Tile.HideEntities();*/
-
 			try
             {
-				Console.WriteLine("FAKE SAVING");
 				SaveWorld(ref Cloud, ref ResetTime);
-				Console.WriteLine("FAKE SAVING END");
+				Console.WriteLine("[FakeProvier] World saved.");
 			}
 			catch (Exception e)
             {
@@ -249,20 +240,6 @@ namespace FakeProvider
 			return HookResult.Cancel;
         }
 
-		#endregion
-		#region OnPostSaveWorld
-		private static void OnPostSaveWorld(bool Cloud, bool ResetTime)
-		{
-			Console.WriteLine("POST SAVE HOOK");
-			/*if (FakeProviderAPI.World == null)
-				return;
-			Main.maxTilesX = VisibleWidth;
-			Main.maxTilesY = VisibleHeight;
-			Main.worldSurface += OffsetY;
-			Main.rockLayer += OffsetY;
-			Main.tile = FakeProviderAPI.Tile;
-			FakeProviderAPI.Tile.UpdateEntities();*/
-		}
 		#endregion
 		#region OnSendData
 
@@ -491,7 +468,6 @@ Entities: {provider.Entities.Count}");
 
         private static void SaveWorld(ref bool Cloud, ref bool ResetTime)
         {
-			Console.WriteLine("FAKE 1");
 			SaveWorldDirect(Cloud, ResetTime);
 			SaveWorldEnd(Cloud, ResetTime);
 		}
@@ -527,7 +503,6 @@ Entities: {provider.Entities.Count}");
 
 		private static void SaveWorldDirect(bool useCloudSaving, bool resetTime = false)
 		{
-			Console.WriteLine("FAKE 2");
 			if (useCloudSaving && SocialAPI.Cloud == null)
 			{
 				return;
@@ -563,7 +538,6 @@ Entities: {provider.Entities.Count}");
 
 		public static void InternalSaveWorld(bool useCloudSaving, bool resetTime)
 		{
-			Console.WriteLine("FAKE 3");
 			Terraria.Utils.TryCreatingDirectory(Main.WorldPath);
 			if (Main.skipMenu)
 			{
@@ -585,9 +559,32 @@ Entities: {provider.Entities.Count}");
 			{
 				return;
 			}
-			new Stopwatch().Start();
 			byte[] array;
 			int num;
+			int defaultSize;
+			using (MemoryStream memoryStream = new MemoryStream(7000000))
+			{
+				using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream))
+				{
+					Main.maxTilesX = FakeProviderAPI.World.Width;
+					Main.maxTilesY = FakeProviderAPI.World.Height;
+					Main.worldSurface -= OffsetY;
+					Main.rockLayer -= OffsetY;
+					Main.tile = FakeProviderAPI.World;
+					FakeProviderAPI.Tile.HideEntities();
+
+					WorldFile.SaveWorld_Version2(binaryWriter);
+
+					Main.maxTilesX = VisibleWidth;
+					Main.maxTilesY = VisibleHeight;
+					Main.worldSurface += OffsetY;
+					Main.rockLayer += OffsetY;
+					Main.tile = FakeProviderAPI.Tile;
+					FakeProviderAPI.Tile.UpdateEntities();
+				}
+				array = memoryStream.ToArray();
+				defaultSize = array.Length;
+			}
 			using (MemoryStream memoryStream = new MemoryStream(7000000))
 			{
 				using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream))
@@ -597,13 +594,22 @@ Entities: {provider.Entities.Count}");
 				array = memoryStream.ToArray();
 				num = array.Length;
 			}
+
+			Debug = $@"World: {Main.worldPathName}
+Load size       : {LoadWorldSize}
+Save size       : {defaultSize}
+Custom save size: {num}";
+
+			Console.WriteLine("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
+			Console.WriteLine(Debug);
+			Console.WriteLine("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
+
 			byte[] array2 = null;
 			if (FileUtilities.Exists(Main.worldPathName, useCloudSaving))
 			{
 				array2 = FileUtilities.ReadAllBytes(Main.worldPathName, useCloudSaving);
 			}
 			FileUtilities.Write(Main.worldPathName, array, num, useCloudSaving);
-			Console.WriteLine($"ACTUAL FILE SAVE {Main.worldPathName}, {array.Length}");
 			array = FileUtilities.ReadAllBytes(Main.worldPathName, useCloudSaving);
 			string text = null;
 			using (MemoryStream memoryStream2 = new MemoryStream(array, 0, num, false))
@@ -632,6 +638,8 @@ Entities: {provider.Entities.Count}");
 					{
 						text = Main.worldPathName;
 						Console.WriteLine("Failed to validate world on save");
+						Console.ReadLine();
+						Environment.Exit(0);
 					}
 				}
 			}
@@ -646,7 +654,6 @@ Entities: {provider.Entities.Count}");
 
 		public static void SaveWorld_Version2(BinaryWriter writer)
 		{
-			Console.WriteLine("FAKE 4");
 			int[] pointers = new int[]
 			{
 				WorldFile.SaveFileFormatHeader(writer),
@@ -843,7 +850,6 @@ Entities: {provider.Entities.Count}");
 
 		private static int SaveWorldTiles(BinaryWriter writer)
 		{
-			Console.WriteLine("FAKE 5");
 			byte[] array = new byte[15];
 			for (int i = 0; i < FakeProviderAPI.World.Width; i++) //
 			{
@@ -852,8 +858,6 @@ Entities: {provider.Entities.Count}");
 				for (int j = 0; j < FakeProviderAPI.World.Height; j++) //
 				{
 					ITile tile = FakeProviderAPI.World[i, j]; //
-					if (i == 2103 && j == 338)
-						Console.WriteLine($"YOUR TILE: {tile.active()}, {tile.type}");
 					int num2 = 3;
 					byte b3;
 					byte b2;
@@ -1242,7 +1246,10 @@ Entities: {provider.Entities.Count}");
                             }
                         }
                         WorldFile.CheckSavedOreTiers();
-                        binaryReader.Close();
+
+						LoadWorldSize = binaryReader.BaseStream.Position; //DEBUG
+
+						binaryReader.Close();
                         memoryStream.Close();
                         if (num2 != 0)
                         {
@@ -1254,7 +1261,9 @@ Entities: {provider.Entities.Count}");
                         }
                         if (WorldGen.loadFailed || !WorldGen.loadSuccess)
                         {
-							throw new InvalidDataException("Failed loading world");
+							Console.WriteLine("Failed loading world");
+							Console.ReadLine();
+							Environment.Exit(0);
                         }
                         WorldFile.ConvertOldTileEntities();
                         WorldFile.ClearTempTiles();
@@ -1316,7 +1325,9 @@ Entities: {provider.Entities.Count}");
                         catch
                         {
 						}
-						throw new InvalidDataException("Failed loading world");
+						Console.WriteLine("Failed loading world");
+						Console.ReadLine();
+						Environment.Exit(0);
 					}
                 }
             }

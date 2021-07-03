@@ -128,15 +128,10 @@ namespace FakeProvider
         //TODO: Optimize
         internal void Add(TileProvider Provider)
         {
-            Console.WriteLine("====================================");
-            Console.WriteLine(Provider.Name);
-            Console.WriteLine("====================================");
-            Console.WriteLine(Environment.StackTrace);
             lock (FakeProviderPlugin.ProvidersToAdd)
             {
                 if (FakeProviderPlugin.ProvidersLoaded)
                 {
-                    Console.WriteLine("text kakojto prosto");
                     lock (Locker)
                     {
                         if (Provider.Observers != null)
