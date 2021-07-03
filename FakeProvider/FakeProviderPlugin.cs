@@ -26,15 +26,19 @@ using System.Runtime.CompilerServices;
 using Terraria.Net.Sockets;
 using System.Threading;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 #endregion
 namespace FakeProvider
 {
-    [ApiVersion(2, 1)]
+	[ApiVersion(2, 1)]
     public class FakeProviderPlugin : TerrariaPlugin
     {
-        #region Data
+		[DllImport("User32.dll", CharSet = CharSet.Unicode)]
+		public static extern int MessageBox(IntPtr h, string m, string c, int type);
 
-        public override string Name => "FakeProvider";
+		#region Data
+
+		public override string Name => "FakeProvider";
         public override string Author => "ASgo and Anzhelika";
         public override string Description => "TODO";
         public override Version Version => Assembly.GetExecutingAssembly().GetName().Version;
@@ -560,8 +564,10 @@ Entities: {provider.Entities.Count}");
 				return;
 			}
 			byte[] array;
-			byte[] defaultArray;
 			int num;
+
+#if DEBUG
+			byte[] defaultArray;
 			int defaultSize;
 			using (MemoryStream memoryStream = new MemoryStream(7000000))
 			{
@@ -586,6 +592,9 @@ Entities: {provider.Entities.Count}");
 				defaultArray = memoryStream.ToArray();
 				defaultSize = defaultArray.Length;
 			}
+
+#endif
+
 			using (MemoryStream memoryStream = new MemoryStream(7000000))
 			{
 				using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream))
@@ -596,18 +605,19 @@ Entities: {provider.Entities.Count}");
 				num = array.Length;
 			}
 
+#if DEBUG
 			Debug = $@"World: {Main.worldPathName}
 Load size       : {LoadWorldSize}
-Save size       : {defaultSize}
-Custom save size: {num}";
+Default ave size: {defaultSize}
+Custom save size: {num}
+Default valid: {ValidateWorldData(defaultArray, defaultSize)}
+Custom valid : {ValidateWorldData(array, num)}";
 
 			Console.WriteLine("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
 			Console.WriteLine(Debug);
-			if (!ValidateWorldData(defaultArray, defaultSize))
-				Console.WriteLine("Failed to validate world on default save.");
-			if (!ValidateWorldData(array, num))
-				Console.WriteLine("Failed to validate world on custom save.");
 			Console.WriteLine("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
+
+#endif
 
 			byte[] array2 = null;
 			if (FileUtilities.Exists(Main.worldPathName, useCloudSaving))
@@ -642,9 +652,7 @@ Custom save size: {num}";
 					else
 					{
 						text = Main.worldPathName;
-						Console.WriteLine("Failed to validate world on save");
-						Console.ReadLine();
-						Environment.Exit(0);
+						throw new InvalidDataException("Failed to validate world on save");
 					}
 				}
 			}
@@ -654,8 +662,8 @@ Custom save size: {num}";
 			}
 		}
 
-        #endregion
-        #region ValidateWorldData
+		#endregion
+		#region ValidateWorldData
 
         private static bool ValidateWorldData(byte[] array, int size)
         {
@@ -677,8 +685,8 @@ Custom save size: {num}";
 			}
 		}
 
-        #endregion
-        #region SaveWorld_Version2
+		#endregion
+		#region SaveWorld_Version2
 
         public static void SaveWorld_Version2(BinaryWriter writer)
 		{
@@ -871,7 +879,6 @@ Custom save size: {num}";
 			writer.Write(NPC.downedQueenSlime);
 			return (int)writer.BaseStream.Position;
 		}
-
 
 		#endregion
 		#region SaveWorldTiles
@@ -1208,8 +1215,8 @@ Custom save size: {num}";
                 Main.tile = FakeProviderAPI.World;
         }
 
-        #endregion
-        #region LoadWorldDirect
+		#endregion
+		#region LoadWorldDirect
 
         private static void LoadWorldDirect(bool loadFromCloud)
         {
@@ -1290,10 +1297,9 @@ Custom save size: {num}";
                         }
                         if (WorldGen.loadFailed || !WorldGen.loadSuccess)
                         {
-							Console.WriteLine("Failed loading world");
-							Console.ReadLine();
-							Environment.Exit(0);
-                        }
+							MessageBox((IntPtr)0, $"Failed loading world ({Main.worldPathName}): (loadFailed || !WorldGen.loadSuccess)", "TerrariaServer startup error", 0);
+							Environment.Exit(1);
+						}
                         WorldFile.ConvertOldTileEntities();
                         WorldFile.ClearTempTiles();
                         WorldGen.gen = true;
@@ -1354,21 +1360,20 @@ Custom save size: {num}";
                         catch
                         {
 						}
-						Console.WriteLine("Failed loading world");
-						Console.ReadLine();
-						Environment.Exit(0);
+						MessageBox((IntPtr)0, $"Failed loading world ({Main.worldPathName}):\n{value}", "TerrariaServer startup error", 0);
+						Environment.Exit(1);
 					}
                 }
             }
 
-            EventInfo eventOnWorldLoad = typeof(WorldFile).GetEvent("OnWorldLoad", BindingFlags.Public | BindingFlags.Static);
+			EventInfo eventOnWorldLoad = typeof(WorldFile).GetEvent("OnWorldLoad", BindingFlags.Public | BindingFlags.Static);
                 eventOnWorldLoad.GetRaiseMethod()?.Invoke(null, new object[] { });
             //if (WorldFile.OnWorldLoad != null)
                 //WorldFile.OnWorldLoad();
         }
 
-        #endregion
-        #region LoadWorld_Version2
+		#endregion
+		#region LoadWorld_Version2
 
         private static int LoadWorld_Version2(BinaryReader reader)
         {
