@@ -1169,7 +1169,8 @@ Custom save size: {num}";
 			object entityCreationLock = TileEntity.EntityCreationLock;
 			lock (entityCreationLock)
 			{
-				writer.Write(TileEntity.ByID.Count);
+				writer.Write((int)TileEntity.ByID.Count(keyValuePair => //
+					!(keyValuePair.Value is IFake fentity && fentity.Provider != FakeProviderAPI.World))); //
 				foreach (KeyValuePair<int, TileEntity> keyValuePair in TileEntity.ByID)
 				{
 					if (keyValuePair.Value is IFake fentity && fentity.Provider != FakeProviderAPI.World) //
