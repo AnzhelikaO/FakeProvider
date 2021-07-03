@@ -560,6 +560,7 @@ Entities: {provider.Entities.Count}");
 				return;
 			}
 			byte[] array;
+			byte[] defaultArray;
 			int num;
 			int defaultSize;
 			using (MemoryStream memoryStream = new MemoryStream(7000000))
@@ -582,8 +583,8 @@ Entities: {provider.Entities.Count}");
 					Main.tile = FakeProviderAPI.Tile;
 					FakeProviderAPI.Tile.UpdateEntities();
 				}
-				array = memoryStream.ToArray();
-				defaultSize = array.Length;
+				defaultArray = memoryStream.ToArray();
+				defaultSize = defaultArray.Length;
 			}
 			using (MemoryStream memoryStream = new MemoryStream(7000000))
 			{
@@ -602,6 +603,10 @@ Custom save size: {num}";
 
 			Console.WriteLine("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
 			Console.WriteLine(Debug);
+			if (!ValidateWorldData(defaultArray, defaultSize))
+				Console.WriteLine("Failed to validate world on default save.");
+			if (!ValidateWorldData(array, num))
+				Console.WriteLine("Failed to validate world on custom save.");
 			Console.WriteLine("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
 
 			byte[] array2 = null;
@@ -649,10 +654,33 @@ Custom save size: {num}";
 			}
 		}
 
-		#endregion
-		#region SaveWorld_Version2
+        #endregion
+        #region ValidateWorldData
 
-		public static void SaveWorld_Version2(BinaryWriter writer)
+        private static bool ValidateWorldData(byte[] array, int size)
+        {
+			using (MemoryStream memoryStream2 = new MemoryStream(array, 0, size, false))
+			{
+				using (BinaryReader binaryReader = new BinaryReader(memoryStream2))
+				{
+					bool valid;
+					try
+					{
+						valid = !Main.validateSaves || WorldFile.ValidateWorld(binaryReader);
+					}
+					catch (Exception e)
+					{
+						valid = false;
+					}
+					return valid;
+				}
+			}
+		}
+
+        #endregion
+        #region SaveWorld_Version2
+
+        public static void SaveWorld_Version2(BinaryWriter writer)
 		{
 			int[] pointers = new int[]
 			{
