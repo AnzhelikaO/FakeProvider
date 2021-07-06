@@ -1700,7 +1700,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 					//	NPC.freeCake = false;
 					//	Main.mapDelay = 2;
 					//	Main.ResetWindCounter(resetExtreme: true);
-					//	//TownManager = new TownRoomManager();
+					//  WorldGen.TownManager = new TownRoomManager();
 					//	//Hooks.ClearWorld();
 					//	TileEntity.Clear();
 					//	Main.checkXMas();
@@ -1853,9 +1853,9 @@ Custom valid : {ValidateWorldData(array, num)}";
 					//				Main.tile[j, k] = null;
 					//			}
 					//		}
-					//	}
-					//	lastMaxTilesX = Main.maxTilesX;
-					//	lastMaxTilesY = Main.maxTilesY;*/
+					//	}*/
+						WorldGen.lastMaxTilesX = Main.maxTilesX;
+						WorldGen.lastMaxTilesY = Main.maxTilesY;
 					//	if (Main.netMode != 2)
 					//	{
 					//		Main.sectionManager = new WorldSections(Main.maxTilesX / 200, Main.maxTilesY / 150);
