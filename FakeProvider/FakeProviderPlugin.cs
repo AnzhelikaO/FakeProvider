@@ -451,8 +451,36 @@ Position and size: {provider.XYWH()}
 Enabled: {provider.Enabled}
 Entities: {provider.Entities.Count}");
                     break;
-                }
-                default:
+				}
+				case "d":
+				case "disable":
+				{
+					if (args.Parameters.Count != 2)
+					{
+						args.Player.SendErrorMessage("/fake disable \"provider name\"");
+						return;
+					}
+					if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
+						return;
+
+					provider.Disable();
+					break;
+				}
+				case "e":
+				case "enable":
+				{
+					if (args.Parameters.Count != 2)
+					{
+						args.Player.SendErrorMessage("/fake enable \"provider name\"");
+						return;
+					}
+					if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
+						return;
+
+					provider.Enable();
+					break;
+				}
+				default:
                 {
                     args.Player.SendSuccessMessage("/fake subcommands:");
                     args.Player.SendInfoMessage(
@@ -460,6 +488,8 @@ Entities: {provider.Entities.Count}");
 /fake tp ""provider name""
 /fake move ""provider name"" <relative x> <relative y>
 /fake layer ""provider name"" <layer>
+/fake disable ""provider name""
+/fake enable ""provider name""
 /fake list [page]");
                     break;
                 }

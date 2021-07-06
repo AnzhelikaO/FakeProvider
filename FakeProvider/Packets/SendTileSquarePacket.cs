@@ -106,7 +106,9 @@ namespace FakeProvider
 			binaryWriter.Write((byte)width);
 			binaryWriter.Write((byte)height);
 			binaryWriter.Write((byte)number5);
-			(ITileCollection tiles, int _sx, int _sy) = FakeProviderAPI.ApplyPersonal(providers, sx, sy, width, height);
+			(ITileCollection tiles, bool relative) = FakeProviderAPI.ApplyPersonal(providers, sx, sy, width, height);
+			int _sx = (relative ? 0 : sx);
+			int _sy = (relative ? 0 : sy);
 			for (int x = _sx; x < _sx + width; x++)
 			{
 				for (int y = _sy; y < _sy + height; y++)

@@ -145,12 +145,14 @@ namespace FakeProvider
 			byte b = 0;
 			byte[] array4 = new byte[15];
 			ITile tile = null;
-			(ITileCollection tiles, int _sx, int _sy) = FakeProviderAPI.ApplyPersonal(providers, xStart, yStart, width, height);
-			for (int i = _sy; i < _sy + height; i++)
+			(ITileCollection tiles, bool relative) = FakeProviderAPI.ApplyPersonal(providers, xStart, yStart, width, height);
+			int dj = relative ? -xStart : 0;
+			int di = relative ? -yStart : 0;
+			for (int i = yStart; i < yStart + height; i++)
 			{
-				for (int j = _sx; j < _sx + width; j++)
+				for (int j = xStart; j < xStart + width; j++)
 				{
-					ITile tile2 = tiles[j, i];
+					ITile tile2 = tiles[j + dj, i + di];
 					if (tile2.isTheSameAs(tile) && TileID.Sets.AllowsSaveCompressionBatching[(int)tile2.type])
 					{
 						num4 += 1;

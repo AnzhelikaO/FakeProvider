@@ -92,10 +92,10 @@ namespace FakeProvider
         #endregion
         #region ApplyPersonal
 
-        public static (ITileCollection tiles, int sx, int sy) ApplyPersonal(IEnumerable<TileProvider> Providers, int X, int Y, int Width, int Height)
+        public static (ITileCollection tiles, bool relative) ApplyPersonal(IEnumerable<TileProvider> Providers, int X, int Y, int Width, int Height)
         {
             if (Providers.Count() == 0)
-                return (Tile, X, Y);
+                return (Tile, false);
 
             TileCollection result = new TileCollection(new ITile[Width, Height]);
 
@@ -106,7 +106,7 @@ namespace FakeProvider
             foreach (TileProvider provider in Providers)
                 provider?.Apply(result, X, Y);
 
-            return (result, 0, 0);
+            return (result, true);
         }
 
         #endregion
