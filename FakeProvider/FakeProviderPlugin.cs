@@ -1522,14 +1522,6 @@ Custom valid : {ValidateWorldData(array, num)}";
 				WorldGen.loadFailed = false;
 				WorldGen.loadSuccess = true;
 
-				StructTile[,] providerData = FakeProviderAPI.World.Data;
-				//TODO: make .Data a StructTile[] to not have to do this ugly conversion
-				var length = providerData.GetLength(0) * providerData.GetLength(1);
-				Span<StructTile> tiles = new Span<StructTile>();
-				fixed (StructTile* p = providerData)
-				{
-					tiles = new Span<StructTile>(p, length);
-				}
 				//TODO: see if we want these
 				//Main.checkXMas();
 				//Main.checkHalloween();
@@ -2329,11 +2321,20 @@ Custom valid : {ValidateWorldData(array, num)}";
 					#endregion
 					debugPointerString = "After LoadHeader";
 
+					LOADHEADER_END:
 					// ======================
 					CreateCustomTileProvider();
 					// ======================
 
-					LOADHEADER_END:
+					StructTile[,] providerData = FakeProviderAPI.World.Data;
+					//TODO: make .Data a StructTile[] to not have to do this ugly conversion
+					var length = providerData.GetLength(0) * providerData.GetLength(1);
+					Span<StructTile> tiles = new Span<StructTile>();
+					fixed (StructTile* p = providerData)
+					{
+						tiles = new Span<StructTile>(p, length);
+					}
+
 					/*if (reader.BaseStream.Position != positions[1])
 					{
 						loadWorldRet = 5;
