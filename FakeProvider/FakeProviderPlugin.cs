@@ -1522,7 +1522,6 @@ Custom valid : {ValidateWorldData(array, num)}";
 				WorldGen.loadFailed = false;
 				WorldGen.loadSuccess = true;
 
-				CreateCustomTileProvider();
 				StructTile[,] providerData = FakeProviderAPI.World.Data;
 				//TODO: make .Data a StructTile[] to not have to do this ugly conversion
 				var length = providerData.GetLength(0) * providerData.GetLength(1);
@@ -2329,6 +2328,11 @@ Custom valid : {ValidateWorldData(array, num)}";
 					}
 					#endregion
 					debugPointerString = "After LoadHeader";
+
+					// ======================
+					CreateCustomTileProvider();
+					// ======================
+
 					LOADHEADER_END:
 					/*if (reader.BaseStream.Position != positions[1])
 					{
