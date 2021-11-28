@@ -758,6 +758,8 @@ Custom valid : {ValidateWorldData(array, num)}";
 			writer.Write(Main.drunkWorld);
 			writer.Write(Main.getGoodWorld);
 			writer.Write(Main.tenthAnniversaryWorld);
+			writer.Write(Main.dontStarveWorld);
+			writer.Write(Main.notTheBeesWorld);
 			writer.Write(Main.ActiveWorldFileData.CreationTime.ToBinary());
 			writer.Write((byte)Main.moonType);
 			writer.Write(Main.treeX[0]);
@@ -907,6 +909,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 			writer.Write(NPC.boughtBunny);
 			writer.Write(NPC.downedEmpressOfLight);
 			writer.Write(NPC.downedQueenSlime);
+			writer.Write(NPC.downedDeerclops);
 			return (int)writer.BaseStream.Position;
 		}
 
@@ -1558,7 +1561,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 
 					int versionNumber = reader.ReadInt32();
 					// <= 87 to not support really old versions I mean, when are we loading these realistically
-					if (versionNumber <= 87 || versionNumber > 238)
+					if (versionNumber <= 87 || versionNumber > 244)
 					{
 						WorldGen.loadFailed = true;
 						throw new Exception("Invalid world file version");
@@ -1947,6 +1950,14 @@ Custom valid : {ValidateWorldData(array, num)}";
 						{
 							Main.tenthAnniversaryWorld = reader.ReadBoolean();
 						}
+						if (versionNumber >= 239)
+						{
+							Main.dontStarveWorld = reader.ReadBoolean();
+						}
+						if (versionNumber >= 241)
+						{
+							Main.notTheBeesWorld = reader.ReadBoolean();
+						}
 					}
 					else
 					{
@@ -2114,7 +2125,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 					int LoadHeadernum2 = reader.ReadInt16();
 					for (int i = 0; i < LoadHeadernum2; i++)
 					{
-						if (i < 668)
+						if (i < 670)
 						{
 							NPC.killCount[i] = reader.ReadInt32();
 						}
@@ -2318,6 +2329,14 @@ Custom valid : {ValidateWorldData(array, num)}";
 						NPC.downedEmpressOfLight = false;
 						NPC.downedQueenSlime = false;
 					}
+					if (versionNumber >= 240)
+                    {
+						NPC.downedDeerclops = reader.ReadBoolean();
+                    }
+					else
+                    {
+						NPC.downedDeerclops = false;
+                    }
 					#endregion
 					debugPointerString = "After LoadHeader";
 
