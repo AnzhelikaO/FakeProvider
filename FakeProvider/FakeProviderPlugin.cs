@@ -1561,7 +1561,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 
 					int versionNumber = reader.ReadInt32();
 					// <= 87 to not support really old versions I mean, when are we loading these realistically
-					if (versionNumber <= 87 || versionNumber > 244)
+					if (versionNumber <= 87 || versionNumber > 248)
 					{
 						WorldGen.loadFailed = true;
 						throw new Exception("Invalid world file version");
