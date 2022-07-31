@@ -42,13 +42,16 @@ namespace FakeProvider
             }
 
 			foreach (var group in FakeProviderAPI.GroupByPersonal(clients, X, Y, Width, Height))
-				FakeProviderPlugin.SendTo(group, Generate(group.Key, X, Y, Width, Height));
+            {
+				foreach (RemoteClient client in group)
+					FakeProviderPlugin.SendTo(client, Generate(group.Key, client, X, Y, Width, Height));
+            }
 		}
 
 		#endregion
 		#region Generate
 
-		private static byte[] Generate(IEnumerable<TileProvider> providers, int X, int Y, int Width, int Height)
+		private static byte[] Generate(IEnumerable<TileProvider> providers, RemoteClient client, int X, int Y, int Width, int Height)
 		{
 
 			byte[] data;
@@ -57,7 +60,7 @@ namespace FakeProvider
 			{
 				bw.BaseStream.Position = 2L;
 				bw.Write((byte)PacketTypes.TileSendSection);
-				CompressTileBlock(providers, bw, X, Y, (short)Width, (short)Height);
+				CompressTileBlock(providers, client, bw, X, Y, (short)Width, (short)Height);
 				long position = bw.BaseStream.Position;
 				bw.BaseStream.Position = 0L;
 				bw.Write((short)position);
@@ -70,7 +73,7 @@ namespace FakeProvider
 		#endregion
 		#region CompressTileBlock
 
-		private static int CompressTileBlock(IEnumerable<TileProvider> providers,
+		private static int CompressTileBlock(IEnumerable<TileProvider> providers, RemoteClient client,
 			BinaryWriter writer, int xStart, int yStart, short width, short height)
 		{
 			if (xStart < 0)
@@ -99,7 +102,7 @@ namespace FakeProvider
 					binaryWriter.Write(width);
 					binaryWriter.Write(height);
 					//NetMessage.CompressTileBlock_Inner(binaryWriter, xStart, yStart, (int)width, (int)height);
-					CompressTileBlock_Inner(providers, binaryWriter, xStart, yStart, width, height);
+					CompressTileBlock_Inner(providers, client, binaryWriter, xStart, yStart, width, height);
 					memoryStream.Position = 0L;
 					MemoryStream memoryStream2 = new MemoryStream();
 					using (DeflateStream deflateStream = new DeflateStream(memoryStream2, CompressionMode.Compress, true))
@@ -130,7 +133,7 @@ namespace FakeProvider
 		#endregion
 		#region CompressTileBlock_Inner
 
-		private static void CompressTileBlock_Inner(IEnumerable<TileProvider> providers,
+		private static void CompressTileBlock_Inner(IEnumerable<TileProvider> providers, RemoteClient client,
 			BinaryWriter writer, int xStart, int yStart, int width, int height)
 		{
 			short[] array = new short[8000];
@@ -212,51 +215,25 @@ namespace FakeProvider
 									num += 1;
 								}
 							}
-							if (tile2.type == 85 && tile2.frameX % 36 == 0 && tile2.frameY % 36 == 0)
-							{
-								short num9 = (short)Sign.ReadSign(j, i, true);
-								if (num9 != -1)
+
+							if (tile2.frameX % 36 == 0 && tile2.frameY % 36 == 0)
+                            {
+								switch (tile2.type)
 								{
-									short[] array5 = array2;
-									short num10 = num2;
-									num2 = (short)(num10 + 1);
-									array5[(int)num10] = num9;
+									case 85: case 55: case 425: case 573:
+										{
+											short k = (short)Sign.ReadSign(j, i, true);
+											if (k != -1)
+											{
+												array2[num2++] = k;
+											}
+											break;
+										}
 								}
 							}
-							if (tile2.type == 55 && tile2.frameX % 36 == 0 && tile2.frameY % 36 == 0)
-							{
-								short num11 = (short)Sign.ReadSign(j, i, true);
-								if (num11 != -1)
-								{
-									short[] array6 = array2;
-									short num12 = num2;
-									num2 = (short)(num12 + 1);
-									array6[(int)num12] = num11;
-								}
-							}
-							if (tile2.type == 425 && tile2.frameX % 36 == 0 && tile2.frameY % 36 == 0)
-							{
-								short num13 = (short)Sign.ReadSign(j, i, true);
-								if (num13 != -1)
-								{
-									short[] array7 = array2;
-									short num14 = num2;
-									num2 = (short)(num14 + 1);
-									array7[(int)num14] = num13;
-								}
-							}
-							if (tile2.type == 573 && tile2.frameX % 36 == 0 && tile2.frameY % 36 == 0)
-							{
-								short num15 = (short)Sign.ReadSign(j, i, true);
-								if (num15 != -1)
-								{
-									short[] array8 = array2;
-									short num16 = num2;
-									num2 = (short)(num16 + 1);
-									array8[(int)num16] = num15;
-								}
-							}
-							if (tile2.type == 378 && tile2.frameX % 36 == 0 && tile2.frameY == 0)
+							
+
+                            if (tile2.type == 378 && tile2.frameX % 36 == 0 && tile2.frameY == 0)
 							{
 								int num17 = TETrainingDummy.Find(j, i);
 								if (num17 != -1)
@@ -467,15 +444,39 @@ namespace FakeProvider
 				writer.Write((short)chest.y);
 				writer.Write(chest.name);
 			}
-			writer.Write(num2);
-			for (int l = 0; l < (int)num2; l++)
-			{
-				Sign sign = Main.sign[(int)array2[l]];
-				writer.Write(array2[l]);
-				writer.Write((short)sign.x);
-				writer.Write((short)sign.y);
-				writer.Write(sign.text);
+
+			{	// TODO: Optimize, add a custom sign that does not exist in the world
+
+				var p2 = providers.Where(p => p.Observers == null ? true : p.Observers.Contains(client.Id));
+				var entities = p2.SelectMany(p => p.Entities);
+				var fakeSigns = entities.Where(p => p is FakeSign).Select(p => p as FakeSign).ToList();
+				int count = fakeSigns.Count();
+
+				FakeSign FindSign(int x, int y)
+				{
+					foreach (FakeSign sign in fakeSigns)
+						if (sign.x == x && sign.y == y)
+							return sign;
+					return null;
+				}
+
+				writer.Write(num2);
+				for (int l = 0; l < (int)num2; l++)
+				{
+					Sign sign = Main.sign[(int)array2[l]];
+					FakeSign fakeSign = FindSign(sign.x, sign.y);
+					if (fakeSign != null)
+					{
+						sign = fakeSign;
+					}
+
+					writer.Write(array2[l]);
+					writer.Write((short)sign.x);
+					writer.Write((short)sign.y);
+					writer.Write(sign.text);
+				}
 			}
+
 			writer.Write(num3);
 			for (int m = 0; m < (int)num3; m++)
 			{
