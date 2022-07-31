@@ -446,7 +446,6 @@ namespace FakeProvider
 
 			{	// TODO: Optimize, add a custom sign that does not exist in the world
 
-				//var p2 = providers.Where(p => p.Observers == null ? true : p.Observers.Contains(client.Id));
 				var entities = providers.SelectMany(p => p.Entities);
 				var fakeSigns = entities.Where(p => p is FakeSign).Select(p => p as FakeSign).ToList();
 				int count = fakeSigns.Count();
