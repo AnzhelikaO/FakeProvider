@@ -904,15 +904,18 @@ namespace FakeProvider
 
         public void Draw(bool Section = true)
         {
+            Terraria.Localization.NetworkText playerList = Observers == null
+                ? Terraria.Localization.NetworkText.FromLiteral(string.Concat(Observers.Select(p => (char)p)))
+                : null;
             if (Section)
             {
-                NetMessage.SendData((int)PacketTypes.TileSendSection, -1, -1, null, X, Y, Width, Height);
+                NetMessage.SendData((int)PacketTypes.TileSendSection, -1, -1, playerList, X, Y, Width, Height);
                 int sx1 = Netplay.GetSectionX(X), sy1 = Netplay.GetSectionY(Y);
                 int sx2 = Netplay.GetSectionX(X + Width - 1), sy2 = Netplay.GetSectionY(Y + Height - 1);
-                NetMessage.SendData((int)PacketTypes.TileFrameSection, -1, -1, null, sx1, sy1, sx2, sy2);
+                NetMessage.SendData((int)PacketTypes.TileFrameSection, -1, -1, playerList, sx1, sy1, sx2, sy2);
             }
             else
-                NetMessage.SendData((int)PacketTypes.TileSendSquare, -1, -1, null, Math.Max(Width, Height), X, Y);
+                NetMessage.SendData((int)PacketTypes.TileSendSquare, -1, -1, playerList, Math.Max(Width, Height), X, Y);
         }
 
         #endregion

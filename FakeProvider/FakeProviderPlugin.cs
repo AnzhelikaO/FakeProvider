@@ -302,22 +302,18 @@ namespace FakeProvider
 		internal static void SendTo(IEnumerable<RemoteClient> clients, byte[] data)
 		{
 			foreach (RemoteClient client in clients)
-				SendTo(client, data);
-		}
+				try
+				{
 
-		internal static void SendTo(RemoteClient client, byte[] data)
-		{
-			try
-			{
-				if (NetSendBytes(client, data, 0, data.Length))
-					return;
+					if (NetSendBytes(client, data, 0, data.Length))
+						return;
 
-				client.Socket.AsyncSend(data, 0, data.Length,
-					new SocketSendCallback(client.ServerWriteCallBack), null);
-			}
-			catch (IOException) { }
-			catch (ObjectDisposedException) { }
-			catch (InvalidOperationException) { }
+					client.Socket.AsyncSend(data, 0, data.Length,
+						new SocketSendCallback(client.ServerWriteCallBack), null);
+				}
+				catch (IOException) { }
+				catch (ObjectDisposedException) { }
+				catch (InvalidOperationException) { }
 		}
 
 		#endregion

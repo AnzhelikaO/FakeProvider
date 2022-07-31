@@ -43,15 +43,14 @@ namespace FakeProvider
 
 			foreach (var group in FakeProviderAPI.GroupByPersonal(clients, X, Y, Width, Height))
             {
-				foreach (RemoteClient client in group)
-					FakeProviderPlugin.SendTo(client, Generate(group.Key, client, X, Y, Width, Height));
-            }
+				FakeProviderPlugin.SendTo(group, Generate(group.Key, X, Y, Width, Height));
+			}
 		}
 
 		#endregion
 		#region Generate
 
-		private static byte[] Generate(IEnumerable<TileProvider> providers, RemoteClient client, int X, int Y, int Width, int Height)
+		private static byte[] Generate(IEnumerable<TileProvider> providers, int X, int Y, int Width, int Height)
 		{
 
 			byte[] data;
@@ -60,7 +59,7 @@ namespace FakeProvider
 			{
 				bw.BaseStream.Position = 2L;
 				bw.Write((byte)PacketTypes.TileSendSection);
-				CompressTileBlock(providers, client, bw, X, Y, (short)Width, (short)Height);
+				CompressTileBlock(providers, bw, X, Y, (short)Width, (short)Height);
 				long position = bw.BaseStream.Position;
 				bw.BaseStream.Position = 0L;
 				bw.Write((short)position);
@@ -73,7 +72,7 @@ namespace FakeProvider
 		#endregion
 		#region CompressTileBlock
 
-		private static int CompressTileBlock(IEnumerable<TileProvider> providers, RemoteClient client,
+		private static int CompressTileBlock(IEnumerable<TileProvider> providers,
 			BinaryWriter writer, int xStart, int yStart, short width, short height)
 		{
 			if (xStart < 0)
@@ -102,7 +101,7 @@ namespace FakeProvider
 					binaryWriter.Write(width);
 					binaryWriter.Write(height);
 					//NetMessage.CompressTileBlock_Inner(binaryWriter, xStart, yStart, (int)width, (int)height);
-					CompressTileBlock_Inner(providers, client, binaryWriter, xStart, yStart, width, height);
+					CompressTileBlock_Inner(providers, binaryWriter, xStart, yStart, width, height);
 					memoryStream.Position = 0L;
 					MemoryStream memoryStream2 = new MemoryStream();
 					using (DeflateStream deflateStream = new DeflateStream(memoryStream2, CompressionMode.Compress, true))
@@ -133,7 +132,7 @@ namespace FakeProvider
 		#endregion
 		#region CompressTileBlock_Inner
 
-		private static void CompressTileBlock_Inner(IEnumerable<TileProvider> providers, RemoteClient client,
+		private static void CompressTileBlock_Inner(IEnumerable<TileProvider> providers,
 			BinaryWriter writer, int xStart, int yStart, int width, int height)
 		{
 			short[] array = new short[8000];
@@ -447,8 +446,8 @@ namespace FakeProvider
 
 			{	// TODO: Optimize, add a custom sign that does not exist in the world
 
-				var p2 = providers.Where(p => p.Observers == null ? true : p.Observers.Contains(client.Id));
-				var entities = p2.SelectMany(p => p.Entities);
+				//var p2 = providers.Where(p => p.Observers == null ? true : p.Observers.Contains(client.Id));
+				var entities = providers.SelectMany(p => p.Entities);
 				var fakeSigns = entities.Where(p => p is FakeSign).Select(p => p as FakeSign).ToList();
 				int count = fakeSigns.Count();
 
