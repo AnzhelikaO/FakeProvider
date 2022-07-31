@@ -295,68 +295,73 @@ namespace FakeProvider
             //FakeProviderAPI.Personal.All(provider => provider.Observers.re)
         }
 
-        #endregion
+		#endregion
 
-        #region SendTo
+		#region SendTo
 
-        internal static void SendTo(IEnumerable<RemoteClient> clients, byte[] data)
-        {
-            foreach (RemoteClient client in clients)
-                try
-                {
-                    if (NetSendBytes(client, data, 0, data.Length))
-                        continue;
+		internal static void SendTo(IEnumerable<RemoteClient> clients, byte[] data)
+		{
+			foreach (RemoteClient client in clients)
+				SendTo(client, data);
+		}
 
-                    client.Socket.AsyncSend(data, 0, data.Length,
-                        new SocketSendCallback(client.ServerWriteCallBack), null);
-                }
-                catch (IOException) { }
-                catch (ObjectDisposedException) { }
-                catch (InvalidOperationException) { }
-        }
+		internal static void SendTo(RemoteClient client, byte[] data)
+		{
+			try
+			{
+				if (NetSendBytes(client, data, 0, data.Length))
+					return;
 
-        #endregion
-        #region FindProvider
+				client.Socket.AsyncSend(data, 0, data.Length,
+					new SocketSendCallback(client.ServerWriteCallBack), null);
+			}
+			catch (IOException) { }
+			catch (ObjectDisposedException) { }
+			catch (InvalidOperationException) { }
+		}
 
-        public static bool FindProvider(string name, TSPlayer player, out TileProvider found)
-        {
-            found = null;
-            List<TileProvider> foundProviders = new List<TileProvider>();
-            string lowerName = name.ToLower();
-            foreach (TileProvider provider in FakeProviderAPI.Tile.Providers)
-            {
-                if (provider == null)
-                    continue;
-                if (provider.Name == name)
-                {
-                    found = provider;
-                    return true;
-                }
-                else if (provider.Name.ToLower().StartsWith(lowerName))
-                    foundProviders.Add(provider);
-            }
-            if (foundProviders.Count == 0)
-            {
-                player?.SendErrorMessage($"Invalid provider '{name}'.");
-                return false;
-            }
-            else if (foundProviders.Count > 1)
-            {
-                if (player != null)
-                    player.SendMultipleMatchError(foundProviders);
-                return false;
-            }
-            else
-            {
-                found = foundProviders[0];
-                return true;
-            }
-        }
+		#endregion
+		#region FindProvider
 
-        #endregion
-        #region FakeCommand
+		public static bool FindProvider(string name, TSPlayer player, out TileProvider found)
+		{
+			found = null;
+			List<TileProvider> foundProviders = new List<TileProvider>();
+			string lowerName = name.ToLower();
+			foreach (TileProvider provider in FakeProviderAPI.Tile.Providers)
+			{
+				if (provider == null)
+					continue;
+				if (provider.Name == name)
+				{
+					found = provider;
+					return true;
+				}
+				else if (provider.Name.ToLower().StartsWith(lowerName))
+					foundProviders.Add(provider);
+			}
+			if (foundProviders.Count == 0)
+			{
+				player?.SendErrorMessage($"Invalid provider '{name}'.");
+				return false;
+			}
+			else if (foundProviders.Count > 1)
+			{
+				if (player != null)
+					player.SendMultipleMatchError(foundProviders);
+				return false;
+			}
+			else
+			{
+				found = foundProviders[0];
+				return true;
+			}
+		}
 
-        public static void FakeCommand(CommandArgs args)
+		#endregion
+		#region FakeCommand
+
+		public static void FakeCommand(CommandArgs args)
         {
             string arg0 = args.Parameters.ElementAtOrDefault(0);
             switch (arg0?.ToLower())
