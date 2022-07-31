@@ -364,10 +364,25 @@ namespace FakeProvider
                 case "l":
                 case "list":
                 {
+					bool allPersonalProvider = args.Parameters.RemoveAll(s => s == "all") > 0;
                     if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out int page))
                         return;
-                    List<string> lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.Providers);
-                    PaginationTools.SendPage(args.Player, page, lines, new PaginationTools.Settings()
+
+					List<TileProvider> providers = new List<TileProvider>();
+					providers.AddRange(FakeProviderAPI.Tile.Providers);
+
+					if (!allPersonalProvider)
+						providers.AddRange(FakeProviderAPI.Tile.Personal.Where(provider => provider.Observers.Contains(args.Player.Index)));
+					else
+						providers.AddRange(FakeProviderAPI.Tile.Personal);
+
+					Func<object, string> formatter = (obj) => obj == null ? 
+						(string)obj : ((obj is TileProvider) ? 
+							(obj as TileProvider).Observers == null ? 
+								obj.ToString() : "[c/ffd800:" + obj + "]" : obj.ToString());
+
+					List<string> lines = PaginationTools.BuildLinesFromTerms(providers, formatter);
+					PaginationTools.SendPage(args.Player, page, lines, new PaginationTools.Settings()
                     {
                         HeaderFormat = "Fake providers ({0}/{1}):",
                         FooterFormat = "Type '/fake list {0}' for more.",
