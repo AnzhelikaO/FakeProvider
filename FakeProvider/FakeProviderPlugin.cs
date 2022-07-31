@@ -587,7 +587,7 @@ Entities: {provider.Entities.Count}");
 
 		public static void InternalSaveWorld(bool useCloudSaving, bool resetTime)
 		{
-			Terraria.Utils.TryCreatingDirectory(Main.WorldPath);
+			Terraria.Utils.TryCreatingDirectory(Directory.GetParent(Main.worldPathName).FullName);
 			if (Main.skipMenu)
 			{
 				return;
@@ -1281,7 +1281,7 @@ Custom valid : {ValidateWorldData(array, num)}";
                     {
                         if (Main.worldPathName.Substring(i, 1) == (Path.DirectorySeparatorChar.ToString() ?? ""))
                         {
-                            Terraria.Utils.TryCreatingDirectory(Main.worldPathName.Substring(0, i));
+							Terraria.Utils.TryCreatingDirectory(Directory.GetParent(Main.worldPathName.Substring(0, i)).FullName);
                             break;
                         }
                     }
@@ -1548,7 +1548,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 				#region AutoGen
 				if (!File.Exists(Main.worldPathName) && Main.autoGen)
 				{
-					Terraria.Utils.TryCreatingDirectory(Main.worldPathName);
+					Terraria.Utils.TryCreatingDirectory(Directory.GetParent(Main.worldPathName).FullName);
 					WorldGen.clearWorld();
 					Main.ActiveWorldFileData = WorldFile.CreateMetadata((Main.worldName == "") ? "World" : Main.worldName, false, Main.GameMode);
 					string text = (Main.AutogenSeedName ?? "").Trim();
