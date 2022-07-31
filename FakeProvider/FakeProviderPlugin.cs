@@ -1576,7 +1576,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 
 					int versionNumber = reader.ReadInt32();
 					// <= 87 to not support really old versions I mean, when are we loading these realistically
-					if (versionNumber <= 87 || versionNumber > 248)
+					if (versionNumber <= 87 || versionNumber > Main.curRelease)
 					{
 						WorldGen.loadFailed = true;
 						throw new Exception("Invalid world file version");
@@ -2828,6 +2828,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 					}
 					void LoadDummies(UnsafeBinaryReader reader)
 					{
+						/*
 						int num = reader.ReadInt32();
 						for (int i = 0; i < num; i++)
 						{
@@ -2836,6 +2837,14 @@ Custom valid : {ValidateWorldData(array, num)}";
 						for (int j = num; j < 1000; j++)
 						{
 							DeprecatedClassLeftInForLoading.dummies[j] = null;
+						}
+						*/ // Removed from the game (Check OTAPI WorldFile.LoadDummies (1.4.3.6 and 1.4.3.2)).
+
+						int num = reader.ReadInt32();
+						for (int i = 0; i < num; i++)
+						{
+							reader.ReadInt16();
+							reader.ReadInt16();
 						}
 					}
 					void LoadTileEntities(UnsafeBinaryReader reader)
