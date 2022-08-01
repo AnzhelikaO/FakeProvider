@@ -15,7 +15,7 @@ namespace FakeProvider
         private TileProvider[] _Providers = new TileProvider[10];
         private List<TileProvider> Order = new List<TileProvider>();
         // TODO: Personal order
-        private List<TileProvider> Personal = new List<TileProvider>();
+        public List<TileProvider> Personal = new List<TileProvider>();
 
         /// <summary> List of all registered providers. </summary>
         public TileProvider[] Providers

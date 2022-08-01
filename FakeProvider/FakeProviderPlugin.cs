@@ -295,68 +295,69 @@ namespace FakeProvider
             //FakeProviderAPI.Personal.All(provider => provider.Observers.re)
         }
 
-        #endregion
+		#endregion
 
-        #region SendTo
+		#region SendTo
 
-        internal static void SendTo(IEnumerable<RemoteClient> clients, byte[] data)
-        {
-            foreach (RemoteClient client in clients)
-                try
-                {
-                    if (NetSendBytes(client, data, 0, data.Length))
-                        continue;
+		internal static void SendTo(IEnumerable<RemoteClient> clients, byte[] data)
+		{
+			foreach (RemoteClient client in clients)
+				try
+				{
 
-                    client.Socket.AsyncSend(data, 0, data.Length,
-                        new SocketSendCallback(client.ServerWriteCallBack), null);
-                }
-                catch (IOException) { }
-                catch (ObjectDisposedException) { }
-                catch (InvalidOperationException) { }
-        }
+					if (NetSendBytes(client, data, 0, data.Length))
+						return;
 
-        #endregion
-        #region FindProvider
+					client.Socket.AsyncSend(data, 0, data.Length,
+						new SocketSendCallback(client.ServerWriteCallBack), null);
+				}
+				catch (IOException) { }
+				catch (ObjectDisposedException) { }
+				catch (InvalidOperationException) { }
+		}
 
-        public static bool FindProvider(string name, TSPlayer player, out TileProvider found)
-        {
-            found = null;
-            List<TileProvider> foundProviders = new List<TileProvider>();
-            string lowerName = name.ToLower();
-            foreach (TileProvider provider in FakeProviderAPI.Tile.Providers)
-            {
-                if (provider == null)
-                    continue;
-                if (provider.Name == name)
-                {
-                    found = provider;
-                    return true;
-                }
-                else if (provider.Name.ToLower().StartsWith(lowerName))
-                    foundProviders.Add(provider);
-            }
-            if (foundProviders.Count == 0)
-            {
-                player?.SendErrorMessage($"Invalid provider '{name}'.");
-                return false;
-            }
-            else if (foundProviders.Count > 1)
-            {
-                if (player != null)
-                    player.SendMultipleMatchError(foundProviders);
-                return false;
-            }
-            else
-            {
-                found = foundProviders[0];
-                return true;
-            }
-        }
+		#endregion
+		#region FindProvider
 
-        #endregion
-        #region FakeCommand
+		public static bool FindProvider(string name, TSPlayer player, out TileProvider found)
+		{
+			found = null;
+			List<TileProvider> foundProviders = new List<TileProvider>();
+			string lowerName = name.ToLower();
+			foreach (TileProvider provider in FakeProviderAPI.Tile.Providers)
+			{
+				if (provider == null)
+					continue;
+				if (provider.Name == name)
+				{
+					found = provider;
+					return true;
+				}
+				else if (provider.Name.ToLower().StartsWith(lowerName))
+					foundProviders.Add(provider);
+			}
+			if (foundProviders.Count == 0)
+			{
+				player?.SendErrorMessage($"Invalid provider '{name}'.");
+				return false;
+			}
+			else if (foundProviders.Count > 1)
+			{
+				if (player != null)
+					player.SendMultipleMatchError(foundProviders);
+				return false;
+			}
+			else
+			{
+				found = foundProviders[0];
+				return true;
+			}
+		}
 
-        public static void FakeCommand(CommandArgs args)
+		#endregion
+		#region FakeCommand
+
+		public static void FakeCommand(CommandArgs args)
         {
             string arg0 = args.Parameters.ElementAtOrDefault(0);
             switch (arg0?.ToLower())
@@ -364,10 +365,25 @@ namespace FakeProvider
                 case "l":
                 case "list":
                 {
+					bool allPersonalProvider = args.Parameters.RemoveAll(s => s == "all") > 0;
                     if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out int page))
                         return;
-                    List<string> lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.Providers);
-                    PaginationTools.SendPage(args.Player, page, lines, new PaginationTools.Settings()
+
+					List<TileProvider> providers = new List<TileProvider>();
+					providers.AddRange(FakeProviderAPI.Tile.Providers);
+
+					if (!allPersonalProvider)
+						providers.AddRange(FakeProviderAPI.Tile.Personal.Where(provider => provider.Observers.Contains(args.Player.Index)));
+					else
+						providers.AddRange(FakeProviderAPI.Tile.Personal);
+
+					Func<object, string> formatter = (obj) => obj == null ? 
+						(string)obj : ((obj is TileProvider) ? 
+							(obj as TileProvider).Observers == null ? 
+								obj.ToString() : "[c/ffd800:" + obj + "]" : obj.ToString());
+
+					List<string> lines = PaginationTools.BuildLinesFromTerms(providers, formatter);
+					PaginationTools.SendPage(args.Player, page, lines, new PaginationTools.Settings()
                     {
                         HeaderFormat = "Fake providers ({0}/{1}):",
                         FooterFormat = "Type '/fake list {0}' for more.",
@@ -572,7 +588,7 @@ Entities: {provider.Entities.Count}");
 
 		public static void InternalSaveWorld(bool useCloudSaving, bool resetTime)
 		{
-			Terraria.Utils.TryCreatingDirectory(Main.WorldPath);
+			Terraria.Utils.TryCreatingDirectory(Directory.GetParent(Main.worldPathName).FullName);
 			if (Main.skipMenu)
 			{
 				return;
@@ -1266,7 +1282,7 @@ Custom valid : {ValidateWorldData(array, num)}";
                     {
                         if (Main.worldPathName.Substring(i, 1) == (Path.DirectorySeparatorChar.ToString() ?? ""))
                         {
-                            Terraria.Utils.TryCreatingDirectory(Main.worldPathName.Substring(0, i));
+							Terraria.Utils.TryCreatingDirectory(Directory.GetParent(Main.worldPathName.Substring(0, i)).FullName);
                             break;
                         }
                     }
@@ -1533,7 +1549,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 				#region AutoGen
 				if (!File.Exists(Main.worldPathName) && Main.autoGen)
 				{
-					Terraria.Utils.TryCreatingDirectory(Main.worldPathName);
+					Terraria.Utils.TryCreatingDirectory(Directory.GetParent(Main.worldPathName).FullName);
 					WorldGen.clearWorld();
 					Main.ActiveWorldFileData = WorldFile.CreateMetadata((Main.worldName == "") ? "World" : Main.worldName, false, Main.GameMode);
 					string text = (Main.AutogenSeedName ?? "").Trim();
@@ -1561,7 +1577,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 
 					int versionNumber = reader.ReadInt32();
 					// <= 87 to not support really old versions I mean, when are we loading these realistically
-					if (versionNumber <= 87 || versionNumber > 248)
+					if (versionNumber <= 87 || versionNumber > Main.curRelease)
 					{
 						WorldGen.loadFailed = true;
 						throw new Exception("Invalid world file version");
@@ -2813,6 +2829,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 					}
 					void LoadDummies(UnsafeBinaryReader reader)
 					{
+						/*
 						int num = reader.ReadInt32();
 						for (int i = 0; i < num; i++)
 						{
@@ -2821,6 +2838,14 @@ Custom valid : {ValidateWorldData(array, num)}";
 						for (int j = num; j < 1000; j++)
 						{
 							DeprecatedClassLeftInForLoading.dummies[j] = null;
+						}
+						*/ // Removed from the game (Check OTAPI WorldFile.LoadDummies (1.4.3.6 and 1.4.3.2)).
+
+						int num = reader.ReadInt32();
+						for (int i = 0; i < num; i++)
+						{
+							reader.ReadInt16();
+							reader.ReadInt16();
 						}
 					}
 					void LoadTileEntities(UnsafeBinaryReader reader)
