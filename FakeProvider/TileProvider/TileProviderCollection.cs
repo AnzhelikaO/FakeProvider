@@ -13,19 +13,20 @@ namespace FakeProvider
 
         public const string VoidProviderName = "__void__";
         private TileProvider[] _Providers = new TileProvider[10];
-        private List<TileProvider> Order = new List<TileProvider>();
-        // TODO: Personal order
-        public List<TileProvider> Personal = new List<TileProvider>();
+
+        public List<TileProvider> Order = new List<TileProvider>(), 
+            Personal = new List<TileProvider>();
 
         /// <summary> List of all registered providers. </summary>
-        public TileProvider[] Providers
+        public TileProvider[] GlobalProviders
         {
             get
             {
                 lock (Locker)
-                    return _Providers.ToArray();
+                    return _Providers;
             }
         }
+        public IEnumerable<TileProvider> Providers => Order.Concat(Personal);
         /// <summary> <see cref="ProviderIndexes"/>[X, Y] is an index of provider at point (X, Y). </summary>
         internal ushort[,] ProviderIndexes;
         /// <summary> World width visible by client. </summary>
@@ -138,7 +139,7 @@ namespace FakeProvider
                             AddPersonal(Provider);
                         else
                         {
-                            if (Order.Any(p => (p.Name == Provider.Name)))
+                            if (Providers.Any(p => (p.Name == Provider.Name)))
                                 throw new ArgumentException($"Tile collection '{Provider.Name}' " +
                                     "is already in use. Name must be unique.");
                             PlaceProviderOnTopOfLayer(Provider);
@@ -162,7 +163,7 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                if (Order.Any(p => (p.Name == Provider.Name)))
+                if (Providers.Any(p => (p.Name == Provider.Name)))
                     throw new ArgumentException($"Tile collection '{Provider.Name}' " +
                         "is already in use. Name must be unique.");
                 Personal.Add(Provider);
@@ -177,40 +178,31 @@ namespace FakeProvider
         #endregion
         #region Remove
 
-        public bool Remove(string Name, bool Draw = true, bool Cleanup = false)
+        public bool Remove(TileProvider provider, bool Draw = true, bool Cleanup = false)
         {
-            if (Name == VoidProviderName)
+            if (provider.Name == VoidProviderName)
                 throw new InvalidOperationException("You cannot remove void provider.");
+
+            bool contains = false;
 
             lock (Locker)
             {
-                if (Order.FirstOrDefault(p => (p.Name == Name)) is TileProvider provider)
-                {
-                    provider.Disable(Draw);
-                    Order.Remove(provider);
-                    _Providers[provider.Index] = null;
-                }
-                else if (Personal.FirstOrDefault(p => (p.Name == Name)) is TileProvider provider2)
-                {
-                    provider2.Disable(Draw);
-                    Personal.Remove(provider2);
-                }
+                provider.Disable(Draw);
+                if (provider.IsPersonal)
+                    if (contains = Personal.Contains(provider))
+                        Personal.Remove(provider);
+                    else
+                    if (contains = Order.Contains(provider))
+                    {
+                        _Providers[provider.Index] = null;
+                        Order.Remove(provider);
+                    }
             }
+
             if (Cleanup)
                 GC.Collect();
-            return true;
-        }
 
-        #endregion
-        #region Clear
-
-        public void Clear(TileProvider except = null)
-        {
-            lock (Locker)
-                foreach (TileProvider provider in Order.ToArray())
-                    if (provider != except)
-                        Remove(provider.Name, true, false);
-            GC.Collect();
+            return contains;
         }
 
         #endregion
