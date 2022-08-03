@@ -58,7 +58,8 @@ namespace FakeProvider
 		private static FieldInfo StatusTextField;
         public static Command[] CommandList = new Command[]
         {
-            new Command("FakeProvider.Control", FakeCommand, "fake")
+            new Command("FakeProvider.Control", FakeCommand, "fake"),
+			new Command("FakeProvider.Control", PersonalFakeCommand, "pfake", "personalfake", "persfake")
         };
 
         #endregion
@@ -316,48 +317,33 @@ namespace FakeProvider
 				catch (InvalidOperationException) { }
 		}
 
-		#endregion
-		#region FindProvider
+        #endregion
+        #region FindProvider
 
-		public static bool FindProvider(string name, TSPlayer player, out TileProvider found)
-		{
-			found = null;
-			List<TileProvider> foundProviders = new List<TileProvider>();
-			string lowerName = name.ToLower();
-			foreach (TileProvider provider in FakeProviderAPI.Tile.Providers)
+		public static bool FindProvider(string name, TSPlayer player, out TileProvider provider, bool includeGlobal = true, bool includePersonal = false)
+        {
+			provider = null;
+			var foundProviders = FakeProviderAPI.FindProvider(name, includeGlobal, includePersonal);
+
+			if (foundProviders.Count() == 0)
 			{
-				if (provider == null)
-					continue;
-				if (provider.Name == name)
-				{
-					found = provider;
-					return true;
-				}
-				else if (provider.Name.ToLower().StartsWith(lowerName))
-					foundProviders.Add(provider);
-			}
-			if (foundProviders.Count == 0)
-			{
-				player?.SendErrorMessage($"Invalid provider '{name}'.");
+				player?.SendErrorMessage("Invalid provider '" + name + "'");
 				return false;
 			}
-			else if (foundProviders.Count > 1)
+			if (foundProviders.Count() > 1)
 			{
-				if (player != null)
-					player.SendMultipleMatchError(foundProviders);
+				player?.SendMultipleMatchError(foundProviders);
 				return false;
 			}
-			else
-			{
-				found = foundProviders[0];
-				return true;
-			}
+			provider = foundProviders.First();
+			return true;
 		}
 
-		#endregion
-		#region FakeCommand
+        #endregion
 
-		public static void FakeCommand(CommandArgs args)
+        #region FakeCommand
+
+        public static void FakeCommand(CommandArgs args)
         {
             string arg0 = args.Parameters.ElementAtOrDefault(0);
             switch (arg0?.ToLower())
@@ -365,24 +351,10 @@ namespace FakeProvider
                 case "l":
                 case "list":
                 {
-					bool allPersonalProvider = args.Parameters.RemoveAll(s => s == "all") > 0;
                     if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out int page))
                         return;
 
-					List<TileProvider> providers = new List<TileProvider>();
-					providers.AddRange(FakeProviderAPI.Tile.Providers);
-
-					if (!allPersonalProvider)
-						providers.AddRange(FakeProviderAPI.Tile.Personal.Where(provider => provider.Observers.Contains(args.Player.Index)));
-					else
-						providers.AddRange(FakeProviderAPI.Tile.Personal);
-
-					Func<object, string> formatter = (obj) => obj == null ? 
-						(string)obj : ((obj is TileProvider) ? 
-							(obj as TileProvider).Observers == null ? 
-								obj.ToString() : "[c/ffd800:" + obj + "]" : obj.ToString());
-
-					List<string> lines = PaginationTools.BuildLinesFromTerms(providers, formatter);
+					List<string> lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.GlobalProviders);
 					PaginationTools.SendPage(args.Player, page, lines, new PaginationTools.Settings()
                     {
                         HeaderFormat = "Fake providers ({0}/{1}):",
@@ -399,8 +371,8 @@ namespace FakeProvider
                         args.Player.SendErrorMessage("/fake tp \"provider name\"");
                         return;
                     }
-                    if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
-                        return;
+					if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
+						return;
 
                     args.Player.Teleport((provider.X + provider.Width / 2) * 16,
                         (provider.Y + provider.Height / 2) * 16);
@@ -416,7 +388,7 @@ namespace FakeProvider
                         return;
                     }
                     if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
-                        return;
+						return;
 
                     if (!Int32.TryParse(args.Parameters[2], out int x)
                         || !Int32.TryParse(args.Parameters[3], out int y))
@@ -438,7 +410,7 @@ namespace FakeProvider
                         return;
                     }
                     if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
-                        return;
+						return;
 
                     if (!Int32.TryParse(args.Parameters[2], out int layer))
                     {
@@ -459,7 +431,7 @@ namespace FakeProvider
                         return;
                     }
                     if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
-                        return;
+						return;
 
                     args.Player.SendInfoMessage(
 $@"Fake provider '{provider.Name}' ({provider.GetType().Name})
@@ -512,11 +484,159 @@ Entities: {provider.Entities.Count}");
             }
         }
 
-        #endregion
+		#endregion
+		#region PersonalFakeCommand
+		public static void PersonalFakeCommand(CommandArgs args)
+		{
+			string arg0 = args.Parameters.ElementAtOrDefault(0);
+			switch (arg0?.ToLower())
+			{
+				case "l":
+				case "list":
+					{
+						bool allPersonalProviders = args.Parameters.RemoveAll(s => s == "all") > 0;
+						if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out int page))
+							return;
 
-        #region SaveWorld
+						List<string> lines = null;
+						if (allPersonalProviders)
+							lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.Personal);
+						else
+							lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.Personal.Where(provider => provider.Observers.Contains(args.Player.Index)));
 
-        private static void SaveWorld(ref bool Cloud, ref bool ResetTime)
+						PaginationTools.SendPage(args.Player, page, lines, new PaginationTools.Settings()
+						{
+							HeaderFormat = "Fake providers ({0}/{1}):",
+							FooterFormat = "Type '/pfake list {0}' for more.",
+							NothingToDisplayString = "There are no personal fake providers yet."
+						});
+						break;
+					}
+				case "tp":
+				case "teleport":
+					{
+						if (args.Parameters.Count != 2)
+						{
+							args.Player.SendErrorMessage("/fake tp \"provider name\"");
+							return;
+						}
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
+							return;
+
+						args.Player.Teleport((provider.X + provider.Width / 2) * 16,
+							(provider.Y + provider.Height / 2) * 16);
+						args.Player.SendSuccessMessage($"Teleported to fake provider '{provider.Name}'.");
+						break;
+					}
+				case "m":
+				case "move":
+					{
+						if (args.Parameters.Count != 4)
+						{
+							args.Player.SendErrorMessage("/fake move \"provider name\" <relative x> <relative y>");
+							return;
+						}
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
+							return;
+
+						if (!Int32.TryParse(args.Parameters[2], out int x)
+							|| !Int32.TryParse(args.Parameters[3], out int y))
+						{
+							args.Player.SendErrorMessage("Invalid coordinates.");
+							return;
+						}
+
+						provider.Move(x, y, true);
+						args.Player.SendSuccessMessage($"Fake provider '{provider.Name}' moved to ({x}, {y}).");
+						break;
+					}
+				case "la":
+				case "layer":
+					{
+						if (args.Parameters.Count != 3)
+						{
+							args.Player.SendErrorMessage("/fake layer \"provider name\" <layer>");
+							return;
+						}
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
+							return;
+
+						if (!Int32.TryParse(args.Parameters[2], out int layer))
+						{
+							args.Player.SendErrorMessage("Invalid layer.");
+							return;
+						}
+
+						provider.SetLayer(layer, true);
+						args.Player.SendSuccessMessage($"Fake provider '{provider.Name}' layer set to {layer}.");
+						break;
+					}
+				case "i":
+				case "info":
+					{
+						if (args.Parameters.Count != 2)
+						{
+							args.Player.SendErrorMessage("/fake info \"provider name\"");
+							return;
+						}
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
+							return;
+
+						args.Player.SendInfoMessage(
+	$@"Fake provider '{provider.Name}' ({provider.GetType().Name})
+Position and size: {provider.XYWH()}
+Enabled: {provider.Enabled}
+Entities: {provider.Entities.Count}");
+						break;
+					}
+				case "d":
+				case "disable":
+					{
+						if (args.Parameters.Count != 2)
+						{
+							args.Player.SendErrorMessage("/fake disable \"provider name\"");
+							return;
+						}
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
+							return;
+
+						provider.Disable();
+						break;
+					}
+				case "e":
+				case "enable":
+					{
+						if (args.Parameters.Count != 2)
+						{
+							args.Player.SendErrorMessage("/fake enable \"provider name\"");
+							return;
+						}
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
+							return;
+
+						provider.Enable();
+						break;
+					}
+				default:
+					{
+						args.Player.SendSuccessMessage("/fake subcommands:");
+						args.Player.SendInfoMessage(
+	@"/pfake info ""provider name""
+/pfake tp ""provider name""
+/pfake move ""provider name"" <relative x> <relative y>
+/pfake layer ""provider name"" <layer>
+/pfake disable ""provider name""
+/pfake enable ""provider name""
+/pfake list [page]");
+						break;
+					}
+			}
+		}
+		#endregion
+
+		#region SaveWorld
+
+		private static void SaveWorld(ref bool Cloud, ref bool ResetTime)
         {
 			SaveWorldDirect(Cloud, ResetTime);
 			SaveWorldEnd(Cloud, ResetTime);

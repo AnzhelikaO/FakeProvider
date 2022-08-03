@@ -26,6 +26,7 @@ namespace FakeProvider
         public int Layer { get; private set; }
         public bool Enabled { get; private set; } = false;
         public HashSet<int> Observers { get; private set; }
+        public bool IsPersonal => Observers != null;
         private List<IFake> _Entities = new List<IFake>();
         public ReadOnlyCollection<IFake> Entities => new ReadOnlyCollection<IFake>(_Entities.ToList());
         private object Locker = new object();

@@ -127,7 +127,28 @@ namespace FakeProvider
         #region GetProviderAt
 
         public static TileProvider GetProviderAt(int X, int Y) =>
-            Tile.Providers[Tile.ProviderIndexes[X, Y]];
+            Tile.GlobalProviders[Tile.ProviderIndexes[X, Y]];
+
+        #endregion
+        #region Remove
+
+        public static bool Remove(TileProvider provider, bool Draw = true) =>
+            Tile.Remove(provider, Draw);
+
+        #endregion
+        #region FindProvider
+
+        public static IEnumerable<TileProvider> FindProvider(string name, bool includeGlobal = true, bool includePersonal = false)
+        {
+            if (!includeGlobal && !includePersonal)
+                throw new ArgumentException("Choose which provider you want.", "includeGlobal & includePersonal");
+            var providers = Tile.Providers;
+
+            IEnumerable<TileProvider> _providers = providers.Where(p => p.Name == name);
+            if (_providers.Count() > 0)
+                return _providers;
+            return providers.Where(p => p.Name.ToLower().StartsWith(name.ToLower()));
+        }
 
         #endregion
     }
