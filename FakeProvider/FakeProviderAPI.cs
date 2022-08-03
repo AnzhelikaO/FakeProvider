@@ -110,7 +110,7 @@ namespace FakeProvider
         }
 
         #endregion
-        #region GroupBy
+        #region GroupByPersonal
 
         // TODO: Optimize
         public static IEnumerable<IGrouping<IEnumerable<TileProvider>, RemoteClient>> GroupByPersonal(
@@ -118,9 +118,8 @@ namespace FakeProvider
         {
             IEnumerable<TileProvider> personal = Tile.CollidePersonal(X, Y, Width, Height);
             return Clients.GroupBy(client =>
-                personal.Where(provider =>
-                    provider.Observers.Contains(client.Id))
-                , OEC);
+                personal.Where(provider => provider.Observers.Contains(client.Id)),
+                OEC);
         }
 
         #endregion
