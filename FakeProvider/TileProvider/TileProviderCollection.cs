@@ -14,8 +14,8 @@ namespace FakeProvider
         public const string VoidProviderName = "__void__";
         private TileProvider[] _Providers = new TileProvider[10];
 
-        public List<TileProvider> Order = new List<TileProvider>(), 
-            Personal = new List<TileProvider>();
+        public List<TileProvider> Order = new List<TileProvider>();
+        public List<TileProvider> Personal = new List<TileProvider>();
 
         /// <summary> List of all registered providers. </summary>
         public TileProvider[] GlobalProviders
@@ -188,15 +188,13 @@ namespace FakeProvider
             lock (Locker)
             {
                 provider.Disable(Draw);
-                if (provider.IsPersonal)
-                    if (contains = Personal.Contains(provider))
-                        Personal.Remove(provider);
-                    else
-                    if (contains = Order.Contains(provider))
-                    {
-                        _Providers[provider.Index] = null;
-                        Order.Remove(provider);
-                    }
+                if (provider.IsPersonal && (contains = Personal.Contains(provider)))
+                    Personal.Remove(provider);
+                else if (contains = Order.Contains(provider))
+                {
+                    _Providers[provider.Index] = null;
+                    Order.Remove(provider);
+                }
             }
 
             if (Cleanup)

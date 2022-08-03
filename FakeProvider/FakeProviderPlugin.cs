@@ -320,7 +320,7 @@ namespace FakeProvider
         #endregion
         #region FindProvider
 
-		public static bool FindProvider(TSPlayer player, string name, out TileProvider provider, bool includeGlobal = true, bool includePersonal = false)
+		public static bool FindProvider(string name, TSPlayer player, out TileProvider provider, bool includeGlobal = true, bool includePersonal = false)
         {
 			provider = null;
 			var foundProviders = FakeProviderAPI.FindProvider(name, includeGlobal, includePersonal);
@@ -371,7 +371,7 @@ namespace FakeProvider
                         args.Player.SendErrorMessage("/fake tp \"provider name\"");
                         return;
                     }
-					if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider))
+					if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
 						return;
 
                     args.Player.Teleport((provider.X + provider.Width / 2) * 16,
@@ -387,7 +387,7 @@ namespace FakeProvider
                         args.Player.SendErrorMessage("/fake move \"provider name\" <relative x> <relative y>");
                         return;
                     }
-                    if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider))
+                    if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
 						return;
 
                     if (!Int32.TryParse(args.Parameters[2], out int x)
@@ -409,7 +409,7 @@ namespace FakeProvider
                         args.Player.SendErrorMessage("/fake layer \"provider name\" <layer>");
                         return;
                     }
-                    if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider))
+                    if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
 						return;
 
                     if (!Int32.TryParse(args.Parameters[2], out int layer))
@@ -430,7 +430,7 @@ namespace FakeProvider
                         args.Player.SendErrorMessage("/fake info \"provider name\"");
                         return;
                     }
-                    if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider))
+                    if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
 						return;
 
                     args.Player.SendInfoMessage(
@@ -448,7 +448,7 @@ Entities: {provider.Entities.Count}");
 						args.Player.SendErrorMessage("/fake disable \"provider name\"");
 						return;
 					}
-					if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider))
+					if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
 						return;
 
 					provider.Disable();
@@ -462,7 +462,7 @@ Entities: {provider.Entities.Count}");
 						args.Player.SendErrorMessage("/fake enable \"provider name\"");
 						return;
 					}
-					if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider))
+					if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider))
 						return;
 
 					provider.Enable();
@@ -502,7 +502,7 @@ Entities: {provider.Entities.Count}");
 						if (allPersonalProviders)
 							lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.Personal);
 						else
-							lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.Personal.Where(tile => tile.Observers.Contains(args.Player.Index)));
+							lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.Personal.Where(provider => provider.Observers.Contains(args.Player.Index)));
 
 						PaginationTools.SendPage(args.Player, page, lines, new PaginationTools.Settings()
 						{
@@ -520,7 +520,7 @@ Entities: {provider.Entities.Count}");
 							args.Player.SendErrorMessage("/fake tp \"provider name\"");
 							return;
 						}
-						if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider, false, true))
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
 							return;
 
 						args.Player.Teleport((provider.X + provider.Width / 2) * 16,
@@ -536,7 +536,7 @@ Entities: {provider.Entities.Count}");
 							args.Player.SendErrorMessage("/fake move \"provider name\" <relative x> <relative y>");
 							return;
 						}
-						if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider, false, true))
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
 							return;
 
 						if (!Int32.TryParse(args.Parameters[2], out int x)
@@ -558,7 +558,7 @@ Entities: {provider.Entities.Count}");
 							args.Player.SendErrorMessage("/fake layer \"provider name\" <layer>");
 							return;
 						}
-						if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider, false, true))
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
 							return;
 
 						if (!Int32.TryParse(args.Parameters[2], out int layer))
@@ -579,7 +579,7 @@ Entities: {provider.Entities.Count}");
 							args.Player.SendErrorMessage("/fake info \"provider name\"");
 							return;
 						}
-						if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider, false, true))
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
 							return;
 
 						args.Player.SendInfoMessage(
@@ -597,7 +597,7 @@ Entities: {provider.Entities.Count}");
 							args.Player.SendErrorMessage("/fake disable \"provider name\"");
 							return;
 						}
-						if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider, false, true))
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
 							return;
 
 						provider.Disable();
@@ -611,7 +611,7 @@ Entities: {provider.Entities.Count}");
 							args.Player.SendErrorMessage("/fake enable \"provider name\"");
 							return;
 						}
-						if (!FindProvider(args.Player, args.Parameters[1], out TileProvider provider, false, true))
+						if (!FindProvider(args.Parameters[1], args.Player, out TileProvider provider, false, true))
 							return;
 
 						provider.Enable();
