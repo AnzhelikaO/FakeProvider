@@ -123,12 +123,6 @@ namespace FakeProvider
         }
 
         #endregion
-        #region GetProviderAt
-
-        public static TileProvider GetProviderAt(int X, int Y) =>
-            Tile.GlobalProviders[Tile.ProviderIndexes[X, Y]];
-
-        #endregion
         #region Remove
 
         public static bool Remove(TileProvider provider, bool Draw = true) =>

@@ -40,8 +40,8 @@ namespace FakeProvider
             this.Index = Index;
             this.RelativeX = X;
             this.RelativeY = Y;
-            this.x = Provider.ProviderCollection.OffsetX + Provider.X + X;
-            this.y = Provider.ProviderCollection.OffsetY + Provider.Y + Y;
+            this.x = Provider.X + X;
+            this.y = Provider.Y + Y;
             this.item = Items ?? new Item[40];
             for (int i = 0; i < 40; i++)
                 this.item[i] = this.item[i] ?? new Item();

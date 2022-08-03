@@ -12,56 +12,64 @@ namespace FakeProvider
         #region Data
 
         public const string VoidProviderName = "__void__";
-        private TileProvider[] _Providers = new TileProvider[10];
 
-        public List<TileProvider> Order = new List<TileProvider>();
-        public List<TileProvider> Personal = new List<TileProvider>();
+        protected TileProvider[] _GlobalProvidersBuffer = new TileProvider[10];
+        protected List<TileProvider> _GlobalProvidersOrder = new List<TileProvider>();
 
-        /// <summary> List of all registered providers. </summary>
-        public TileProvider[] GlobalProviders
+        protected List<TileProvider> _PersonalProviders = new List<TileProvider>();
+        /// <summary>
+        /// List of all non-personal providers
+        /// </summary>
+        public List<TileProvider> Global
         {
             get
             {
                 lock (Locker)
-                    return _Providers;
+                    return new List<TileProvider>(_GlobalProvidersOrder);
             }
         }
-        public IEnumerable<TileProvider> Providers => Order.Concat(Personal);
+        /// <summary>
+        /// List of all personal providers
+        /// </summary>
+        public List<TileProvider> Personal
+        {
+            get
+            {
+                lock (Locker)
+                    return new List<TileProvider>(_PersonalProviders);
+            }
+        }
+        /// <summary>
+        /// List of all providers
+        /// </summary>
+        public IEnumerable<TileProvider> Providers => Global.Concat(Personal);
         /// <summary> <see cref="ProviderIndexes"/>[X, Y] is an index of provider at point (X, Y). </summary>
-        internal ushort[,] ProviderIndexes;
+        protected ushort[,] ProviderIndexes;
         /// <summary> World width visible by client. </summary>
         public int Width { get; protected set; }
         /// <summary> World height visible by client. </summary>
         public int Height { get; protected set; }
-        /// <summary> Horizontal offset of the loaded world. </summary>
-
-        // TODO: I completely messed up offset.
-        public int OffsetX { get; internal protected set; }
-        /// <summary> Vertical offset of the loaded world. </summary>
-        public int OffsetY { get; internal protected set; }
         /// <summary> Tile to be visible outside of all providers. </summary>
         protected object Locker { get; set; } = new object();
         internal protected TileProvider Void { get; set; }
         public ITile VoidTile { get; protected set; }
 
         #endregion
+
         #region Constructor
 
         public TileProviderCollection() : base() { }
 
         #endregion
-
         #region Initialize
 
-        public void Initialize(int Width, int Height, int OffsetX, int OffsetY)
+        public void Initialize(int Width, int Height)
         {
             if (ProviderIndexes != null)
                 throw new Exception("Attempt to reinitialize.");
 
             this.Width = Width;
             this.Height = Height;
-            this.OffsetX = OffsetX;
-            this.OffsetY = OffsetY;
 
             ProviderIndexes = new ushort[this.Width, this.Height];
             Void = FakeProviderAPI.CreateTileProvider(VoidProviderName, 0, 0, 1, 1, Int32.MinValue,
@@ -77,15 +85,17 @@ namespace FakeProvider
         {
             get
             {
-                X -= OffsetX;
-                Y -= OffsetY;
-                return _Providers[ProviderIndexes[X, Y]].GetIncapsulatedTile(X, Y);
+                lock (Locker)
+                {
+                    return _GlobalProvidersBuffer[ProviderIndexes[X, Y]].GetTileInWorld(X, Y);
+                }
             }
             set
             {
-                X -= OffsetX;
-                Y -= OffsetY;
-                _Providers[ProviderIndexes[X, Y]].SetIncapsulatedTile(X, Y, value);
+                lock (Locker)
+                {
+                    _GlobalProvidersBuffer[ProviderIndexes[X, Y]].SetTileInWorld(X, Y, value);
+                }
             }
         }
 
@@ -98,6 +108,11 @@ namespace FakeProvider
             : VoidTile;
 
         #endregion
+        #region TileOnTopIndex
+
+        public ushort TileOnTopIndex(int X, int Y) => ProviderIndexes[X, Y];
+
+        #endregion
 
         #region Dispose
 
@@ -105,7 +120,7 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                foreach (TileProvider provider in Order)
+                foreach (TileProvider provider in _GlobalProvidersOrder)
                     provider.Dispose();
             }
         }
@@ -119,7 +134,7 @@ namespace FakeProvider
             get
             {
                 lock (Locker)
-                    return Order.FirstOrDefault(p => (p.Name == Name));
+                    return _GlobalProvidersOrder.FirstOrDefault(p => (p.Name == Name));
             }
         }
 
@@ -144,7 +159,7 @@ namespace FakeProvider
                                     "is already in use. Name must be unique.");
                             PlaceProviderOnTopOfLayer(Provider);
                             int index = GetEmptyIndex();
-                            _Providers[index] = Provider;
+                            _GlobalProvidersBuffer[index] = Provider;
                             Provider.ProviderCollection = this;
                             Provider.Index = index;
                             Provider.Enable(false);
@@ -166,7 +181,7 @@ namespace FakeProvider
                 if (Providers.Any(p => (p.Name == Provider.Name)))
                     throw new ArgumentException($"Tile collection '{Provider.Name}' " +
                         "is already in use. Name must be unique.");
-                Personal.Add(Provider);
+                _PersonalProviders.Add(Provider);
                 //int index = GetEmptyIndex();
                 //_Providers[index] = Provider;
                 Provider.ProviderCollection = this;
@@ -188,12 +203,12 @@ namespace FakeProvider
             lock (Locker)
             {
                 provider.Disable(Draw);
-                if (provider.IsPersonal && (contains = Personal.Contains(provider)))
-                    Personal.Remove(provider);
-                else if (contains = Order.Contains(provider))
+                if (provider.IsPersonal && (contains = _PersonalProviders.Contains(provider)))
+                    _PersonalProviders.Remove(provider);
+                else if (contains = _GlobalProvidersOrder.Contains(provider))
                 {
-                    _Providers[provider.Index] = null;
-                    Order.Remove(provider);
+                    _GlobalProvidersBuffer[provider.Index] = null;
+                    _GlobalProvidersOrder.Remove(provider);
                 }
             }
 
@@ -210,7 +225,7 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                TileProvider provider = Order.FirstOrDefault(p => (p.Name == Name));
+                TileProvider provider = _GlobalProvidersOrder.FirstOrDefault(p => (p.Name == Name));
                 if (provider == null)
                     return false;
                 provider.SetTop(Draw);
@@ -222,7 +237,7 @@ namespace FakeProvider
         #region CollidePersonal
 
         public IEnumerable<TileProvider> CollidePersonal(int X, int Y, int Width, int Height) =>
-            Personal.Where(provider => provider.Enabled && provider.HasCollision(X, Y, Width, Height));
+            _PersonalProviders.Where(provider => provider.Enabled && provider.HasCollision(X, Y, Width, Height));
 
         #endregion
 
@@ -231,10 +246,13 @@ namespace FakeProvider
         private int GetEmptyIndex()
         {
             int index = 0;
-            while (index < _Providers.Length && _Providers[index] != null)
-                index++;
-            if (index >= _Providers.Length)
-                Array.Resize(ref _Providers, _Providers.Length * 2);
+            lock (Locker)
+            {
+                while (index < _GlobalProvidersBuffer.Length && _GlobalProvidersBuffer[index] != null)
+                    index++;
+                if (index >= _GlobalProvidersBuffer.Length)
+                    Array.Resize(ref _GlobalProvidersBuffer, _GlobalProvidersBuffer.Length * 2);
+            }
             return index;
         }
 
@@ -245,13 +263,13 @@ namespace FakeProvider
         {
             lock (Locker)
             {
-                Order.Remove(Provider);
-                int order = Order.FindIndex(p => (p.Layer > Provider.Layer));
+                _GlobalProvidersOrder.Remove(Provider);
+                int order = _GlobalProvidersOrder.FindIndex(p => (p.Layer > Provider.Layer));
                 if (order == -1)
-                    order = Order.Count;
-                Order.Insert(order, Provider);
-                for (int i = order; i < Order.Count; i++)
-                    Order[i].Order = i;
+                    order = _GlobalProvidersOrder.Count;
+                _GlobalProvidersOrder.Insert(order, Provider);
+                for (int i = order; i < _GlobalProvidersOrder.Count; i++)
+                    _GlobalProvidersOrder[i].Order = i;
             }
         }
 
@@ -287,7 +305,7 @@ namespace FakeProvider
                 (X, Y, Width, Height) = Clamp(X, Y, Width, Height);
 
                 Queue<TileProvider> providers = new Queue<TileProvider>();
-                foreach (TileProvider provider in Order)
+                foreach (TileProvider provider in _GlobalProvidersOrder)
                     if (provider.Enabled)
                     {
                         ushort providerIndex = (ushort)provider.Index;
@@ -340,12 +358,12 @@ namespace FakeProvider
                 for (int i = 0; i < width; i++)
                     for (int j = 0; j < height; j++)
                     {
-                        TileProvider provider = _Providers[ProviderIndexes[x + i, y + j]];
+                        TileProvider provider = _GlobalProvidersBuffer[ProviderIndexes[x + i, y + j]];
                         if (provider[x + i, y + j] == null || provider.Order <= order || !provider.Enabled)
                             ProviderIndexes[x + i, y + j] = providerIndex;
                     }
 
-                foreach (TileProvider provider in Order)
+                foreach (TileProvider provider in _GlobalProvidersOrder)
                 {
                     Intersect(provider, x, y, width, height,
                         out int x2, out int y2, out int width2, out int height2);
@@ -361,7 +379,7 @@ namespace FakeProvider
         public void HideEntities()
         {
             lock (Locker)
-                foreach (TileProvider provider in Order)
+                foreach (TileProvider provider in _GlobalProvidersOrder)
                     if (provider.Name != FakeProviderAPI.WorldProviderName)
                         provider.HideEntities();
         }
@@ -372,7 +390,7 @@ namespace FakeProvider
         public void UpdateEntities()
         {
             lock (Locker)
-                foreach (TileProvider provider in Order)
+                foreach (TileProvider provider in _GlobalProvidersOrder)
                     if (provider.Name != FakeProviderAPI.WorldProviderName)
                         provider.UpdateEntities();
         }
@@ -383,7 +401,7 @@ namespace FakeProvider
         public void ScanRectangle(int X, int Y, int Width, int Height, TileProvider IgnoreProvider = null)
         {
             lock (Locker)
-                foreach (TileProvider provider in Order)
+                foreach (TileProvider provider in _GlobalProvidersOrder)
                     if (provider != IgnoreProvider)
                     {
                         Intersect(provider, X, Y, Width, Height, out int x, out int y, out int width, out int height);

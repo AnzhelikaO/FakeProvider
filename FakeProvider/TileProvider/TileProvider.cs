@@ -63,8 +63,8 @@ namespace FakeProvider
             this.Layer = Layer;
             this.Observers = Observers;
 
-            for (int i = X; i < X + Width; i++)
-                for (int j = Y; j < Y + Height; j++)
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
                 {
                     ITile t = CopyFrom[i, j];
                     if (t != null)
@@ -109,15 +109,15 @@ namespace FakeProvider
         }
 
         #endregion
-        #region GetIncapsulatedTile
+        #region GetTileInWorld
 
-        public ITile GetIncapsulatedTile(int X, int Y) =>
+        public ITile GetTileInWorld(int X, int Y) =>
             new TileReference(Data, X - this.X, Y - this.Y);
 
         #endregion
-        #region SetIncapsulatedTile
+        #region SetTileInWorld
 
-        public void SetIncapsulatedTile(int X, int Y, ITile Tile) =>
+        public void SetTileInWorld(int X, int Y, ITile Tile) =>
             new TileReference(Data, X - this.X, Y - this.Y).CopyFrom(Tile);
 
         #endregion
@@ -476,8 +476,8 @@ namespace FakeProvider
 
         public FakeSign AddEntity(Sign Entity, bool replace = false)
         {
-            int x = Entity.x - ProviderCollection.OffsetX - this.X;
-            int y = Entity.y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.x - this.X;
+            int y = Entity.y - this.Y;
             FakeSign sign = new FakeSign(this, replace ? Array.IndexOf(Main.sign, Entity) : -1, x, y, Entity.text);
             lock (Locker)
                 _Entities.Add(sign);
@@ -487,8 +487,8 @@ namespace FakeProvider
 
         public FakeChest AddEntity(Chest Entity, bool replace = false)
         {
-            int x = Entity.x - ProviderCollection.OffsetX - this.X;
-            int y = Entity.y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.x - this.X;
+            int y = Entity.y - this.Y;
             FakeChest chest = new FakeChest(this, replace ? Array.IndexOf(Main.chest, Entity) : -1, x, y, Entity.item);
             lock (Locker)
                 _Entities.Add(chest);
@@ -517,8 +517,8 @@ namespace FakeProvider
 
         public FakeTrainingDummy AddEntity(TETrainingDummy Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -533,8 +533,8 @@ namespace FakeProvider
 
         public FakeItemFrame AddEntity(TEItemFrame Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -549,8 +549,8 @@ namespace FakeProvider
 
         public FakeLogicSensor AddEntity(TELogicSensor Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -565,8 +565,8 @@ namespace FakeProvider
 
         public FakeDisplayDoll AddEntity(TEDisplayDoll Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -581,8 +581,8 @@ namespace FakeProvider
 
         public FakeFoodPlatter AddEntity(TEFoodPlatter Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -597,8 +597,8 @@ namespace FakeProvider
 
         public FakeHatRack AddEntity(TEHatRack Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -613,8 +613,8 @@ namespace FakeProvider
 
         public FakeTeleportationPylon AddEntity(TETeleportationPylon Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -629,8 +629,8 @@ namespace FakeProvider
 
         public FakeWeaponsRack AddEntity(TEWeaponsRack Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -696,8 +696,8 @@ namespace FakeProvider
         {
             if (Entity is FakeSign)
             {
-                Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
-                Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
+                Entity.X = this.X + Entity.RelativeX;
+                Entity.Y = this.Y + Entity.RelativeY;
                 if (Entity.Index >= 0 && Main.sign[Entity.Index] == Entity)
                     return true;
 
@@ -717,8 +717,8 @@ namespace FakeProvider
             }
             else if (Entity is FakeChest)
             {
-                Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
-                Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
+                Entity.X = this.X + Entity.RelativeX;
+                Entity.Y = this.Y + Entity.RelativeY;
                 if (Entity.Index >= 0 && Main.chest[Entity.Index] == Entity)
                     return true;
 
@@ -742,8 +742,8 @@ namespace FakeProvider
                 if (TileEntity.ByPosition.TryGetValue(position, out TileEntity entity)
                         && entity == Entity)
                     TileEntity.ByPosition.Remove(position);
-                Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
-                Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
+                Entity.X = this.X + Entity.RelativeX;
+                Entity.Y = this.Y + Entity.RelativeY;
                 TileEntity.ByPosition[new Point16(Entity.X, Entity.Y)] = (TileEntity)Entity;
                 if (Entity.Index < 0)
                     Entity.Index = TileEntity.AssignNewID();
@@ -822,7 +822,7 @@ namespace FakeProvider
                     if (!IsEntityTile(entity.RelativeX, entity.RelativeY, entity.TileTypes))
                         RemoveEntity(entity);
 
-            (int x, int y, int width, int height) = XYWH(ProviderCollection.OffsetX, ProviderCollection.OffsetY);
+            (int x, int y, int width, int height) = XYWH();
             for (int i = 0; i < Main.sign.Length; i++)
             {
                 Sign sign = Main.sign[i];
@@ -897,7 +897,7 @@ namespace FakeProvider
         #region TileOnTop
 
         private bool TileOnTop(int X, int Y) =>
-            ProviderCollection.ProviderIndexes[this.X + X, this.Y + Y] == Index;
+            ProviderCollection.TileOnTopIndex(this.X + X, this.Y + Y) == Index;
 
         #endregion
 
@@ -905,7 +905,7 @@ namespace FakeProvider
 
         public void Draw(bool Section = true)
         {
-            Terraria.Localization.NetworkText playerList = Observers == null
+            Terraria.Localization.NetworkText playerList = Observers != null
                 ? Terraria.Localization.NetworkText.FromLiteral(string.Concat(Observers.Select(p => (char)p)))
                 : null;
             if (Section)

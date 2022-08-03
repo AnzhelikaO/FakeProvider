@@ -192,15 +192,15 @@ namespace FakeProvider
 
         private static void OnPostLoadWorld(bool FromCloud)
         {
-            FakeProviderAPI.Tile.OffsetX = OffsetX;
-            FakeProviderAPI.Tile.OffsetY = OffsetY;
+            //FakeProviderAPI.Tile.OffsetX = OffsetX;
+            //FakeProviderAPI.Tile.OffsetY = OffsetY;
 
             Main.maxTilesX = VisibleWidth;
             Main.maxTilesY = VisibleHeight;
-            Main.worldSurface += OffsetY;
-            Main.rockLayer += OffsetY;
-            Main.spawnTileX += OffsetX;
-            Main.spawnTileY += OffsetY;
+            //Main.worldSurface += OffsetY;
+            //Main.rockLayer += OffsetY;
+            //Main.spawnTileX += OffsetX;
+            //Main.spawnTileY += OffsetY;
             WorldGen.setWorldSize();
 
             lock (ProvidersToAdd)
@@ -354,7 +354,7 @@ namespace FakeProvider
                     if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out int page))
                         return;
 
-					List<string> lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.GlobalProviders);
+					List<string> lines = PaginationTools.BuildLinesFromTerms(FakeProviderAPI.Tile.Global);
 					PaginationTools.SendPage(args.Player, page, lines, new PaginationTools.Settings()
                     {
                         HeaderFormat = "Fake providers ({0}/{1}):",
@@ -1375,7 +1375,7 @@ Custom valid : {ValidateWorldData(array, num)}";
             else
                 VisibleHeight++;
             FakeProviderAPI.Tile = new TileProviderCollection();
-            FakeProviderAPI.Tile.Initialize(VisibleWidth, VisibleHeight, 0, 0);
+            FakeProviderAPI.Tile.Initialize(VisibleWidth, VisibleHeight);
 
             FakeProviderAPI.World = FakeProviderAPI.CreateTileProvider(FakeProviderAPI.WorldProviderName, 0, 0,
                 maxTilesX, maxTilesY, Int32.MinValue + 1);
