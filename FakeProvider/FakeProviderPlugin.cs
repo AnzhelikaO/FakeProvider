@@ -327,12 +327,12 @@ namespace FakeProvider
 
 			if (foundProviders.Count() == 0)
 			{
-				player.SendErrorMessage("Invalid provider '" + name + "'");
+				player?.SendErrorMessage("Invalid provider '" + name + "'");
 				return false;
 			}
 			if (foundProviders.Count() > 1)
 			{
-				player.SendMultipleMatchError(foundProviders);
+				player?.SendMultipleMatchError(foundProviders);
 				return false;
 			}
 			provider = foundProviders.First();
