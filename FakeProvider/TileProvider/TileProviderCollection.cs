@@ -1,5 +1,5 @@
 ﻿#region Using
-using OTAPI.Tile;
+using Terraria;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Linq;
 #endregion
 namespace FakeProvider
 {
-    public class TileProviderCollection : ITileCollection, IDisposable
+    public class TileProviderCollection : ModFramework.ICollection<ITile>, IDisposable
     {
         #region Data
 

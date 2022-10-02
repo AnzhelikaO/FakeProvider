@@ -1,5 +1,4 @@
 ﻿#region Using
-using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -51,7 +50,7 @@ namespace FakeProvider
             this.Layer = Layer;
         }
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, ModFramework.ICollection<ITile> CopyFrom, int Layer = 0)
         {
             this.Index = Index;
             this.Name = Name;
@@ -95,7 +94,7 @@ namespace FakeProvider
 
         #region operator[,]
 
-        ITile ITileCollection.this[int X, int Y]
+        ITile ModFramework.ICollection<ITile>.this[int X, int Y]
         {
             get => new TileReference<T>(Data, X, Y);
             set => new TileReference<T>(Data, X, Y).CopyFrom(value);

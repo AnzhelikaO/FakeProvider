@@ -1,4 +1,4 @@
-﻿using OTAPI.Tile;
+﻿using Terraria;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +40,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        public static INamedTileCollection CreateTileProvider(string Name, int X, int Y, int Width, int Height, ModFramework.ICollection<ITile> CopyFrom, int Layer = 0)
         {
             Type newType = Helper.CreateType();
             Type tileProviderType = typeof(TileProvider<>).MakeGenericType(newType);
@@ -107,7 +107,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        public static INamedTileCollection CreateReadonlyTileProvider(string Name, int X, int Y, int Width, int Height, ModFramework.ICollection<ITile> CopyFrom, int Layer = 0)
         {
             Type newType = Helper.CreateType();
             Type tileProviderType = typeof(ReadonlyTileProvider<>).MakeGenericType(newType);

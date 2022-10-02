@@ -1,5 +1,4 @@
 ﻿#region Using
-using OTAPI.Tile;
 using System;
 using System.Collections.ObjectModel;
 using Terraria;
@@ -8,9 +7,9 @@ using Terraria.GameContent.Tile_Entities;
 #endregion
 namespace FakeProvider
 {
-    public interface INamedTileCollection : ITileCollection, IDisposable
+    public interface INamedTileCollection : ModFramework.ICollection<ITile>, IDisposable
     {
-        IProviderTile this[int x, int y] { get; set; }
+        new IProviderTile this[int x, int y] { get; set; }
         IProviderTile GetIncapsulatedTile(int X, int Y);
         void SetIncapsulatedTile(int X, int Y, ITile Tile);
         INamedTileCollection Tile { get; }

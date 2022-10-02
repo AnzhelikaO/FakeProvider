@@ -1,6 +1,5 @@
 ﻿#region Using
 using Microsoft.Xna.Framework;
-using OTAPI.Tile;
 using Terraria;
 #endregion
 namespace FakeProvider
@@ -70,7 +69,7 @@ namespace FakeProvider
         #endregion
         #region wall
 
-        public byte wall
+        public ushort wall
         {
             get => Data[X, Y].wall;
             set { }
@@ -107,7 +106,7 @@ namespace FakeProvider
 
         #region sTileHeader
 
-        public short sTileHeader
+        public ushort sTileHeader
         {
             get => Data[X, Y].sTileHeader;
             set { }
@@ -443,5 +442,120 @@ namespace FakeProvider
             $"Wall:{wall} Slope:{slope()} fX:{frameX} fY:{frameY}";
 
         #endregion
+
+        public void actColor(ref Vector3 oldColor)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public bool shimmer()
+        {
+            return (this.bTileHeader & 96) == 96;
+        }
+
+        public void shimmer(bool shimmer)
+        {
+            if (shimmer)
+            {
+                this.bTileHeader = (byte)((this.bTileHeader & (byte)159) | (byte)96);
+                return;
+            }
+            this.bTileHeader &= 159;
+        }
+
+        public bool invisibleBlock()
+        {
+            return (this.bTileHeader3 & 32) == 32;
+        }
+
+        public void invisibleBlock(bool invisibleBlock)
+        {
+            if (invisibleBlock)
+            {
+                this.bTileHeader3 |= 32;
+                return;
+            }
+            this.bTileHeader3 = (byte)((int)this.bTileHeader3 & -33);
+        }
+
+        public bool invisibleWall()
+        {
+            return (this.bTileHeader3 & 64) == 64;
+        }
+
+        public void invisibleWall(bool invisibleWall)
+        {
+			if (invisibleWall)
+			{
+				this.bTileHeader3 |= 64;
+				return;
+			}
+			this.bTileHeader3 = (byte)((int)this.bTileHeader3 & -65);
+        }
+
+        public bool fullbrightBlock()
+        {
+			return (this.bTileHeader3 & 128) == 128;
+        }
+
+        public void fullbrightBlock(bool fullbrightBlock)
+        {
+			if (fullbrightBlock)
+			{
+				this.bTileHeader3 |= 128;
+				return;
+			}
+			this.bTileHeader3 = (byte)((int)this.bTileHeader3 & -129);
+        }
+
+        public bool fullbrightWall()
+        {
+			return (this.sTileHeader & 32768) == 32768;
+        }
+
+        public void fullbrightWall(bool fullbrightWall)
+        {
+			if (fullbrightWall)
+			{
+				this.sTileHeader |= 32768;
+				return;
+			}
+			this.sTileHeader = (ushort)((int)this.sTileHeader & -32769);
+        }
+
+        public void Clear(Terraria.DataStructures.TileDataType types)
+        {
+        }
+
+        public void CopyPaintAndCoating(ITile other)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public TileColorCache BlockColorAndCoating()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public TileColorCache WallColorAndCoating()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void UseBlockColors(TileColorCache cache)
+        {
+        }
+
+        public void UseWallColors(TileColorCache cache)
+        {
+        }
+
+        public void ClearBlockPaintAndCoating()
+        {
+        }
+
+        public void ClearWallPaintAndCoating()
+        {
+        }
     }
 }

@@ -1,7 +1,7 @@
 ﻿#region Using
 using Microsoft.Xna.Framework;
-using OTAPI.Tile;
 using Terraria;
+using Terraria.DataStructures;
 #endregion
 namespace FakeProvider
 {
@@ -70,7 +70,7 @@ namespace FakeProvider
         #endregion
         #region wall
 
-        public byte wall
+        public ushort wall
         {
             get => Data[X, Y].wall;
             set => Data[X, Y].wall = value;
@@ -107,7 +107,7 @@ namespace FakeProvider
 
         #region sTileHeader
 
-        public short sTileHeader
+        public ushort sTileHeader
         {
             get => Data[X, Y].sTileHeader;
             set => Data[X, Y].sTileHeader = value;
@@ -366,7 +366,7 @@ namespace FakeProvider
         {
             if (Color > 30)
                 Color = 30;
-            sTileHeader = (short)((sTileHeader & 65504) | Color);
+            sTileHeader = (ushort)((sTileHeader & 65504) | Color);
         }
 
         #endregion
@@ -390,7 +390,7 @@ namespace FakeProvider
             if (Active)
                 sTileHeader |= 32;
             else
-                sTileHeader = (short)(sTileHeader & 65503);
+                sTileHeader = (ushort)(sTileHeader & 65503);
         }
 
         #endregion
@@ -402,7 +402,7 @@ namespace FakeProvider
             if (InActive)
                 sTileHeader |= 64;
             else
-                sTileHeader = (short)(sTileHeader & 65471);
+                sTileHeader = (ushort)(sTileHeader & 65471);
         }
 
         #endregion
@@ -416,7 +416,7 @@ namespace FakeProvider
             if (Wire)
                 sTileHeader |= 128;
             else
-                sTileHeader = (short)(sTileHeader & 65407);
+                sTileHeader = (ushort)(sTileHeader & 65407);
         }
 
         #endregion
@@ -428,7 +428,7 @@ namespace FakeProvider
             if (Wire2)
                 sTileHeader |= 256;
             else
-                sTileHeader = (short)(sTileHeader & 65279);
+                sTileHeader = (ushort)(sTileHeader & 65279);
         }
 
         #endregion
@@ -440,7 +440,7 @@ namespace FakeProvider
             if (Wire3)
                 sTileHeader |= 512;
             else
-                sTileHeader = (short)(sTileHeader & 65023);
+                sTileHeader = (ushort)(sTileHeader & 65023);
         }
 
         #endregion
@@ -465,7 +465,7 @@ namespace FakeProvider
             if (Actuator)
                 sTileHeader |= 2048;
             else
-                sTileHeader = (short)(sTileHeader & 63487);
+                sTileHeader = (ushort)(sTileHeader & 63487);
         }
 
         #endregion
@@ -478,7 +478,7 @@ namespace FakeProvider
             if (HalfBrick)
                 sTileHeader |= 1024;
             else
-                sTileHeader = (short)(sTileHeader & 64511);
+                sTileHeader = (ushort)(sTileHeader & 64511);
         }
 
         #endregion
@@ -486,7 +486,7 @@ namespace FakeProvider
 
         public byte slope() => (byte)((sTileHeader & 28672) >> 12);
         public void slope(byte Slope) =>
-            sTileHeader = (short)((sTileHeader & 36863) | ((Slope & 7) << 12));
+            sTileHeader = (ushort)((sTileHeader & 36863) | ((Slope & 7) << 12));
 
         #endregion
         #region topSlope
@@ -547,6 +547,126 @@ namespace FakeProvider
         public new string ToString() =>
             $"Tile Type:{type} Active:{active()} " +
             $"Wall:{wall} Slope:{slope()} fX:{frameX} fY:{frameY}";
+
+        public void actColor(ref Vector3 oldColor)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public bool shimmer()
+        {
+            return (this.bTileHeader & 96) == 96;
+        }
+
+        public void shimmer(bool shimmer)
+        {
+            if (shimmer)
+            {
+                this.bTileHeader = (byte)((this.bTileHeader & (byte)159) | (byte)96);
+                return;
+            }
+            this.bTileHeader &= 159;
+        }
+
+        public bool invisibleBlock()
+        {
+            return (this.bTileHeader3 & 32) == 32;
+        }
+
+        public void invisibleBlock(bool invisibleBlock)
+        {
+            if (invisibleBlock)
+            {
+                this.bTileHeader3 |= 32;
+                return;
+            }
+            this.bTileHeader3 = (byte)((int)this.bTileHeader3 & -33);
+        }
+
+        public bool invisibleWall()
+        {
+            return (this.bTileHeader3 & 64) == 64;
+        }
+
+        public void invisibleWall(bool invisibleWall)
+        {
+			if (invisibleWall)
+			{
+				this.bTileHeader3 |= 64;
+				return;
+			}
+			this.bTileHeader3 = (byte)((int)this.bTileHeader3 & -65);
+        }
+
+        public bool fullbrightBlock()
+        {
+			return (this.bTileHeader3 & 128) == 128;
+        }
+
+        public void fullbrightBlock(bool fullbrightBlock)
+        {
+			if (fullbrightBlock)
+			{
+				this.bTileHeader3 |= 128;
+				return;
+			}
+			this.bTileHeader3 = (byte)((int)this.bTileHeader3 & -129);
+        }
+
+        public bool fullbrightWall()
+        {
+			return (this.sTileHeader & 32768) == 32768;
+        }
+
+        public void fullbrightWall(bool fullbrightWall)
+        {
+			if (fullbrightWall)
+			{
+				this.sTileHeader |= 32768;
+				return;
+			}
+			this.sTileHeader = (ushort)((int)this.sTileHeader & -32769);
+        }
+
+        public void Clear(TileDataType types)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void CopyPaintAndCoating(ITile other)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public TileColorCache BlockColorAndCoating()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public TileColorCache WallColorAndCoating()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void UseBlockColors(TileColorCache cache)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void UseWallColors(TileColorCache cache)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void ClearBlockPaintAndCoating()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void ClearWallPaintAndCoating()
+        {
+            throw new System.NotImplementedException();
+        }
 
         #endregion
     }

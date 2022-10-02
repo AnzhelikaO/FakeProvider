@@ -1,6 +1,4 @@
 ﻿#region Using
-using OTAPI;
-using OTAPI.Tile;
 using System;
 using System.IO;
 using System.Linq;
@@ -11,7 +9,6 @@ using Terraria.IO;
 using Terraria.Social;
 using Terraria.Utilities;
 using TerrariaApi.Server;
-using OTAPI.Callbacks.Terraria;
 using System.Collections.Generic;
 using TShockAPI;
 #endregion
@@ -113,7 +110,7 @@ namespace FakeProvider
             ReadonlyWorld = args.Any(x => (x.ToLower() == "-readonlyworld"));
 
             AssemblyName assemblyName = new AssemblyName("FakeProviderRuntimeAssembly");
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder
                 .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
             Helper.ModuleBuilder = assemblyBuilder.DefineDynamicModule("FakeProviderRuntimeModule");
         }
@@ -132,10 +129,9 @@ namespace FakeProvider
             for (int i = 0; i < Main.maxPlayers; i++)
                 AllPlayers[i] = i;
 
-            Hooks.World.IO.PreLoadWorld += OnPreLoadWorld;
-            Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
-            Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
-            Hooks.World.IO.PostSaveWorld += OnPostSaveWorld;
+            
+            On.Terraria.IO.WorldFile.LoadWorld += OnLoadWorld;
+            On.Terraria.IO.WorldFile.SaveWorld += OnSaveWorld;
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
 
             Commands.ChatCommands.AddRange(CommandList);
@@ -148,10 +144,8 @@ namespace FakeProvider
         {
             if (Disposing)
             {
-                Hooks.World.IO.PreLoadWorld -= OnPreLoadWorld;
-                Hooks.World.IO.PostLoadWorld -= OnPostLoadWorld;
-                Hooks.World.IO.PreSaveWorld -= OnPreSaveWorld;
-                Hooks.World.IO.PostSaveWorld -= OnPostSaveWorld;
+                On.Terraria.IO.WorldFile.LoadWorld -= OnLoadWorld;
+                On.Terraria.IO.WorldFile.SaveWorld -= OnSaveWorld;
                 ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
             }
             base.Dispose(Disposing);
@@ -159,20 +153,10 @@ namespace FakeProvider
 
         #endregion
 
-        #region OnPreLoadWorld
-
-        private static HookResult OnPreLoadWorld(ref bool loadFromCloud)
+        private static void OnLoadWorld(On.Terraria.IO.WorldFile.orig_LoadWorld orig, bool loadFromCloud)
         {
             LoadWorldDirect(loadFromCloud);
-            Hooks.World.IO.PostLoadWorld?.Invoke(loadFromCloud);
-            return HookResult.Cancel;
-        }
 
-        #endregion
-        #region OnPostLoadWorld
-
-        private static void OnPostLoadWorld(bool FromCloud)
-        {
             FakeProviderAPI.Tile.OffsetX = OffsetX;
             FakeProviderAPI.Tile.OffsetY = OffsetY;
 
@@ -204,11 +188,7 @@ namespace FakeProvider
 
             GC.Collect();
         }
-
-        #endregion
-        #region OnPreSaveWorld
-
-        private static HookResult OnPreSaveWorld(ref bool Cloud, ref bool ResetTime)
+        private static void OnSaveWorld(On.Terraria.IO.WorldFile.orig_SaveWorld orig)
         {
             Main.maxTilesX = FakeProviderAPI.World.Width;
             Main.maxTilesY = FakeProviderAPI.World.Height;
@@ -216,14 +196,9 @@ namespace FakeProvider
             Main.rockLayer -= OffsetY;
             Main.tile = FakeProviderAPI.World;
             FakeProviderAPI.Tile.HideEntities();
-            return HookResult.Continue;
-        }
 
-        #endregion
-        #region OnPostSaveWorld
+            orig();
 
-        private static void OnPostSaveWorld(bool Cloud, bool ResetTime)
-        {
             Main.maxTilesX = VisibleWidth;
             Main.maxTilesY = VisibleHeight;
             Main.worldSurface += OffsetY;
@@ -232,7 +207,6 @@ namespace FakeProvider
             FakeProviderAPI.Tile.UpdateEntities();
         }
 
-        #endregion
         #region OnSendData
 
         private static void OnSendData(SendDataEventArgs args)
@@ -296,8 +270,9 @@ namespace FakeProvider
             }
             else if (foundProviders.Count > 1)
             {
-                if (player != null)
-                    TShock.Utils.SendMultipleMatchError(player, foundProviders);
+                if (player != null) {
+                    player.SendMessage($"Multiple providers matched: ${string.Join(", ", foundProviders)}", Microsoft.Xna.Framework.Color.Red);
+                }
                 return false;
             }
             else
@@ -454,7 +429,7 @@ Entities: {provider.Entities.Count}");
 
         private static void LoadWorldDirect(bool loadFromCloud)
         {
-            WorldFile.IsWorldOnCloud = loadFromCloud;
+            WorldFile._isWorldOnCloud = loadFromCloud;
             Main.checkXMas();
             Main.checkHalloween();
             bool flag = loadFromCloud && SocialAPI.Cloud != null;
@@ -472,7 +447,7 @@ Entities: {provider.Entities.Count}");
                     }
                 }
                 WorldGen.clearWorld();
-                Main.ActiveWorldFileData = WorldFile.CreateMetadata((Main.worldName == "") ? "World" : Main.worldName, flag, Main.expertMode);
+                Main.ActiveWorldFileData = WorldFile.CreateMetadata((Main.worldName == "") ? "World" : Main.worldName, flag, Main.GameMode);
                 string text = (Main.AutogenSeedName ?? "").Trim();
                 if (text.Length == 0)
                 {
@@ -482,8 +457,8 @@ Entities: {provider.Entities.Count}");
                 {
                     Main.ActiveWorldFileData.SetSeed(text);
                 }
-                WorldGen.generateWorld(Main.ActiveWorldFileData.Seed, Main.AutogenProgress);
-                WorldFile.saveWorld();
+                WorldGen.GenerateWorld(Main.ActiveWorldFileData.Seed, Main.AutogenProgress);
+                WorldFile.SaveWorld();
             }
             using (MemoryStream memoryStream = new MemoryStream(FileUtilities.ReadAllBytes(Main.worldPathName, flag)))
             {
@@ -493,12 +468,12 @@ Entities: {provider.Entities.Count}");
                     {
                         WorldGen.loadFailed = false;
                         WorldGen.loadSuccess = false;
-                        int num = WorldFile.versionNumber = binaryReader.ReadInt32();
+                        int num = WorldFile._versionNumber = binaryReader.ReadInt32();
                         int num2;
                         if (num <= 87)
                         {
                             // Not supported
-                            num2 = WorldFile.LoadWorld_Version1(binaryReader);
+                            num2 = WorldFile.LoadWorld_Version1_Old_BeforeRelease88(binaryReader);
                         }
                         else
                         {
@@ -530,7 +505,7 @@ Entities: {provider.Entities.Count}");
                             return;
                         }
                         WorldGen.gen = true;
-                        WorldGen.waterLine = Main.maxTilesY;
+                        // WorldGen.waterLine = Main.maxTilesY; TODO: what did this become?
                         Liquid.QuickWater(2, -1, -1);
                         WorldGen.WaterCheck();
                         int num3 = 0;
@@ -569,12 +544,12 @@ Entities: {provider.Entities.Count}");
                         WorldGen.WaterCheck();
                         WorldGen.gen = false;
                         NPC.setFireFlyChance();
-                        Main.InitLifeBytes();
+                        // Main.InitLifeBytes(); TODO: is this still a thing?
                         if (Main.slimeRainTime > 0.0)
                         {
                             Main.StartSlimeRain(false);
                         }
-                        NPC.setWorldMonsters();
+                        // NPC.setWorldMonsters(); TODO: is this still a thing?
                     }
                     catch (Exception value)
                     {
@@ -605,13 +580,7 @@ Entities: {provider.Entities.Count}");
 
         private static void SetStatusText(string text)
         {
-            Hooks.Game.StatusTextHandler statusTextWrite = Hooks.Game.StatusTextWrite;
-            HookResult? hookResult = (statusTextWrite != null) ? new HookResult?(statusTextWrite(ref text)) : null;
-            bool flag = hookResult != null && hookResult.Value == HookResult.Cancel;
-            if (!flag)
-            {
-                typeof(Main).GetField("statusText", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, text);
-            }
+            Main.statusText = text;
         }
 
         #endregion
@@ -661,9 +630,9 @@ Entities: {provider.Entities.Count}");
             {
                 return 5;
             }
-            if (WorldFile.versionNumber >= 116)
+            if (WorldFile._versionNumber >= 116)
             {
-                if (WorldFile.versionNumber < 122)
+                if (WorldFile._versionNumber < 122)
                 {
                     WorldFile.LoadDummies(reader);
                     if (reader.BaseStream.Position != (long)array[6])
@@ -680,7 +649,7 @@ Entities: {provider.Entities.Count}");
                     }
                 }
             }
-            if (WorldFile.versionNumber >= 170)
+            if (WorldFile._versionNumber >= 170)
             {
                 WorldFile.LoadWeightedPressurePlates(reader);
                 if (reader.BaseStream.Position != (long)array[7])
@@ -688,7 +657,7 @@ Entities: {provider.Entities.Count}");
                     return 5;
                 }
             }
-            if (WorldFile.versionNumber >= 189)
+            if (WorldFile._versionNumber >= 189)
             {
                 WorldFile.LoadTownManager(reader);
                 if (reader.BaseStream.Position != (long)array[8])

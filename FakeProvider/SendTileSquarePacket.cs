@@ -1,5 +1,4 @@
 ﻿#region Using
-using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -108,6 +107,7 @@ namespace FakeProvider
                 {
                     BitsByte bb11 = 0;
                     BitsByte bb12 = 0;
+                    BitsByte bb13 = 0;
                     byte value = 0;
                     byte value2 = 0;
                     ITile tile = Main.tile[num8, num9];
@@ -132,8 +132,13 @@ namespace FakeProvider
                     }
                     bb12 += (byte)(tile.slope() << 4);
                     bb12[7] = tile.wire4();
+                    bb13[0] = tile.fullbrightBlock();
+                    bb13[1] = tile.fullbrightWall();
+                    bb13[2] = tile.invisibleBlock();
+                    bb13[3] = tile.invisibleWall();
                     BinaryWriter.Write(bb11);
                     BinaryWriter.Write(bb12);
+                    BinaryWriter.Write(bb13);
                     if (tile.active())
                     {
                         BinaryWriter.Write(value);
