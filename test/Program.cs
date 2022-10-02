@@ -64,7 +64,7 @@ namespace test
         }
         private TypeBuilder CreateClass()
         {
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(this.asemblyName, AssemblyBuilderAccess.Run);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(this.asemblyName, AssemblyBuilderAccess.Run);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
             TypeBuilder typeBuilder = moduleBuilder.DefineType(this.asemblyName.FullName
                                 , TypeAttributes.Public |
@@ -145,7 +145,7 @@ namespace test
             {
                 Provider provider = new Provider($"Custom Provider {i}");
                 AssemblyName assemblyName = new AssemblyName($"kek{i}");
-                AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
                 ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
                 TypeBuilder typeBuilder = moduleBuilder.DefineType(assemblyName.FullName
                                     , TypeAttributes.Public |

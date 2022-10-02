@@ -1,5 +1,4 @@
 ﻿#region Using
-using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -75,58 +74,12 @@ namespace FakeProvider
 		private static int CompressTileBlock(IEnumerable<TileProvider> providers,
 			BinaryWriter writer, int xStart, int yStart, short width, short height)
 		{
-			if (xStart < 0)
-			{
-				width += (short)xStart;
-				xStart = 0;
-			}
-			if (yStart < 0)
-			{
-				height += (short)yStart;
-				yStart = 0;
-			}
-			if ((xStart + width) > Main.maxTilesX)
-				width = (short)(Main.maxTilesX - xStart);
-			if ((yStart + height) > Main.maxTilesY)
-				height = (short)(Main.maxTilesY - yStart);
-			if ((width == 0) || (height == 0))
-				return 0; // WHAT???????????????????????
-
-			using (MemoryStream memoryStream = new MemoryStream())
-			{
-				using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream))
-				{
-					binaryWriter.Write(xStart);
-					binaryWriter.Write(yStart);
-					binaryWriter.Write(width);
-					binaryWriter.Write(height);
-					//NetMessage.CompressTileBlock_Inner(binaryWriter, xStart, yStart, (int)width, (int)height);
-					CompressTileBlock_Inner(providers, binaryWriter, xStart, yStart, width, height);
-					memoryStream.Position = 0L;
-					MemoryStream memoryStream2 = new MemoryStream();
-					using (DeflateStream deflateStream = new DeflateStream(memoryStream2, CompressionMode.Compress, true))
-					{
-						memoryStream.CopyTo(deflateStream);
-						deflateStream.Flush();
-						deflateStream.Close();
-						deflateStream.Dispose();
-					}
-					bool flag = memoryStream.Length <= memoryStream2.Length;
-					if (flag)
-					{
-						memoryStream.Position = 0L;
-						writer.Write((byte)0);
-						writer.Write(memoryStream.GetBuffer());
-					}
-					else
-					{
-						memoryStream2.Position = 0L;
-						writer.Write((byte)1);
-						writer.Write(memoryStream2.GetBuffer());
-					}
-				}
-			}
-			return 0;
+            writer.Write(xStart);
+            writer.Write(yStart);
+            writer.Write((short)width);
+            writer.Write((short)height);
+            CompressTileBlock_Inner(providers, writer, xStart, yStart, width, height);
+            return 0;
 		}
 
 		#endregion
@@ -147,7 +100,7 @@ namespace FakeProvider
 			byte b = 0;
 			byte[] array4 = new byte[15];
 			ITile tile = null;
-			(ITileCollection tiles, bool relative) = FakeProviderAPI.ApplyPersonal(providers, xStart, yStart, width, height);
+			(ModFramework.ICollection<ITile> tiles, bool relative) = FakeProviderAPI.ApplyPersonal(providers, xStart, yStart, width, height);
 			int dj = relative ? -xStart : 0;
 			int di = relative ? -yStart : 0;
 			for (int i = yStart; i < yStart + height; i++)
@@ -400,7 +353,24 @@ namespace FakeProvider
 							num5++;
 							b3 |= 64;
 						}
-						num6 = 2;
+
+						byte coatingByte = 0;
+						if (tile.invisibleBlock())
+							coatingByte = (byte)(coatingByte | 2u);
+						if (tile.invisibleWall())
+							coatingByte = (byte)(coatingByte | 4u);
+						if (tile.fullbrightBlock())
+							coatingByte = (byte)(coatingByte | 8u);
+						if (tile.fullbrightWall())
+							coatingByte  = (byte)(coatingByte | 0x10u);
+
+						num6 = 3;
+						if (coatingByte != 0)
+						{
+							b3 |= 1;
+							array4[num6] = coatingByte;
+							num6--;
+						}
 						if (b3 != 0)
 						{
 							b2 |= 1;

@@ -1,13 +1,13 @@
-﻿using OTAPI.Tile;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Terraria;
 
 namespace FakeProvider
 {
-    public class TileCollection : ITileCollection
+    public class TileCollection : ModFramework.ICollection<ITile>
     {
 		protected ITile[,] Tiles;
 		public int Width => Tiles.GetLength(0);

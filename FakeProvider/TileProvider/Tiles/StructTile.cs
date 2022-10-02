@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,11 +22,12 @@ namespace FakeProvider
 		public const int Liquid_Water = 0;
 		public const int Liquid_Lava = 1;
 		public const int Liquid_Honey = 2;
+		public const int Liquid_Shimmer = 3;
 
 		public ushort type;
 		public ushort wall;
 		public byte liquid;
-		public short sTileHeader;
+		public ushort sTileHeader;
 		public byte bTileHeader;
 		public byte bTileHeader2;
 		public byte bTileHeader3;
@@ -37,7 +37,7 @@ namespace FakeProvider
 		ushort ITile.type { get => type; set => type = value; }
 		ushort ITile.wall { get => wall; set => wall = value; }
 		byte ITile.liquid { get => liquid; set => liquid = value; }
-		short ITile.sTileHeader { get => sTileHeader; set => sTileHeader = value; }
+		ushort ITile.sTileHeader { get => sTileHeader; set => sTileHeader = value; }
 		byte ITile.bTileHeader { get => bTileHeader; set => bTileHeader = value; }
 		byte ITile.bTileHeader2 { get => bTileHeader2; set => bTileHeader2 = value; }
 		byte ITile.bTileHeader3 { get => bTileHeader3; set => bTileHeader3 = value; }
@@ -189,6 +189,12 @@ namespace FakeProvider
 			if (liquidType == 2)
 			{
 				this.honey(true);
+				return;
+			}
+			if (liquidType == 3)
+			{
+				this.shimmer(true);
+				return;
 			}
 		}
 
@@ -405,7 +411,7 @@ namespace FakeProvider
 
 		public void color(byte color)
 		{
-			this.sTileHeader = (short)(((int)this.sTileHeader & 65504) | (int)color);
+			this.sTileHeader = (ushort)(((int)this.sTileHeader & 65504) | (int)color);
 		}
 
 		public bool active()
@@ -420,7 +426,7 @@ namespace FakeProvider
 				this.sTileHeader |= 32;
 				return;
 			}
-			this.sTileHeader = (short)((int)this.sTileHeader & 65503);
+			this.sTileHeader = (ushort)((int)this.sTileHeader & 65503);
 		}
 
 		public bool inActive()
@@ -435,7 +441,7 @@ namespace FakeProvider
 				this.sTileHeader |= 64;
 				return;
 			}
-			this.sTileHeader = (short)((int)this.sTileHeader & 65471);
+			this.sTileHeader = (ushort)((int)this.sTileHeader & 65471);
 		}
 
 		public bool wire()
@@ -450,7 +456,7 @@ namespace FakeProvider
 				this.sTileHeader |= 128;
 				return;
 			}
-			this.sTileHeader = (short)((int)this.sTileHeader & 65407);
+			this.sTileHeader = (ushort)((int)this.sTileHeader & 65407);
 		}
 
 		public bool wire2()
@@ -465,7 +471,7 @@ namespace FakeProvider
 				this.sTileHeader |= 256;
 				return;
 			}
-			this.sTileHeader = (short)((int)this.sTileHeader & 65279);
+			this.sTileHeader = (ushort)((int)this.sTileHeader & 65279);
 		}
 
 		public bool wire3()
@@ -480,7 +486,7 @@ namespace FakeProvider
 				this.sTileHeader |= 512;
 				return;
 			}
-			this.sTileHeader = (short)((int)this.sTileHeader & 65023);
+			this.sTileHeader = (ushort)((int)this.sTileHeader & 65023);
 		}
 
 		public bool halfBrick()
@@ -495,7 +501,7 @@ namespace FakeProvider
 				this.sTileHeader |= 1024;
 				return;
 			}
-			this.sTileHeader = (short)((int)this.sTileHeader & 64511);
+			this.sTileHeader = (ushort)((int)this.sTileHeader & 64511);
 		}
 
 		public bool actuator()
@@ -510,7 +516,7 @@ namespace FakeProvider
 				this.sTileHeader |= 2048;
 				return;
 			}
-			this.sTileHeader = (short)((int)this.sTileHeader & 63487);
+			this.sTileHeader = (ushort)((int)this.sTileHeader & 63487);
 		}
 
 		public byte slope()
@@ -520,7 +526,7 @@ namespace FakeProvider
 
 		public void slope(byte slope)
 		{
-			this.sTileHeader = (short)(((int)this.sTileHeader & 36863) | (int)(slope & 7) << 12);
+			this.sTileHeader = (ushort)(((int)this.sTileHeader & 36863) | (int)(slope & 7) << 12);
 		}
 
 		public void Clear(TileDataType types)
@@ -569,6 +575,139 @@ namespace FakeProvider
 				this.actuator(false);
 				this.inActive(false);
 			}
+		}
+
+		public bool shimmer()
+		{
+			return (this.bTileHeader & 96) == 96;
+		}
+
+		public void shimmer(bool shimmer)
+		{
+			if (shimmer)
+			{
+				this.bTileHeader = (byte)((this.bTileHeader & (byte)159) | (byte)96);
+				return;
+			}
+			this.bTileHeader &= 159;
+		}
+
+		public bool invisibleBlock()
+		{
+			return (this.bTileHeader3 & 32) == 32;
+		}
+
+		public void invisibleBlock(bool invisibleBlock)
+		{
+			if (invisibleBlock)
+			{
+				this.bTileHeader3 |= 32;
+				return;
+			}
+			this.bTileHeader3 = (byte)((int)this.bTileHeader3 & -33);
+		}
+
+		public bool invisibleWall()
+		{
+			return (this.bTileHeader3 & 64) == 64;
+		}
+
+		public void invisibleWall(bool invisibleWall)
+		{
+			if (invisibleWall)
+			{
+				this.bTileHeader3 |= 64;
+				return;
+			}
+			this.bTileHeader3 = (byte)((int)this.bTileHeader3 & -65);
+		}
+
+		public bool fullbrightBlock()
+		{
+			return (this.bTileHeader3 & 128) == 128;
+		}
+
+		public void fullbrightBlock(bool fullbrightBlock)
+		{
+			if (fullbrightBlock)
+			{
+				this.bTileHeader3 |= 128;
+				return;
+			}
+			this.bTileHeader3 = (byte)((int)this.bTileHeader3 & -129);
+		}
+
+		public bool fullbrightWall()
+		{
+			return (this.sTileHeader & 32768) == 32768;
+		}
+
+		public void fullbrightWall(bool fullbrightWall)
+		{
+			if (fullbrightWall)
+			{
+				this.sTileHeader |= 32768;
+				return;
+			}
+			this.sTileHeader = (ushort)((int)this.sTileHeader & -32769);
+		}
+
+		public void CopyPaintAndCoating(ITile other)
+		{
+			this.color(other.color());
+			this.wallColor(other.wallColor());
+			this.invisibleBlock(other.invisibleBlock());
+			this.invisibleWall(other.invisibleWall());
+			this.fullbrightBlock(other.fullbrightBlock());
+			this.fullbrightWall(other.fullbrightWall());
+		}
+
+		public TileColorCache BlockColorAndCoating()
+		{
+			return new TileColorCache()
+				{
+					Color = color(),
+					FullBright = fullbrightBlock(),
+					Invisible = invisibleBlock()
+				};
+		}
+
+		public TileColorCache WallColorAndCoating()
+		{
+			return new TileColorCache()
+				{
+					Color = wallColor(),
+					FullBright = fullbrightWall(),
+					Invisible = invisibleWall()
+				};
+		}
+
+		public void UseBlockColors(TileColorCache cache)
+		{
+			this.color(cache.Color);
+			this.fullbrightBlock(cache.FullBright);
+			this.invisibleBlock(cache.Invisible);
+		}
+
+		public void UseWallColors(TileColorCache cache)
+		{
+			this.wallColor(cache.Color);
+			this.fullbrightWall(cache.FullBright);
+			this.invisibleWall(cache.Invisible);
+		}
+
+		public void ClearBlockPaintAndCoating()
+		{
+			this.color(0);
+			this.fullbrightBlock(false);
+			this.invisibleBlock(false);
+		}
+
+		public void ClearWallPaintAndCoating()
+		{
+			this.wallColor(0);
+			this.fullbrightWall(false);
+			this.invisibleWall(false);
 		}
 	}
 }

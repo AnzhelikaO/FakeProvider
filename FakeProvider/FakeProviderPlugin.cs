@@ -1,6 +1,5 @@
 ﻿#region Using
 using OTAPI;
-using OTAPI.Tile;
 using System;
 using System.IO;
 using System.Linq;
@@ -11,7 +10,6 @@ using Terraria.IO;
 using Terraria.Social;
 using Terraria.Utilities;
 using TerrariaApi.Server;
-using OTAPI.Callbacks.Terraria;
 using System.Collections.Generic;
 using TShockAPI;
 using Terraria.GameContent.Events;
@@ -150,9 +148,8 @@ namespace FakeProvider
             for (int i = 0; i < Main.maxPlayers; i++)
                 AllPlayers[i] = i;
 
-            Hooks.World.IO.PreLoadWorld += OnPreLoadWorld;
-            Hooks.World.IO.PostLoadWorld += OnPostLoadWorld;
-            Hooks.World.IO.PreSaveWorld += OnPreSaveWorld;
+			On.Terraria.IO.WorldFile.LoadWorld += OnLoadWorld;
+			On.Terraria.IO.WorldFile.SaveWorld_bool_bool += OnSaveWorld;
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
             ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
 
@@ -166,41 +163,40 @@ namespace FakeProvider
         {
             if (Disposing)
             {
-                Hooks.World.IO.PreLoadWorld -= OnPreLoadWorld;
-                Hooks.World.IO.PostLoadWorld -= OnPostLoadWorld;
-                Hooks.World.IO.PreSaveWorld -= OnPreSaveWorld;
+				On.Terraria.IO.WorldFile.LoadWorld -= OnLoadWorld;
+				On.Terraria.IO.WorldFile.SaveWorld_bool_bool -= OnSaveWorld;
 				ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnServerLeave);
             }
             base.Dispose(Disposing);
         }
 
-        #endregion
+        private void OnSaveWorld(On.Terraria.IO.WorldFile.orig_SaveWorld_bool_bool orig, bool Cloud, bool ResetTime)
+        {
+            if (FakeProviderAPI.World == null) {
+				orig(Cloud, ResetTime);
+			}
 
-        #region OnPreLoadWorld
+			try
+            {
+				SaveWorld(ref Cloud, ref ResetTime);
+				Console.WriteLine("[FakeProvier] World saved.");
+			}
+			catch (Exception e)
+            {
+				Console.WriteLine(e);
+            }
+        }
 
-        private static HookResult OnPreLoadWorld(ref bool loadFromCloud)
+        private void OnLoadWorld(On.Terraria.IO.WorldFile.orig_LoadWorld orig, bool loadFromCloud)
         {
             if (FastWorldLoad) LoadWorldFast();
             else LoadWorldDirect(loadFromCloud);
-            Hooks.World.IO.PostLoadWorld?.Invoke(loadFromCloud);
-            return HookResult.Cancel;
-        }
 
-        #endregion
-        #region OnPostLoadWorld
-
-        private static void OnPostLoadWorld(bool FromCloud)
-        {
-            //FakeProviderAPI.Tile.OffsetX = OffsetX;
-            //FakeProviderAPI.Tile.OffsetY = OffsetY;
+			orig(loadFromCloud);
 
             Main.maxTilesX = VisibleWidth;
             Main.maxTilesY = VisibleHeight;
-            //Main.worldSurface += OffsetY;
-            //Main.rockLayer += OffsetY;
-            //Main.spawnTileX += OffsetX;
-            //Main.spawnTileY += OffsetY;
             WorldGen.setWorldSize();
 
             lock (ProvidersToAdd)
@@ -225,27 +221,7 @@ namespace FakeProvider
         }
 
         #endregion
-        #region OnPreSaveWorld
 
-        private static HookResult OnPreSaveWorld(ref bool Cloud, ref bool ResetTime)
-        {
-            if (FakeProviderAPI.World == null)
-                return HookResult.Continue;
-
-			try
-            {
-				SaveWorld(ref Cloud, ref ResetTime);
-				Console.WriteLine("[FakeProvier] World saved.");
-			}
-			catch (Exception e)
-            {
-				Console.WriteLine(e);
-            }
-
-			return HookResult.Cancel;
-        }
-
-		#endregion
 		#region OnSendData
 
 		private static void OnSendData(SendDataEventArgs args)
@@ -639,33 +615,15 @@ Entities: {provider.Entities.Count}");
 		private static void SaveWorld(ref bool Cloud, ref bool ResetTime)
         {
 			SaveWorldDirect(Cloud, ResetTime);
-			SaveWorldEnd(Cloud, ResetTime);
 		}
 
 		#endregion
-		#region SaveWorldEnd
 
-		private static void SaveWorldEnd(bool useCloudSaving, bool resetTime)
-		{
-			Hooks.World.IO.PostSaveWorldHandler postSaveWorld = Hooks.World.IO.PostSaveWorld;
-			if (postSaveWorld != null)
-			{
-				postSaveWorld(useCloudSaving, resetTime);
-			}
-		}
-
-		#endregion
 		#region SetStatusText
 
 		private static void SetStatusText(string text)
 		{
-			Hooks.Game.StatusTextHandler statusTextWrite = Hooks.Game.StatusTextWrite;
-			HookResult? hookResult = (statusTextWrite != null) ? new HookResult?(statusTextWrite(ref text)) : null;
-			bool flag = hookResult != null && hookResult.Value == HookResult.Cancel;
-			if (!flag)
-			{
-				StatusTextField.SetValue(null, text);
-			}
+			Main.statusText = text;
 		}
 
 		#endregion
@@ -990,7 +948,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 			{
 				writer.Write(NPC.killCount[j]);
 			}
-			writer.Write(Main.fastForwardTime);
+			writer.Write(Main.fastForwardTimeToDawn);
 			writer.Write(NPC.downedFishron);
 			writer.Write(NPC.downedMartians);
 			writer.Write(NPC.downedAncientCultist);
@@ -1046,6 +1004,26 @@ Custom valid : {ValidateWorldData(array, num)}";
 			writer.Write(NPC.downedEmpressOfLight);
 			writer.Write(NPC.downedQueenSlime);
 			writer.Write(NPC.downedDeerclops);
+			writer.Write(NPC.unlockedSlimeBlueSpawn);
+			writer.Write(NPC.unlockedMerchantSpawn);
+			writer.Write(NPC.unlockedDemolitionistSpawn);
+			writer.Write(NPC.unlockedPartyGirlSpawn);
+			writer.Write(NPC.unlockedDyeTraderSpawn);
+			writer.Write(NPC.unlockedTruffleSpawn);
+			writer.Write(NPC.unlockedArmsDealerSpawn);
+			writer.Write(NPC.unlockedNurseSpawn);
+			writer.Write(NPC.unlockedPrincessSpawn);
+			writer.Write(NPC.combatBookVolumeTwoWasUsed);
+			writer.Write(NPC.peddlersSatchelWasUsed);
+			writer.Write(NPC.unlockedSlimeGreenSpawn);
+			writer.Write(NPC.unlockedSlimeOldSpawn);
+			writer.Write(NPC.unlockedSlimePurpleSpawn);
+			writer.Write(NPC.unlockedSlimeRainbowSpawn);
+			writer.Write(NPC.unlockedSlimeRedSpawn);
+			writer.Write(NPC.unlockedSlimeYellowSpawn);
+			writer.Write(NPC.unlockedSlimeCopperSpawn);
+			writer.Write(Main.fastForwardTimeToDusk);
+			writer.Write((byte)Main.moondialCooldown);
 			return (int)writer.BaseStream.Position;
 		}
 
@@ -1472,7 +1450,7 @@ Custom valid : {ValidateWorldData(array, num)}";
                         WorldFile.ConvertOldTileEntities();
                         WorldFile.ClearTempTiles();
                         WorldGen.gen = true;
-                        WorldGen.waterLine = Main.maxTilesY;
+                        Terraria.WorldBuilding.GenVars.waterLine = Main.maxTilesY;
                         Liquid.QuickWater(2, -1, -1);
                         WorldGen.WaterCheck();
                         int num3 = 0;
@@ -1830,247 +1808,9 @@ Custom valid : {ValidateWorldData(array, num)}";
 					Main.bottomWorld = reader.ReadInt32();
 					Main.maxTilesY = reader.ReadInt32();
 					Main.maxTilesX = reader.ReadInt32();
-					#region clearWorld()
-					//	Main.ladyBugRainBoost = 0;
-					//	Main.getGoodWorld = false;
-					//	Main.drunkWorld = false;
-					//	//Main.tenthAnniversaryWorld = false;
-					//	NPC.ResetBadgerHatTime();
-					//	NPC.freeCake = false;
-					//	Main.mapDelay = 2;
-					//	Main.ResetWindCounter(resetExtreme: true);
-					//  WorldGen.TownManager = new TownRoomManager();
-					//	//Hooks.ClearWorld();
-					//	TileEntity.Clear();
-					//	Main.checkXMas();
-					//	Main.checkHalloween();
-					//	/*if (Main.mapReady)
-					//	{
-					//		for (int i = 0; i < lastMaxTilesX; i++)
-					//		{
-					//			_ = (float)i / (float)lastMaxTilesX;
-					//			Main.statusText = Lang.gen[65].Value;
-					//		}
-					//		if (Main.Map != null)
-					//		{
-					//			Main.Map.Clear();
-					//		}
-					//	}*/
-					//	if (Main.mapReady)
-					//		Main.Map.Clear();
-					//	NPC.MoonLordCountdown = 0;
-					//	Main.forceHalloweenForToday = false;
-					//	Main.forceXMasForToday = false;
-					//	NPC.RevengeManager.Reset();
-					//	Main.pumpkinMoon = false;
-					//	Main.clearMap = true;
-					//	Main.mapTime = 0;
-					//	Main.updateMap = false;
-					//	Main.mapReady = false;
-					//	Main.refreshMap = false;
-					//	Main.eclipse = false;
-					//	Main.slimeRain = false;
-					//	Main.slimeRainTime = 0.0;
-					//	Main.slimeWarningTime = 0;
-					//	Main.sundialCooldown = 0;
-					//	Main.fastForwardTime = false;
-					//	BirthdayParty.WorldClear();
-					//	LanternNight.WorldClear();
-					//	//mysticLogsEvent.WorldClear();
-					//	CreditsRollEvent.Reset();
-					//	Sandstorm.WorldClear();
-					//	Main.UpdateTimeRate();
-					//	Main.wofNPCIndex = -1;
-					//	NPC.waveKills = 0f;
-					//	/*spawnHardBoss = 0;
-					//	totalSolid2 = 0;
-					//	totalGood2 = 0;
-					//	totalEvil2 = 0;
-					//	totalBlood2 = 0;
-					//	totalSolid = 0;
-					//	totalGood = 0;
-					//	totalEvil = 0;
-					//	totalBlood = 0;*/
-					//	WorldFile.ResetTemps();
-					//	Main.maxRaining = 0f;
-					//	/*totalX = 0;
-					//	totalD = 0;
-					//	tEvil = 0;
-					//	tBlood = 0;
-					//	tGood = 0;
-					//	spawnEye = false;
-					//	prioritizedTownNPCType = 0;
-					//	shadowOrbCount = 0;
-					//	altarCount = 0;
-					//	SavedOreTiers.Copper = -1;
-					//	SavedOreTiers.Iron = -1;
-					//	SavedOreTiers.Silver = -1;
-					//	SavedOreTiers.Gold = -1;
-					//	SavedOreTiers.Cobalt = -1;
-					//	SavedOreTiers.Mythril = -1;
-					//	SavedOreTiers.Adamantite = -1;*/
-					//	Main.cloudBGActive = 0f;
-					//	Main.raining = false;
-					//	Main.hardMode = false;
-					//	Main.helpText = 0;
-					//	Main.BartenderHelpTextIndex = 0;
-					//	Main.dungeonX = 0;
-					//	Main.dungeonY = 0;
-					//	NPC.downedBoss1 = false;
-					//	NPC.downedBoss2 = false;
-					//	NPC.downedBoss3 = false;
-					//	NPC.downedQueenBee = false;
-					//	NPC.downedSlimeKing = false;
-					//	NPC.downedMechBossAny = false;
-					//	NPC.downedMechBoss1 = false;
-					//	NPC.downedMechBoss2 = false;
-					//	NPC.downedMechBoss3 = false;
-					//	NPC.downedFishron = false;
-					//	NPC.downedAncientCultist = false;
-					//	NPC.downedMoonlord = false;
-					//	NPC.downedHalloweenKing = false;
-					//	NPC.downedHalloweenTree = false;
-					//	NPC.downedChristmasIceQueen = false;
-					//	NPC.downedChristmasSantank = false;
-					//	NPC.downedChristmasTree = false;
-					//	NPC.downedPlantBoss = false;
-					//	NPC.downedGolemBoss = false;
-					//	NPC.downedEmpressOfLight = false;
-					//	NPC.downedQueenSlime = false;
-					//	NPC.combatBookWasUsed = false;
-					//	NPC.savedStylist = false;
-					//	NPC.savedGoblin = false;
-					//	NPC.savedWizard = false;
-					//	NPC.savedMech = false;
-					//	NPC.savedTaxCollector = false;
-					//	NPC.savedAngler = false;
-					//	NPC.savedBartender = false;
-					//	NPC.savedGolfer = false;
-					//	NPC.boughtCat = false;
-					//	NPC.boughtDog = false;
-					//	NPC.boughtBunny = false;
-					//	NPC.downedGoblins = false;
-					//	NPC.downedClown = false;
-					//	NPC.downedFrost = false;
-					//	NPC.downedPirates = false;
-					//	NPC.downedMartians = false;
-					//	NPC.downedTowerSolar = (NPC.downedTowerVortex = (NPC.downedTowerNebula = (NPC.downedTowerStardust = (NPC.LunarApocalypseIsUp = false))));
-					//	NPC.TowerActiveSolar = (NPC.TowerActiveVortex = (NPC.TowerActiveNebula = (NPC.TowerActiveStardust = false)));
-					//	DD2Event.ResetProgressEntirely();
-					//	NPC.ClearFoundActiveNPCs();
-					//	Main.BestiaryTracker.Reset();
-					//	Main.PylonSystem.Reset();
-					//	CreativePowerManager.Instance.Reset();
-					//	Main.CreativeMenu.Reset();
-					//	//shadowOrbSmashed = false;
-					//	//spawnMeteor = false;
-					//	//stopDrops = false;
-					//	Main.invasionDelay = 0;
-					//	Main.invasionType = 0;
-					//	Main.invasionSize = 0;
-					//	Main.invasionWarn = 0;
-					//	Main.invasionX = 0.0;
-					//	Main.invasionSizeStart = 0;
-					//	Main.treeX[0] = Main.maxTilesX;
-					//	Main.treeX[1] = Main.maxTilesX;
-					//	Main.treeX[2] = Main.maxTilesX;
-					//	Main.treeStyle[0] = 0;
-					//	Main.treeStyle[1] = 0;
-					//	Main.treeStyle[2] = 0;
-					//	Main.treeStyle[3] = 0;
-					//	//noLiquidCheck = false;
-					//	Liquid.numLiquid = 0;
-					//	LiquidBuffer.numLiquidBuffer = 0;
-					///*	if (Main.netMode == 1 || lastMaxTilesX > Main.maxTilesX || lastMaxTilesY > Main.maxTilesY)
-					//	{
-					//		for (int j = 0; j < lastMaxTilesX; j++)
-					//		{
-					//			//float num = (float)j / (float)lastMaxTilesX;
-					//			//Main.statusText = Lang.gen[46].Value + " " + (int)(num * 100f + 1f) + "%";
-					//			for (int k = 0; k < lastMaxTilesY; k++)
-					//			{
-					//				Main.tile[j, k] = null;
-					//			}
-					//		}
-					//	}*/
-						WorldGen.lastMaxTilesX = Main.maxTilesX;
-						WorldGen.lastMaxTilesY = Main.maxTilesY;
-					//	if (Main.netMode != 2)
-					//	{
-					//		Main.sectionManager = new WorldSections(Main.maxTilesX / 200, Main.maxTilesY / 150);
-					//	}
-					//	if (Main.netMode != 1)
-					//	{
-					//		for (int l = 0; l < Main.maxTilesX; l++)
-					//		{
-					//			//float num2 = (float)l / (float)Main.maxTilesX;
-					//			//Main.statusText = Lang.gen[47].Value + " " + (int)(num2 * 100f + 1f) + "%";
-					//			for (int m = 0; m < Main.maxTilesY; m++)
-					//			{
-					//				tiles[Index(l, m)] = new StructTile();
-					//				/*if (Main.tile[l, m] == null)
-					//				{
-					//					Main.tile[l, m] = new Tile();
-					//				}
-					//				else
-					//				{
-					//					Main.tile[l, m].ClearEverything();
-					//				}*/
-					//			}
-					//		}
-					//	}
-					//	for (int n = 0; n < Main.countsAsHostForGameplay.Length; n++)
-					//	{
-					//		Main.countsAsHostForGameplay[n] = false;
-					//	}
-					//	CombatText.clearAll();
-					//	for (int num3 = 0; num3 < 6000; num3++)
-					//	{
-					//		Main.dust[num3] = new Dust();
-					//		Main.dust[num3].dustIndex = num3;
-					//	}
-					//	for (int num4 = 0; num4 < 600; num4++)
-					//	{
-					//		Main.gore[num4] = new Gore();
-					//	}
-					//	for (int num5 = 0; num5 < 400; num5++)
-					//	{
-					//		Main.item[num5] = new Item();
-					//		Main.timeItemSlotCannotBeReusedFor[num5] = 0;
-					//	}
-					//	for (int num6 = 0; num6 < 200; num6++)
-					//	{
-					//		Main.npc[num6] = new NPC();
-					//	}
-					//	for (int num7 = 0; num7 < 1000; num7++)
-					//	{
-					//		Main.projectile[num7] = new Projectile();
-					//	}
-					//	for (int num8 = 0; num8 < 8000; num8++)
-					//	{
-					//		Main.chest[num8] = null;
-					//	}
-					//	for (int num9 = 0; num9 < 1000; num9++)
-					//	{
-					//		Main.sign[num9] = null;
-					//	}
-					//	for (int num10 = 0; num10 < Liquid.maxLiquid; num10++)
-					//	{
-					//		Main.liquid[num10] = new Liquid();
-					//	}
-					//	for (int num11 = 0; num11 < 50000; num11++)
-					//	{
-					//		Main.liquidBuffer[num11] = new LiquidBuffer();
-					//	}
-					//	//setWorldSize();
-					//	Main.bottomWorld = Main.maxTilesY * 16;
-					//	Main.rightWorld = Main.maxTilesX * 16;
-					//	Main.maxSectionsX = Main.maxTilesX / 200;
-					//	Main.maxSectionsY = Main.maxTilesY / 150; 
-					//	Star.SpawnStars();
-					//	//worldCleared = true;
-					//	//WorldGen.clearWorld();
-					#endregion
+					WorldGen.lastMaxTilesX = Main.maxTilesX;
+					WorldGen.lastMaxTilesY = Main.maxTilesY;
+
 					if (versionNumber >= 209)
 					{
 						Main.GameMode = reader.ReadInt32();
@@ -2093,6 +1833,22 @@ Custom valid : {ValidateWorldData(array, num)}";
 						if (versionNumber >= 241)
 						{
 							Main.notTheBeesWorld = reader.ReadBoolean();
+						}
+						if (versionNumber >= 249)
+						{
+							Main.remixWorld = reader.ReadBoolean();
+						}
+						if (versionNumber >= 266)
+						{
+							Main.noTrapsWorld = reader.ReadBoolean();
+						}
+						if (versionNumber >= 267)
+						{
+							Main.zenithWorld = reader.ReadBoolean();
+						}
+						else
+						{
+							Main.zenithWorld = (!Main.remixWorld ? false : Main.drunkWorld);
 						}
 					}
 					else
@@ -2171,6 +1927,10 @@ Custom valid : {ValidateWorldData(array, num)}";
 					WorldGen.shadowOrbCount = reader.ReadByte();
 					WorldGen.altarCount = reader.ReadInt32();
 					Main.hardMode = reader.ReadBoolean();
+					if (versionNumber >= 257)
+					{
+						Main.afterPartyOfDoom = reader.ReadBoolean();
+					}
 					Main.invasionDelay = reader.ReadInt32();
 					Main.invasionSize = reader.ReadInt32();
 					Main.invasionType = reader.ReadInt32();
@@ -2261,7 +2021,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 					int LoadHeadernum2 = reader.ReadInt16();
 					for (int i = 0; i < LoadHeadernum2; i++)
 					{
-						if (i < 670)
+						if (i < 688)
 						{
 							NPC.killCount[i] = reader.ReadInt32();
 						}
@@ -2274,8 +2034,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 					{
 						goto LOADHEADER_END;
 					}
-					Main.fastForwardTime = reader.ReadBoolean();
-					Main.UpdateTimeRate();
+					Main.fastForwardTimeToDawn = reader.ReadBoolean();
 					if (versionNumber < 131)
 					{
 						goto LOADHEADER_END;
@@ -2473,6 +2232,82 @@ Custom valid : {ValidateWorldData(array, num)}";
                     {
 						NPC.downedDeerclops = false;
                     }
+					if (versionNumber >= 250)
+					{
+						NPC.unlockedSlimeBlueSpawn = reader.ReadBoolean();
+					}
+					else
+					{
+						NPC.unlockedSlimeBlueSpawn = false;
+					}
+					if (versionNumber >= 251)
+					{
+						NPC.unlockedMerchantSpawn = reader.ReadBoolean();
+						NPC.unlockedDemolitionistSpawn = reader.ReadBoolean();
+						NPC.unlockedPartyGirlSpawn = reader.ReadBoolean();
+						NPC.unlockedDyeTraderSpawn = reader.ReadBoolean();
+						NPC.unlockedTruffleSpawn = reader.ReadBoolean();
+						NPC.unlockedArmsDealerSpawn = reader.ReadBoolean();
+						NPC.unlockedNurseSpawn = reader.ReadBoolean();
+						NPC.unlockedPrincessSpawn = reader.ReadBoolean();
+					}
+					else
+					{
+						NPC.unlockedMerchantSpawn = false;
+						NPC.unlockedDemolitionistSpawn = false;
+						NPC.unlockedPartyGirlSpawn = false;
+						NPC.unlockedDyeTraderSpawn = false;
+						NPC.unlockedTruffleSpawn = false;
+						NPC.unlockedArmsDealerSpawn = false;
+						NPC.unlockedNurseSpawn = false;
+						NPC.unlockedPrincessSpawn = false;
+					}
+					if (versionNumber >= 259)
+					{
+						NPC.combatBookVolumeTwoWasUsed = reader.ReadBoolean();
+					}
+					else
+					{
+						NPC.combatBookVolumeTwoWasUsed = false;
+					}
+					if (versionNumber >= 260)
+					{
+						NPC.peddlersSatchelWasUsed = reader.ReadBoolean();
+					}
+					else
+					{
+						NPC.peddlersSatchelWasUsed = false;
+					}
+					if (versionNumber >= 261)
+					{
+						NPC.unlockedSlimeGreenSpawn = reader.ReadBoolean();
+						NPC.unlockedSlimeOldSpawn = reader.ReadBoolean();
+						NPC.unlockedSlimePurpleSpawn = reader.ReadBoolean();
+						NPC.unlockedSlimeRainbowSpawn = reader.ReadBoolean();
+						NPC.unlockedSlimeRedSpawn = reader.ReadBoolean();
+						NPC.unlockedSlimeYellowSpawn = reader.ReadBoolean();
+						NPC.unlockedSlimeCopperSpawn = reader.ReadBoolean();
+					}
+					else
+					{
+						NPC.unlockedSlimeGreenSpawn = false;
+						NPC.unlockedSlimeOldSpawn = false;
+						NPC.unlockedSlimePurpleSpawn = false;
+						NPC.unlockedSlimeRainbowSpawn = false;
+						NPC.unlockedSlimeRedSpawn = false;
+						NPC.unlockedSlimeYellowSpawn = false;
+						NPC.unlockedSlimeCopperSpawn = false;
+					}
+					if (versionNumber >= 264)
+					{
+						Main.fastForwardTimeToDusk = reader.ReadBoolean();
+						Main.moondialCooldown = reader.ReadByte();
+					}
+					else
+					{
+						Main.fastForwardTimeToDusk = false;
+						Main.moondialCooldown = 0;
+					}
 					#endregion
 					debugPointerString = "After LoadHeader";
 
@@ -2500,29 +2335,35 @@ Custom valid : {ValidateWorldData(array, num)}";
 					{
 						for (int tileY = 0; tileY < Main.maxTilesY; tileY++)
 						{
-							//tiles[Index(tileX, tileY)] = new StructTile();
 							int type = -1;
-							byte b;
-							byte b2 = (b = 0);
-							//StructTile tiles[Index(tileX, tileY)] = tiles[Index(tileX, tileY)];
-							byte b3 = reader.ReadByte();
-							if ((b3 & 1) == 1)
+							byte firstHeader = 0;
+							byte secondHeader = 0;
+							byte sTileHeader = reader.ReadByte();
+							bool readSecondHeader = false;
+							if ((sTileHeader & 1) == 1)
 							{
-								b2 = reader.ReadByte();
-								if ((b2 & 1) == 1)
-								{
-									b = reader.ReadByte();
-								}
+								readSecondHeader = true;
+								firstHeader = reader.ReadByte();
 							}
-							byte b4;
-							if ((b3 & 2) == 2)
+							bool readThirdHeader = false;
+							if (readSecondHeader && (firstHeader & 1) == 1)
+							{
+								readThirdHeader = true;
+								secondHeader = reader.ReadByte();
+							}
+							byte thirdHeader = 0;
+							if (readThirdHeader && (secondHeader & 1) == 1)
+							{
+								thirdHeader = reader.ReadByte();
+							}
+							if ((sTileHeader & 2) == 2)
 							{
 								tiles[Index(tileX, tileY)].active(true);
-								if ((b3 & 0x20) == 32)
+								if ((sTileHeader & 0x20) == 32)
 								{
-									b4 = reader.ReadByte();
-									type = reader.ReadByte();
-									type = (type << 8) | b4;
+									byte lo = reader.ReadByte();
+									byte hi = reader.ReadByte();
+									type = (hi << 8) | lo;
 								}
 								else
 								{
@@ -2543,30 +2384,34 @@ Custom valid : {ValidateWorldData(array, num)}";
 									tiles[Index(tileX, tileY)].frameX = -1;
 									tiles[Index(tileX, tileY)].frameY = -1;
 								}
-								if ((b & 8) == 8)
+								if ((secondHeader & 8) == 8)
 								{
 									tiles[Index(tileX, tileY)].color(reader.ReadByte());
 								}
 							}
-							if ((b3 & 4) == 4)
+							if ((sTileHeader & 4) == 4)
 							{
 								tiles[Index(tileX, tileY)].wall = reader.ReadByte();
-								if (tiles[Index(tileX, tileY)].wall >= 316)
+								if (tiles[Index(tileX, tileY)].wall >= 347)
 								{
 									tiles[Index(tileX, tileY)].wall = 0;
 								}
-								if ((b & 0x10) == 16)
+								if ((secondHeader & 0x10) == 16)
 								{
 									tiles[Index(tileX, tileY)].wallColor(reader.ReadByte());
 								}
 							}
-							b4 = (byte)((b3 & 0x18) >> 3);
-							if (b4 != 0)
+							byte liquidsByte = (byte)((sTileHeader & 0x18) >> 3);
+							if (liquidsByte != 0)
 							{
 								tiles[Index(tileX, tileY)].liquid = reader.ReadByte();
-								if (b4 > 1)
+								if ((secondHeader & 0x80) == 128)
 								{
-									if (b4 == 2)
+									tiles[Index(tileX, tileY)].shimmer(true);
+								}
+								else if (liquidsByte > 1)
+								{
+									if (liquidsByte == 2)
 									{
 										tiles[Index(tileX, tileY)].lava(lava: true);
 									}
@@ -2576,58 +2421,69 @@ Custom valid : {ValidateWorldData(array, num)}";
 									}
 								}
 							}
-							if (b2 > 1)
+							if (firstHeader > 1)
 							{
-								if ((b2 & 2) == 2)
+								if ((firstHeader & 2) == 2)
 								{
 									tiles[Index(tileX, tileY)].wire(wire: true);
 								}
-								if ((b2 & 4) == 4)
+								if ((firstHeader & 4) == 4)
 								{
 									tiles[Index(tileX, tileY)].wire2(wire2: true);
 								}
-								if ((b2 & 8) == 8)
+								if ((firstHeader & 8) == 8)
 								{
 									tiles[Index(tileX, tileY)].wire3(wire3: true);
 								}
-								b4 = (byte)((b2 & 0x70) >> 4);
-								if (b4 != 0 && (Main.tileSolid[tiles[Index(tileX, tileY)].type] || TileID.Sets.NonSolidSaveSlopes[tiles[Index(tileX, tileY)].type]))
+								byte slopeByte = (byte)((firstHeader & 0x70) >> 4);
+								if (slopeByte != 0 && (Main.tileSolid[tiles[Index(tileX, tileY)].type] || TileID.Sets.NonSolidSaveSlopes[tiles[Index(tileX, tileY)].type]))
 								{
-									if (b4 == 1)
+									if (slopeByte == 1)
 									{
 										tiles[Index(tileX, tileY)].halfBrick(halfBrick: true);
 									}
 									else
 									{
-										tiles[Index(tileX, tileY)].slope((byte)(b4 - 1));
+										tiles[Index(tileX, tileY)].slope((byte)(slopeByte - 1));
 									}
 								}
 							}
-							if (b > 0)
+							if (secondHeader > 1)
 							{
-								if ((b & 2) == 2)
+								if ((secondHeader & 2) == 2)
 								{
 									tiles[Index(tileX, tileY)].actuator(actuator: true);
 								}
-								if ((b & 4) == 4)
+								if ((secondHeader & 4) == 4)
 								{
 									tiles[Index(tileX, tileY)].inActive(inActive: true);
 								}
-								if ((b & 0x20) == 32)
+								if ((secondHeader & 0x20) == 32)
 								{
 									tiles[Index(tileX, tileY)].wire4(wire4: true);
 								}
-								if ((b & 0x40) == 64)
+								if ((secondHeader & 0x40) == 64)
 								{
-									b4 = reader.ReadByte();
-									tiles[Index(tileX, tileY)].wall = (ushort)((b4 << 8) | tiles[Index(tileX, tileY)].wall);
+									byte hiByte = reader.ReadByte();
+									tiles[Index(tileX, tileY)].wall = (ushort)((hiByte << 8) | tiles[Index(tileX, tileY)].wall);
 									if (tiles[Index(tileX, tileY)].wall >= 316)
 									{
 										tiles[Index(tileX, tileY)].wall = 0;
 									}
 								}
 							}
-							int surfaceOffset = (byte)((b3 & 0xC0) >> 6) switch
+							if (thirdHeader > 1)
+							{
+								if ((thirdHeader & 2) == 2)
+									tiles[Index(tileX, tileY)].invisibleBlock(true);
+								if ((thirdHeader & 4) == 4)
+									tiles[Index(tileX, tileY)].invisibleWall(true);
+								if ((thirdHeader & 8) == 8)
+									tiles[Index(tileX, tileY)].fullbrightBlock(true);
+								if ((thirdHeader & 16) == 16)
+									tiles[Index(tileX, tileY)].fullbrightWall(true);
+							}
+							int surfaceOffset = (byte)((sTileHeader & 0xC0) >> 6) switch
 							{
 								0 => 0,
 								1 => reader.ReadByte(),
@@ -2900,6 +2756,10 @@ Custom valid : {ValidateWorldData(array, num)}";
 					#endregion
 					void LoadNPCs(UnsafeBinaryReader reader)
 					{
+						if (versionNumber >= 0x10c)
+						{
+							#warning TODO: handle shimmer NPCs
+						}
 						int num = 0;
 						bool flag = reader.ReadBoolean();
 						while (flag)
@@ -2945,6 +2805,17 @@ Custom valid : {ValidateWorldData(array, num)}";
 							nPC.position = reader.ReadVector2();
 							num++;
 							flag = reader.ReadBoolean();
+						}
+						if (versionNumber < 251)
+						{
+							NPC.unlockedMerchantSpawn = NPC.AnyNPCs(17);
+							NPC.unlockedDemolitionistSpawn = NPC.AnyNPCs(38);
+							NPC.unlockedPartyGirlSpawn = NPC.AnyNPCs(208);
+							NPC.unlockedDyeTraderSpawn = NPC.AnyNPCs(207);
+							NPC.unlockedTruffleSpawn = NPC.AnyNPCs(160);
+							NPC.unlockedArmsDealerSpawn = NPC.AnyNPCs(19);
+							NPC.unlockedNurseSpawn = NPC.AnyNPCs(18);
+							NPC.unlockedPrincessSpawn = NPC.AnyNPCs(0x297);
 						}
 					}
 					void LoadDummies(UnsafeBinaryReader reader)

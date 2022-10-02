@@ -1,5 +1,4 @@
-﻿using OTAPI.Tile;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -31,7 +30,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static TileProvider CreateTileProvider(string Name, int X, int Y, int Width, int Height, int Layer, ITileCollection CopyFrom)
+        public static TileProvider CreateTileProvider(string Name, int X, int Y, int Width, int Height, int Layer, ModFramework.ICollection<ITile> CopyFrom)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom);
@@ -58,7 +57,7 @@ namespace FakeProvider
             return result;
         }
 
-        public static TileProvider CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, int Layer, ITileCollection CopyFrom)
+        public static TileProvider CreatePersonalTileProvider(string Name, HashSet<int> Players, int X, int Y, int Width, int Height, int Layer, ModFramework.ICollection<ITile> CopyFrom)
         {
             TileProvider result = new TileProvider();
             result.Initialize(Name, X, Y, Width, Height, Layer, CopyFrom, Players);
@@ -92,7 +91,7 @@ namespace FakeProvider
         #endregion
         #region ApplyPersonal
 
-        public static (ITileCollection tiles, bool relative) ApplyPersonal(IEnumerable<TileProvider> Providers, int X, int Y, int Width, int Height)
+        public static (ModFramework.ICollection<ITile> tiles, bool relative) ApplyPersonal(IEnumerable<TileProvider> Providers, int X, int Y, int Width, int Height)
         {
             if (Providers.Count() == 0)
                 return (Tile, false);
