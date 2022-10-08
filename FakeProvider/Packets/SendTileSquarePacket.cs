@@ -1,5 +1,4 @@
 ﻿#region Using
-using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -106,7 +105,7 @@ namespace FakeProvider
 			binaryWriter.Write((byte)width);
 			binaryWriter.Write((byte)height);
 			binaryWriter.Write((byte)number5);
-			(ITileCollection tiles, bool relative) = FakeProviderAPI.ApplyPersonal(providers, sx, sy, width, height);
+			(ModFramework.ICollection<ITile> tiles, bool relative) = FakeProviderAPI.ApplyPersonal(providers, sx, sy, width, height);
 			int _sx = (relative ? 0 : sx);
 			int _sy = (relative ? 0 : sy);
 			for (int x = _sx; x < _sx + width; x++)
@@ -115,6 +114,7 @@ namespace FakeProvider
 				{
 					BitsByte bb17 = 0;
 					BitsByte bb18 = 0;
+					BitsByte bb19 = 0;
 					byte b = 0;
 					byte b2 = 0;
 					ITile tile = tiles[x, y];
@@ -139,8 +139,13 @@ namespace FakeProvider
 					}
 					bb18 += (byte)(tile.slope() << 4);
 					bb18[7] = tile.wire4();
+                    bb19[0] = tile.fullbrightBlock();
+                    bb19[1] = tile.fullbrightWall();
+                    bb19[2] = tile.invisibleBlock();
+                    bb19[3] = tile.invisibleWall();
 					binaryWriter.Write(bb17);
 					binaryWriter.Write(bb18);
+					binaryWriter.Write(bb19);
 					//if (b > 0) // Allow clearing paint
 					if (tile.active()) // Allow clearing paint
 					{

@@ -1,5 +1,4 @@
 ﻿#region Using
-using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,7 +9,7 @@ using Terraria.GameContent.Tile_Entities;
 #endregion
 namespace FakeProvider
 {
-    public sealed class TileProvider : ITileCollection, IDisposable
+    public sealed class TileProvider : ModFramework.ICollection<ITile>, IDisposable
     {
         #region Data
 
@@ -52,7 +51,7 @@ namespace FakeProvider
             this.Observers = Observers;
         }
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer, ITileCollection CopyFrom, HashSet<int> Observers = null)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer, ModFramework.ICollection<ITile> CopyFrom, HashSet<int> Observers = null)
         {
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
@@ -96,7 +95,7 @@ namespace FakeProvider
 
         #region operator[,]
 
-        ITile ITileCollection.this[int X, int Y]
+        ITile ModFramework.ICollection<ITile>.this[int X, int Y]
         {
             get => new TileReference(Data, X, Y);
             set => new TileReference(Data, X, Y).CopyFrom(value);
@@ -324,7 +323,7 @@ namespace FakeProvider
         #endregion
         #region Apply
 
-        public void Apply(ITileCollection Tiles, int X, int Y)
+        public void Apply(ModFramework.ICollection<ITile> Tiles, int X, int Y)
         {
             Intersect(X, Y, Tiles.Width, Tiles.Height,
                 out int x1, out int y1, out int w, out int h);
