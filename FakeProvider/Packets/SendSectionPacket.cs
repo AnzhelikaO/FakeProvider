@@ -355,13 +355,13 @@ namespace FakeProvider
 						}
 
 						byte coatingByte = 0;
-						if (tile.invisibleBlock())
+						if (tile2.invisibleBlock())
 							coatingByte = (byte)(coatingByte | 2u);
-						if (tile.invisibleWall())
+						if (tile2.invisibleWall())
 							coatingByte = (byte)(coatingByte | 4u);
-						if (tile.fullbrightBlock())
+						if (tile2.fullbrightBlock())
 							coatingByte = (byte)(coatingByte | 8u);
-						if (tile.fullbrightWall())
+						if (tile2.fullbrightWall())
 							coatingByte  = (byte)(coatingByte | 0x10u);
 
 						num6 = 3;
