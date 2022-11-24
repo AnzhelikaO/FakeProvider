@@ -9,7 +9,7 @@ namespace FakeProvider
     {
         #region Data
 
-        public INamedTileCollection Provider { get; }
+        public TileProvider Provider { get; }
         public int Index
         {
             get => ID;
@@ -37,14 +37,14 @@ namespace FakeProvider
 
         #region Constructor
 
-        public FakeTrainingDummy(INamedTileCollection Provider, int Index, int X, int Y, int NPC = -1)
+        public FakeTrainingDummy(TileProvider Provider, int Index, int X, int Y, int NPC = -1)
         {
             this.Provider = Provider;
             this.ID = Index;
             this.RelativeX = X;
             this.RelativeY = Y;
             this.Position = new Point16(X, Y);
-            this.type = 0;
+            this.type = _myEntityID;
             this.npc = NPC;
         }
 

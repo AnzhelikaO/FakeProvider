@@ -10,7 +10,7 @@ namespace FakeProvider
     {
         #region Data
 
-        public INamedTileCollection Provider { get; }
+        public TileProvider Provider { get; }
         public int Index
         {
             get => ID;
@@ -38,15 +38,15 @@ namespace FakeProvider
 
         #region Constructor
 
-        public FakeItemFrame(INamedTileCollection Provider, int Index, int X, int Y, Item Item = null)
+        public FakeItemFrame(TileProvider Provider, int Index, int X, int Y, Item Item = null)
         {
             this.Provider = Provider;
             this.ID = Index;
             this.RelativeX = X;
             this.RelativeY = Y;
             this.Position = new Point16(X, Y);
+            this.type = _myEntityID;
             this.item = Item ?? new Item();
-            this.type = 1;
         }
 
         #endregion

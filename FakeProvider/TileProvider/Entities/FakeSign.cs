@@ -8,7 +8,7 @@ namespace FakeProvider
     {
         #region Data
 
-        public INamedTileCollection Provider { get; }
+        public TileProvider Provider { get; }
         public int Index { get; set; }
         public int X
         {
@@ -34,14 +34,14 @@ namespace FakeProvider
 
         #region Constructor
 
-        public FakeSign(INamedTileCollection Provider, int Index, int X, int Y, string Text = "")
+        public FakeSign(TileProvider Provider, int Index, int X, int Y, string Text = "")
         {
             this.Provider = Provider;
             this.Index = Index;
             this.RelativeX = X;
             this.RelativeY = Y;
-            this.x = Provider.ProviderCollection.OffsetX + Provider.X + X;
-            this.y = Provider.ProviderCollection.OffsetY + Provider.Y + Y;
+            this.x = Provider.X + X;
+            this.y = Provider.Y + Y;
             this.text = Text;
         }
 

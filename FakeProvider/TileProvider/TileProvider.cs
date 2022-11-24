@@ -1,5 +1,4 @@
 ﻿#region Using
-using OTAPI.Tile;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,13 +9,12 @@ using Terraria.GameContent.Tile_Entities;
 #endregion
 namespace FakeProvider
 {
-    public sealed class TileProvider<T> : INamedTileCollection
+    public sealed class TileProvider : ModFramework.ICollection<ITile>, IDisposable
     {
         #region Data
 
         public TileProviderCollection ProviderCollection { get; internal set; }
-        private StructTile[,] Data;
-        public INamedTileCollection Tile => this;
+        internal StructTile[,] Data;
         public string Name { get; private set; }
         public int X { get; private set; }
         public int Y { get; private set; }
@@ -26,11 +24,14 @@ namespace FakeProvider
         public int Order { get; internal set; } = -1;
         public int Layer { get; private set; }
         public bool Enabled { get; private set; } = false;
+        public HashSet<int> Observers { get; private set; }
+        public bool IsPersonal => Observers != null;
         private List<IFake> _Entities = new List<IFake>();
         public ReadOnlyCollection<IFake> Entities => new ReadOnlyCollection<IFake>(_Entities.ToList());
         private object Locker = new object();
 
         #endregion
+
         #region Constructor
 
         internal TileProvider() { }
@@ -38,7 +39,7 @@ namespace FakeProvider
         #endregion
         #region Initialize
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer, HashSet<int> Observers = null)
         {
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
@@ -47,9 +48,10 @@ namespace FakeProvider
             this.Width = Width;
             this.Height = Height;
             this.Layer = Layer;
+            this.Observers = Observers;
         }
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITileCollection CopyFrom, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer, ModFramework.ICollection<ITile> CopyFrom, HashSet<int> Observers = null)
         {
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
@@ -58,9 +60,10 @@ namespace FakeProvider
             this.Width = Width;
             this.Height = Height;
             this.Layer = Layer;
+            this.Observers = Observers;
 
-            for (int i = X; i < X + Width; i++)
-                for (int j = Y; j < Y + Height; j++)
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
                 {
                     ITile t = CopyFrom[i, j];
                     if (t != null)
@@ -68,7 +71,7 @@ namespace FakeProvider
                 }
         }
 
-        internal void Initialize(string Name, int X, int Y, int Width, int Height, ITile[,] CopyFrom, int Layer = 0)
+        internal void Initialize(string Name, int X, int Y, int Width, int Height, int Layer, ITile[,] CopyFrom, HashSet<int> Observers = null)
         {
             this.Name = Name;
             this.Data = new StructTile[Width, Height];
@@ -77,6 +80,7 @@ namespace FakeProvider
             this.Width = Width;
             this.Height = Height;
             this.Layer = Layer;
+            this.Observers = Observers;
 
             for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
@@ -91,34 +95,34 @@ namespace FakeProvider
 
         #region operator[,]
 
-        ITile ITileCollection.this[int X, int Y]
+        ITile ModFramework.ICollection<ITile>.this[int X, int Y]
         {
-            get => new TileReference<T>(Data, X, Y);
-            set => new TileReference<T>(Data, X, Y).CopyFrom(value);
+            get => new TileReference(Data, X, Y);
+            set => new TileReference(Data, X, Y).CopyFrom(value);
         }
 
-        public IProviderTile this[int X, int Y]
+        public ITile this[int X, int Y]
         {
-            get => new TileReference<T>(Data, X, Y);
-            set => new TileReference<T>(Data, X, Y).CopyFrom(value);
+            get => new TileReference(Data, X, Y);
+            set => new TileReference(Data, X, Y).CopyFrom(value);
         }
 
         #endregion
-        #region GetIncapsulatedTile
+        #region GetTileInWorld
 
-        public IProviderTile GetIncapsulatedTile(int X, int Y) =>
-            new TileReference<T>(Data, X - this.X, Y - this.Y);
+        public ITile GetTileInWorld(int X, int Y) =>
+            new TileReference(Data, X - this.X, Y - this.Y);
 
         #endregion
-        #region SetIncapsulatedTile
+        #region SetTileInWorld
 
-        public void SetIncapsulatedTile(int X, int Y, ITile Tile) =>
-            new TileReference<T>(Data, X - this.X, Y - this.Y).CopyFrom(Tile);
+        public void SetTileInWorld(int X, int Y, ITile Tile) =>
+            new TileReference(Data, X - this.X, Y - this.Y).CopyFrom(Tile);
 
         #endregion
         #region GetTileSafe
 
-        public IProviderTile GetTileSafe(int X, int Y) => X >= 0 && Y >= 0 && X < Width && Y < Height
+        public ITile GetTileSafe(int X, int Y) => X >= 0 && Y >= 0 && X < Width && Y < Height
             ? this[X, Y]
             : ProviderCollection.VoidTile;
 
@@ -185,7 +189,7 @@ namespace FakeProvider
             if (!Enabled)
             {
                 Enabled = true;
-                ProviderCollection.UpdateProviderReferences(this);
+                ProviderCollection?.UpdateProviderReferences(this);
                 if (Draw)
                     this.Draw(true);
             }
@@ -199,12 +203,16 @@ namespace FakeProvider
             if (Enabled)
             {
                 Enabled = false;
-                // Adding/removing manually added/removed signs, chests and entities
-                ScanEntities();
-                // Remove signs, chests, entities
-                HideEntities();
-                // Showing tiles, signs, chests and entities under the provider
-                ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height, Index);
+                if (ProviderCollection != null)
+                {
+                    // Adding/removing manually added/removed signs, chests and entities
+                    ScanEntities();
+                    // Remove signs, chests, entities
+                    HideEntities();
+                    // Showing tiles, signs, chests and entities under the provider
+                    if (Observers == null)
+                        ProviderCollection.UpdateRectangleReferences(X, Y, Width, Height, Index);
+                }
                 if (Draw)
                     this.Draw(true);
             }
@@ -226,6 +234,8 @@ namespace FakeProvider
 
         public void SetLayer(int Layer, bool Draw = true)
         {
+            if (Observers != null)
+                return;
             int oldLayer = this.Layer;
             if (Layer != oldLayer)
             {
@@ -271,7 +281,7 @@ namespace FakeProvider
         #endregion
         #region CopyFrom
 
-        public void CopyFrom(INamedTileCollection provider)
+        public void CopyFrom(TileProvider provider)
         {
             Clear();
             SetXYWH(provider.X, provider.Y, provider.Width, provider.Height);
@@ -281,6 +291,52 @@ namespace FakeProvider
 
             foreach (var entity in provider.Entities)
                 AddEntity(entity);
+        }
+
+        #endregion
+        #region HasCollision
+
+        public bool HasCollision(int X, int Y, int Width, int Height) =>
+            (X < (this.X + this.Width)) && (this.X < (X + Width))
+                && (Y < (this.Y + this.Height)) && (this.Y < (Y + Height));
+
+        #endregion
+        #region Intersect
+
+        private void Intersect(int X, int Y, int Width, int Height,
+            out int RX, out int RY, out int RWidth, out int RHeight)
+        {
+            int ex1 = this.X + this.Width;
+            int ex2 = X + Width;
+            int ey1 = this.Y + this.Height;
+            int ey2 = Y + Height;
+            int maxSX = (this.X > X) ? this.X : X;
+            int maxSY = (this.Y > Y) ? this.Y : Y;
+            int minEX = (ex1 < ex2) ? ex1 : ex2;
+            int minEY = (ey1 < ey2) ? ey1 : ey2;
+            RX = maxSX;
+            RY = maxSY;
+            RWidth = minEX - maxSX;
+            RHeight = minEY - maxSY;
+        }
+
+        #endregion
+        #region Apply
+
+        public void Apply(ModFramework.ICollection<ITile> Tiles, int X, int Y)
+        {
+            Intersect(X, Y, Tiles.Width, Tiles.Height,
+                out int x1, out int y1, out int w, out int h);
+            int x2 = x1 + w;
+            int y2 = y1 + h;
+
+            for (int i = x1; i < x2; i++)
+                for (int j = y1; j < y2; j++)
+                {
+                    ITile tile = this[i - this.X, j - this.Y];
+                    if (tile != null)
+                        Tiles[i - X, j - Y] = tile;
+                }
         }
 
         #endregion
@@ -345,6 +401,66 @@ namespace FakeProvider
         }
 
         #endregion
+        #region AddDisplayDoll
+
+        public FakeDisplayDoll AddDisplayDoll(int X, int Y, Item[] Items = null, Item[] Dyes = null)
+        {
+            FakeDisplayDoll doll = new FakeDisplayDoll(this, -1, X, Y, Items, Dyes);
+            lock (Locker)
+                _Entities.Add(doll);
+            UpdateEntity(doll);
+            return doll;
+        }
+
+        #endregion
+        #region AddFoodPlatter
+
+        public FakeFoodPlatter AddFoodPlatter(int X, int Y, Item Item = null)
+        {
+            FakeFoodPlatter foodPlatter = new FakeFoodPlatter(this, -1, X, Y, Item);
+            lock (Locker)
+                _Entities.Add(foodPlatter);
+            UpdateEntity(foodPlatter);
+            return foodPlatter;
+        }
+
+        #endregion
+        #region AddHatRack
+
+        public FakeHatRack AddHatRack(int X, int Y, Item[] Items = null, Item[] Dyes = null)
+        {
+            FakeHatRack rack = new FakeHatRack(this, -1, X, Y, Items, Dyes);
+            lock (Locker)
+                _Entities.Add(rack);
+            UpdateEntity(rack);
+            return rack;
+        }
+
+        #endregion
+        #region AddTeleportationPylon
+
+        public FakeTeleportationPylon AddTeleportationPylon(int X, int Y)
+        {
+            FakeTeleportationPylon pylon = new FakeTeleportationPylon(this, -1, X, Y);
+            lock (Locker)
+                _Entities.Add(pylon);
+            UpdateEntity(pylon);
+            return pylon;
+        }
+
+        #endregion
+        #region AddWeaponsRack
+
+        public FakeWeaponsRack AddWeaponsRack(int X, int Y, Item Item = null)
+        {
+            FakeWeaponsRack itemFrame = new FakeWeaponsRack(this, -1, X, Y, Item);
+            lock (Locker)
+                _Entities.Add(itemFrame);
+            UpdateEntity(itemFrame);
+            return itemFrame;
+        }
+
+        #endregion
         #region AddEntity
 
         public IFake AddEntity(IFake Entity) =>
@@ -359,8 +475,8 @@ namespace FakeProvider
 
         public FakeSign AddEntity(Sign Entity, bool replace = false)
         {
-            int x = Entity.x - ProviderCollection.OffsetX - this.X;
-            int y = Entity.y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.x - this.X;
+            int y = Entity.y - this.Y;
             FakeSign sign = new FakeSign(this, replace ? Array.IndexOf(Main.sign, Entity) : -1, x, y, Entity.text);
             lock (Locker)
                 _Entities.Add(sign);
@@ -370,8 +486,8 @@ namespace FakeProvider
 
         public FakeChest AddEntity(Chest Entity, bool replace = false)
         {
-            int x = Entity.x - ProviderCollection.OffsetX - this.X;
-            int y = Entity.y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.x - this.X;
+            int y = Entity.y - this.Y;
             FakeChest chest = new FakeChest(this, replace ? Array.IndexOf(Main.chest, Entity) : -1, x, y, Entity.item);
             lock (Locker)
                 _Entities.Add(chest);
@@ -386,12 +502,22 @@ namespace FakeProvider
                     ? (IFake)AddEntity(itemFrame, replace)
                     : Entity is TELogicSensor logicSensor
                         ? (IFake)AddEntity(logicSensor, replace)
-                        : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
+                        : Entity is TEDisplayDoll displayDoll
+                            ? (IFake)AddEntity(displayDoll, replace)
+                            : Entity is TEFoodPlatter foodPlatter
+                                ? (IFake)AddEntity(foodPlatter, replace)
+                                : Entity is TEHatRack hatRack
+                                    ? (IFake)AddEntity(hatRack, replace)
+                                    : Entity is TETeleportationPylon teleportationPylon
+                                        ? (IFake)AddEntity(teleportationPylon, replace)
+                                        : Entity is TEWeaponsRack weaponsRack
+                                            ? (IFake)AddEntity(weaponsRack, replace)
+                                            : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
 
         public FakeTrainingDummy AddEntity(TETrainingDummy Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -406,8 +532,8 @@ namespace FakeProvider
 
         public FakeItemFrame AddEntity(TEItemFrame Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
@@ -422,14 +548,94 @@ namespace FakeProvider
 
         public FakeLogicSensor AddEntity(TELogicSensor Entity, bool replace = false)
         {
-            int x = Entity.Position.X - ProviderCollection.OffsetX - this.X;
-            int y = Entity.Position.Y - ProviderCollection.OffsetY - this.Y;
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
             if (replace)
             {
                 TileEntity.ByID.Remove(Entity.ID);
                 TileEntity.ByPosition.Remove(Entity.Position);
             }
             FakeLogicSensor fake = new FakeLogicSensor(this, replace ? Entity.ID : -1, x, y, Entity.logicCheck);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeDisplayDoll AddEntity(TEDisplayDoll Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeDisplayDoll fake = new FakeDisplayDoll(this, replace ? Entity.ID : -1, x, y, Entity._items, Entity._dyes);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeFoodPlatter AddEntity(TEFoodPlatter Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeFoodPlatter fake = new FakeFoodPlatter(this, replace ? Entity.ID : -1, x, y, Entity.item);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeHatRack AddEntity(TEHatRack Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeHatRack fake = new FakeHatRack(this, replace ? Entity.ID : -1, x, y, Entity._items, Entity._dyes);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeTeleportationPylon AddEntity(TETeleportationPylon Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeTeleportationPylon fake = new FakeTeleportationPylon(this, replace ? Entity.ID : -1, x, y);
+            lock (Locker)
+                _Entities.Add(fake);
+            UpdateEntity(fake);
+            return fake;
+        }
+
+        public FakeWeaponsRack AddEntity(TEWeaponsRack Entity, bool replace = false)
+        {
+            int x = Entity.Position.X - this.X;
+            int y = Entity.Position.Y - this.Y;
+            if (replace)
+            {
+                TileEntity.ByID.Remove(Entity.ID);
+                TileEntity.ByPosition.Remove(Entity.Position);
+            }
+            FakeWeaponsRack fake = new FakeWeaponsRack(this, replace ? Entity.ID : -1, x, y, Entity.item);
             lock (Locker)
                 _Entities.Add(fake);
             UpdateEntity(fake);
@@ -489,8 +695,8 @@ namespace FakeProvider
         {
             if (Entity is FakeSign)
             {
-                Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
-                Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
+                Entity.X = this.X + Entity.RelativeX;
+                Entity.Y = this.Y + Entity.RelativeY;
                 if (Entity.Index >= 0 && Main.sign[Entity.Index] == Entity)
                     return true;
 
@@ -510,8 +716,8 @@ namespace FakeProvider
             }
             else if (Entity is FakeChest)
             {
-                Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
-                Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
+                Entity.X = this.X + Entity.RelativeX;
+                Entity.Y = this.Y + Entity.RelativeY;
                 if (Entity.Index >= 0 && Main.chest[Entity.Index] == Entity)
                     return true;
 
@@ -535,8 +741,8 @@ namespace FakeProvider
                 if (TileEntity.ByPosition.TryGetValue(position, out TileEntity entity)
                         && entity == Entity)
                     TileEntity.ByPosition.Remove(position);
-                Entity.X = ProviderCollection.OffsetX + this.X + Entity.RelativeX;
-                Entity.Y = ProviderCollection.OffsetY + this.Y + Entity.RelativeY;
+                Entity.X = this.X + Entity.RelativeX;
+                Entity.Y = this.Y + Entity.RelativeY;
                 TileEntity.ByPosition[new Point16(Entity.X, Entity.Y)] = (TileEntity)Entity;
                 if (Entity.Index < 0)
                     Entity.Index = TileEntity.AssignNewID();
@@ -593,7 +799,17 @@ namespace FakeProvider
                     ? FakeItemFrame._TileTypes
                     : Entity is TELogicSensor
                         ? FakeLogicSensor._TileTypes
-                        : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
+                        : Entity is TEDisplayDoll
+                            ? FakeDisplayDoll._TileTypes
+                            : Entity is TEFoodPlatter
+                                ? FakeFoodPlatter._TileTypes
+                                : Entity is TEHatRack
+                                    ? FakeHatRack._TileTypes
+                                    : Entity is TETeleportationPylon
+                                        ? FakeTeleportationPylon._TileTypes
+                                        : Entity is TEWeaponsRack
+                                            ? FakeWeaponsRack._TileTypes
+                                            : throw new ArgumentException($"Unknown entity type {Entity.GetType().Name}", nameof(Entity));
 
         #endregion
         #region ScanEntities
@@ -605,8 +821,8 @@ namespace FakeProvider
                     if (!IsEntityTile(entity.RelativeX, entity.RelativeY, entity.TileTypes))
                         RemoveEntity(entity);
 
-            (int x, int y, int width, int height) = XYWH(ProviderCollection.OffsetX, ProviderCollection.OffsetY);
-            for (int i = 0; i < 1000; i++)
+            (int x, int y, int width, int height) = XYWH();
+            for (int i = 0; i < Main.sign.Length; i++)
             {
                 Sign sign = Main.sign[i];
                 if (sign == null)
@@ -623,7 +839,7 @@ namespace FakeProvider
                 }
             }
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < Main.chest.Length; i++)
             {
                 Chest chest = Main.chest[i];
                 if (chest == null)
@@ -645,9 +861,14 @@ namespace FakeProvider
                 int entityX = entity.Position.X;
                 int entityY = entity.Position.Y;
 
-                if ((entity.GetType().Name == nameof(TETrainingDummy)      // <=> not FakeTrainingDummy or some other inherited type
-                        || entity.GetType().Name == nameof(TEItemFrame)    // <=> not FakeItemFrame or some other inherited type
-                        || entity.GetType().Name == nameof(TELogicSensor)) // <=> not FakeLogicSensor or some other inherited type
+                if ((entity.GetType().Name == nameof(TETrainingDummy)            // <=> not FakeTrainingDummy or some other inherited type
+                        || entity.GetType().Name == nameof(TEItemFrame)          // <=> not FakeItemFrame or some other inherited type
+                        || entity.GetType().Name == nameof(TELogicSensor)        // <=> not FakeLogicSensor or some other inherited type
+                        || entity.GetType().Name == nameof(TEDisplayDoll)        // <=> not FakeDisplayDoll or some other inherited type
+                        || entity.GetType().Name == nameof(TEFoodPlatter)        // <=> not FakeFoodPlatter or some other inherited type
+                        || entity.GetType().Name == nameof(TEHatRack)            // <=> not FakeHatRack or some other inherited type
+                        || entity.GetType().Name == nameof(TETeleportationPylon) // <=> not FakeTeleportationPylon or some other inherited type
+                        || entity.GetType().Name == nameof(TEWeaponsRack))       // <=> not FakeWeaponsRack or some other inherited type
                     && Helper.Inside(entityX, entityY, x, y, width, height)
                     && TileOnTop(entityX - this.X, entityY - this.Y))
                 {
@@ -675,7 +896,7 @@ namespace FakeProvider
         #region TileOnTop
 
         private bool TileOnTop(int X, int Y) =>
-            ProviderCollection.GetTileSafe(this.X + X, this.Y + Y).Provider == this;
+            ProviderCollection.TileOnTopIndex(this.X + X, this.Y + Y) == Index;
 
         #endregion
 
@@ -683,15 +904,18 @@ namespace FakeProvider
 
         public void Draw(bool Section = true)
         {
+            Terraria.Localization.NetworkText playerList = Observers != null
+                ? Terraria.Localization.NetworkText.FromLiteral(string.Concat(Observers.Select(p => (char)p)))
+                : null;
             if (Section)
             {
-                NetMessage.SendData((int)PacketTypes.TileSendSection, -1, -1, null, X, Y, Width, Height);
+                NetMessage.SendData((int)PacketTypes.TileSendSection, -1, -1, playerList, X, Y, Width, Height);
                 int sx1 = Netplay.GetSectionX(X), sy1 = Netplay.GetSectionY(Y);
                 int sx2 = Netplay.GetSectionX(X + Width - 1), sy2 = Netplay.GetSectionY(Y + Height - 1);
-                NetMessage.SendData((int)PacketTypes.TileFrameSection, -1, -1, null, sx1, sy1, sx2, sy2);
+                NetMessage.SendData((int)PacketTypes.TileFrameSection, -1, -1, playerList, sx1, sy1, sx2, sy2);
             }
             else
-                NetMessage.SendData((int)PacketTypes.TileSendSquare, -1, -1, null, Math.Max(Width, Height), X, Y);
+                NetMessage.SendData((int)PacketTypes.TileSendSquare, -1, -1, playerList, Math.Max(Width, Height), X, Y);
         }
 
         #endregion

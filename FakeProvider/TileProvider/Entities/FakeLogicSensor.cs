@@ -9,7 +9,7 @@ namespace FakeProvider
     {
         #region Data
 
-        public INamedTileCollection Provider { get; }
+        public TileProvider Provider { get; }
         public int Index
         {
             get => ID;
@@ -37,15 +37,15 @@ namespace FakeProvider
 
         #region Constructor
 
-        public FakeLogicSensor(INamedTileCollection Provider, int Index, int X, int Y, LogicCheckType LogicCheckType)
+        public FakeLogicSensor(TileProvider Provider, int Index, int X, int Y, LogicCheckType LogicCheckType)
         {
             this.Provider = Provider;
             this.ID = Index;
             this.RelativeX = X;
             this.RelativeY = Y;
             this.Position = new Point16(X, Y);
+            this.type = _myEntityID;
             this.logicCheck = LogicCheckType;
-            this.type = 2;
         }
 
         #endregion
