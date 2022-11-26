@@ -7,6 +7,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="TShock" Version="5.0.0-beta" />
@@ -17,5 +18,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="4.5.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Ionic.Zip.CF">
+      <HintPath>D:\Documents\TShock\ServerPlugins\Ionic.Zip.CF.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

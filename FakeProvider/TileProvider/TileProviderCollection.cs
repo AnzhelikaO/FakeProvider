@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Configuration.Provider;
 #endregion
 namespace FakeProvider
 {
@@ -231,6 +232,33 @@ namespace FakeProvider
                 provider.SetTop(Draw);
                 return true;
             }
+        }
+
+        #endregion
+        #region Enable
+
+        public void Enable(IEnumerable<TileProvider> providers)
+        {
+            lock (Locker)
+                foreach (TileProvider provider in providers)
+                    provider.Enable(false);
+        }
+
+        #endregion
+        #region Disable
+
+        public List<TileProvider> Disable()
+        {
+            List<TileProvider> disabled = new List<TileProvider>();
+            lock (Locker)
+                foreach (TileProvider provider in _GlobalProvidersOrder)
+                    if (provider.Name != FakeProviderAPI.WorldProviderName)
+                        if (provider.Enabled)
+                        {
+                            disabled.Add(provider);
+                            provider.Disable(false);
+                        }
+            return disabled;
         }
 
         #endregion

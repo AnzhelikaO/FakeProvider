@@ -25,6 +25,8 @@ using Terraria.Net.Sockets;
 using System.Threading;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using static MonoMod.InlineRT.MonoModRule;
+using Google.Protobuf.WellKnownTypes;
 #endregion
 namespace FakeProvider
 {
@@ -45,10 +47,6 @@ namespace FakeProvider
 		private static long LoadWorldSize;
 		public static string Debug;
 
-        public static int OffsetX { get; private set; } // Not supported
-		public static int OffsetY { get; private set; } // Not supported
-		public static int VisibleWidth { get; private set; }
-        public static int VisibleHeight { get; private set; }
         public static bool FastWorldLoad { get; private set; }
 
         internal static List<TileProvider> ProvidersToAdd = new List<TileProvider>();
@@ -66,67 +64,8 @@ namespace FakeProvider
 
         public FakeProviderPlugin(Main game) : base(game)
         {
-            Order = -1002;
+            Order = -1002; // TUI has -1000
             string[] args = Environment.GetCommandLineArgs();
-			int argumentIndex;
-			#region Offset
-
-			/*int offsetX = 0;
-            argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-offsetx")));
-            if (argumentIndex > -1)
-            {
-                argumentIndex++;
-                if ((argumentIndex >= args.Length)
-                        || !int.TryParse(args[argumentIndex], out offsetX))
-                    Console.WriteLine("Please provide a not negative offsetX integer value.");
-            }
-            OffsetX = offsetX;
-
-            int offsetY = 0;
-            argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-offsety")));
-            if (argumentIndex > -1)
-            {
-                argumentIndex++;
-                if ((argumentIndex >= args.Length)
-                        || !int.TryParse(args[argumentIndex], out offsetY))
-                    Console.WriteLine("Please provide a not negative offsetY integer value.");
-            }
-            OffsetY = offsetY;*/
-
-			#endregion
-			#region VisibleWidth, VisibleHeight
-
-			int visibleWidth = -1;
-            argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-visiblewidth")));
-            if (argumentIndex > -1)
-            {
-                argumentIndex++;
-                if ((argumentIndex >= args.Length)
-                        || !int.TryParse(args[argumentIndex], out visibleWidth))
-                {
-                    Console.WriteLine("Please provide a not negative visibleWidth integer value.");
-                    visibleWidth = -1;
-                }
-            }
-            VisibleWidth = visibleWidth;
-
-            int visibleHeight = -1;
-            argumentIndex = Array.FindIndex(args, (x => (x.ToLower() == "-visibleheight")));
-            if (argumentIndex > -1)
-            {
-                argumentIndex++;
-                if ((argumentIndex >= args.Length)
-                        || !int.TryParse(args[argumentIndex], out visibleHeight))
-                {
-                    Console.WriteLine("Please provide a not negative visibleHeight integer value.");
-                    visibleHeight = -1;
-                }
-            }
-            VisibleHeight = visibleHeight;
-
-            #endregion
-
-#warning TODO: rockLevel, surfaceLevel, cavernLevel or whatever
 
 			// WARNING: has not been heavily tested
 			FastWorldLoad = args.Any(x => (x.ToLower() == "-fastworldload"));
@@ -171,53 +110,71 @@ namespace FakeProvider
             base.Dispose(Disposing);
         }
 
+        #endregion
+        #region OnSaveWorld
+
         private void OnSaveWorld(On.Terraria.IO.WorldFile.orig_SaveWorld_bool_bool orig, bool Cloud, bool ResetTime)
         {
-            if (FakeProviderAPI.World == null) {
+            if (FakeProviderAPI.World == null)
+			{
 				orig(Cloud, ResetTime);
+				return;
 			}
 
 			try
             {
-				SaveWorld(ref Cloud, ref ResetTime);
-				Console.WriteLine("[FakeProvier] World saved.");
+				List<TileProvider> disabled = FakeProviderAPI.Tile.Disable();
+
+				orig(Cloud, ResetTime);
+
+                FakeProviderAPI.Tile.Enable(disabled);
+
+                Console.WriteLine("[FakeProvier] World saved.");
 			}
 			catch (Exception e)
             {
-				Console.WriteLine(e);
+				TShock.Log.ConsoleError(e.ToString());
+				throw;
             }
         }
 
+        #endregion
+        #region OnLoadWorld
+
         private void OnLoadWorld(On.Terraria.IO.WorldFile.orig_LoadWorld orig, bool loadFromCloud)
         {
-            if (FastWorldLoad) LoadWorldFast();
-            else LoadWorldDirect(loadFromCloud);
+			try
+			{
+				ReadWorldSize(loadFromCloud);
+				CreateCustomTileProvider();
 
-			orig(loadFromCloud);
+				orig(loadFromCloud);
 
-            Main.maxTilesX = VisibleWidth;
-            Main.maxTilesY = VisibleHeight;
-            WorldGen.setWorldSize();
+				lock (ProvidersToAdd)
+				{
+					ProvidersLoaded = true;
 
-            lock (ProvidersToAdd)
-            {
-                ProvidersLoaded = true;
+					FakeProviderAPI.Tile.Add(FakeProviderAPI.Tile.Void);
+					ProvidersToAdd.Remove(FakeProviderAPI.Tile.Void);
 
-                FakeProviderAPI.Tile.Add(FakeProviderAPI.Tile.Void);
-                ProvidersToAdd.Remove(FakeProviderAPI.Tile.Void);
+					FakeProviderAPI.Tile.Add(FakeProviderAPI.World);
+					ProvidersToAdd.Remove(FakeProviderAPI.World);
+					FakeProviderAPI.World.ScanEntities();
 
-                FakeProviderAPI.Tile.Add(FakeProviderAPI.World);
-                ProvidersToAdd.Remove(FakeProviderAPI.World);
-                FakeProviderAPI.World.ScanEntities();
+					foreach (TileProvider provider in ProvidersToAdd)
+						FakeProviderAPI.Tile.Add(provider);
+					ProvidersToAdd.Clear();
+				}
 
-                foreach (TileProvider provider in ProvidersToAdd)
-                    FakeProviderAPI.Tile.Add(provider);
-                ProvidersToAdd.Clear();
-            }
+				Main.tile = FakeProviderAPI.Tile;
 
-            Main.tile = FakeProviderAPI.Tile;
-
-            GC.Collect();
+				GC.Collect();
+			}
+			catch (Exception e)
+			{
+				TShock.Log.ConsoleError(e.ToString());
+				throw;
+			}
         }
 
         #endregion
@@ -610,18 +567,58 @@ Entities: {provider.Entities.Count}");
 		}
 		#endregion
 
-		#region SaveWorld
+		#region ReadWorldSize
 
-		private static void SaveWorld(ref bool Cloud, ref bool ResetTime)
-        {
-			SaveWorldDirect(Cloud, ResetTime);
+		private void ReadWorldSize(bool cloud)
+		{
+			using (MemoryStream memoryStream = new MemoryStream(FileUtilities.ReadAllBytes(Main.worldPathName, cloud)))
+			using (BinaryReader binaryReader = new BinaryReader(memoryStream))
+            {
+				int version = binaryReader.ReadInt32();
+				WorldFile._versionNumber = version;
+				memoryStream.Position = 0L;
+				TShock.Log.Error($"version: ${version}");
+				if (!WorldFile.LoadFileFormatHeader(binaryReader, out _, out int[] array))
+					throw new IOException("Invalid world file format 1");
+				if (binaryReader.BaseStream.Position != (long)array[0])
+                    throw new IOException("Invalid world file format 2");
+
+                WorldFile.LoadHeader(binaryReader);
+            }
 		}
 
-		#endregion
+        #endregion
+        #region CreateCustomTileProvider
 
-		#region SetStatusText
+        private static void CreateCustomTileProvider()
+        {
+            FakeProviderAPI.Tile = new TileProviderCollection();
+            FakeProviderAPI.Tile.Initialize(Main.maxTilesX, Main.maxTilesY);
 
-		private static void SetStatusText(string text)
+            FakeProviderAPI.World = FakeProviderAPI.CreateTileProvider(FakeProviderAPI.WorldProviderName, 0, 0,
+                Main.maxTilesX, Main.maxTilesY, Int32.MinValue + 1);
+
+			if (Main.tile is IDisposable previous)
+				previous.Dispose();
+			Main.tile = FakeProviderAPI.World;
+        }
+
+        #endregion
+
+        #region OBSOLETE
+
+        #region SaveWorld
+
+        private static void SaveWorld(ref bool Cloud, ref bool ResetTime)
+        {
+            SaveWorldDirect(Cloud, ResetTime);
+        }
+
+        #endregion
+
+        #region SetStatusText
+
+        private static void SetStatusText(string text)
 		{
 			Main.statusText = text;
 		}
@@ -697,19 +694,11 @@ Entities: {provider.Entities.Count}");
 			{
 				using (BinaryWriter binaryWriter = new BinaryWriter(memoryStream))
 				{
-					Main.maxTilesX = FakeProviderAPI.World.Width;
-					Main.maxTilesY = FakeProviderAPI.World.Height;
-					Main.worldSurface -= OffsetY;
-					Main.rockLayer -= OffsetY;
 					Main.tile = FakeProviderAPI.World;
 					FakeProviderAPI.Tile.HideEntities();
 
 					WorldFile.SaveWorld_Version2(binaryWriter);
 
-					Main.maxTilesX = VisibleWidth;
-					Main.maxTilesY = VisibleHeight;
-					Main.worldSurface += OffsetY;
-					Main.rockLayer += OffsetY;
 					Main.tile = FakeProviderAPI.Tile;
 					FakeProviderAPI.Tile.UpdateEntities();
 				}
@@ -732,7 +721,7 @@ Entities: {provider.Entities.Count}");
 #if DEBUG
 			Debug = $@"World: {Main.worldPathName}
 Load size       : {LoadWorldSize}
-Default ave size: {defaultSize}
+Default save size: {defaultSize}
 Custom save size: {num}
 Default valid: {ValidateWorldData(defaultArray, defaultSize)}
 Custom valid : {ValidateWorldData(array, num)}";
@@ -1336,33 +1325,8 @@ Custom valid : {ValidateWorldData(array, num)}";
 		}
 
 
-		#endregion
+        #endregion
 
-		#region CreateCustomTileProvider
-
-		private static void CreateCustomTileProvider()
-        {
-            int maxTilesX = Main.maxTilesX;
-            int maxTilesY = Main.maxTilesY;
-            if (VisibleWidth < 0)
-                VisibleWidth = (OffsetX + maxTilesX);
-            else
-                VisibleWidth++;
-            if (VisibleHeight < 0)
-                VisibleHeight = (OffsetY + maxTilesY);
-            else
-                VisibleHeight++;
-            FakeProviderAPI.Tile = new TileProviderCollection();
-            FakeProviderAPI.Tile.Initialize(VisibleWidth, VisibleHeight);
-
-            FakeProviderAPI.World = FakeProviderAPI.CreateTileProvider(FakeProviderAPI.WorldProviderName, 0, 0,
-                maxTilesX, maxTilesY, Int32.MinValue + 1);
-
-            using (IDisposable previous = Main.tile as IDisposable)
-                Main.tile = FakeProviderAPI.World;
-        }
-
-		#endregion
 		#region LoadWorldDirect
 
         private static void LoadWorldDirect(bool loadFromCloud)
@@ -1709,7 +1673,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 							}
 							byte b1 = (byte)((fileMetadatanum >> 56) & 0xFF);
 							FileType fileType = FileType.None;
-							FileType[] array = (FileType[])Enum.GetValues(typeof(FileType));
+							FileType[] array = (FileType[])System.Enum.GetValues(typeof(FileType));
 							for (int i = 0; i < array.Length; i++)
 							{
 								if ((uint)array[i] == b1)
@@ -1729,7 +1693,7 @@ Custom valid : {ValidateWorldData(array, num)}";
 							#endregion
 							if (Main.WorldFileMetadata.Type != expectedType)
 							{
-								throw new FormatException("Expected type \"" + Enum.GetName(typeof(FileType), expectedType) + "\" but found \"" + Enum.GetName(typeof(FileType), Main.WorldFileMetadata.Type) + "\".");
+								throw new FormatException("Expected type \"" + System.Enum.GetName(typeof(FileType), expectedType) + "\" but found \"" + System.Enum.GetName(typeof(FileType), Main.WorldFileMetadata.Type) + "\".");
 							}
 							#endregion
 						}
@@ -3742,6 +3706,8 @@ Custom valid : {ValidateWorldData(array, num)}";
 			}
 
 		}
+		#endregion
+
 		#endregion
 	}
 }

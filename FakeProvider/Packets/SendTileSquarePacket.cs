@@ -143,36 +143,36 @@ namespace FakeProvider
                     bb19[1] = tile.fullbrightWall();
                     bb19[2] = tile.invisibleBlock();
                     bb19[3] = tile.invisibleWall();
-					binaryWriter.Write(bb17);
-					binaryWriter.Write(bb18);
-					binaryWriter.Write(bb19);
+					binaryWriter.Write((byte)bb17);
+					binaryWriter.Write((byte)bb18);
+					binaryWriter.Write((byte)bb19);
 					//if (b > 0) // Allow clearing paint
 					if (tile.active()) // Allow clearing paint
 					{
-						binaryWriter.Write(b);
+						binaryWriter.Write((byte)b);
 					}
 					//if (b2 > 0) // Allow clearing paint
 					if (tile.wall > 0) // Allow clearing paint
 					{
-						binaryWriter.Write(b2);
+						binaryWriter.Write((byte)b2);
 					}
 					if (tile.active())
 					{
-						binaryWriter.Write(tile.type);
+						binaryWriter.Write((ushort)tile.type);
 						if (Main.tileFrameImportant[(int)tile.type])
 						{
-							binaryWriter.Write(tile.frameX);
-							binaryWriter.Write(tile.frameY);
+							binaryWriter.Write((short)tile.frameX);
+							binaryWriter.Write((short)tile.frameY);
 						}
 					}
 					if (tile.wall > 0)
 					{
-						binaryWriter.Write(tile.wall);
+						binaryWriter.Write((ushort)tile.wall);
 					}
 					if (tile.liquid > 0 && Main.netMode == 2)
 					{
-						binaryWriter.Write(tile.liquid);
-						binaryWriter.Write(tile.liquidType());
+						binaryWriter.Write((byte)tile.liquid);
+						binaryWriter.Write((byte)tile.liquidType());
 					}
 				}
 			}
