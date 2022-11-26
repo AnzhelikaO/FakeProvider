@@ -19,9 +19,4 @@
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="4.5.4" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Ionic.Zip.CF">
-      <HintPath>D:\Documents\TShock\ServerPlugins\Ionic.Zip.CF.dll</HintPath>
-    </Reference>
-  </ItemGroup>
 </Project>

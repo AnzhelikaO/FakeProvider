@@ -27,6 +27,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using static MonoMod.InlineRT.MonoModRule;
 using Google.Protobuf.WellKnownTypes;
+using ModFramework;
 #endregion
 namespace FakeProvider
 {
@@ -95,10 +96,10 @@ namespace FakeProvider
             Commands.ChatCommands.AddRange(CommandList);
         }
 
-        #endregion
-        #region Dispose
+		#endregion
+		#region Dispose
 
-        protected override void Dispose(bool Disposing)
+		protected override void Dispose(bool Disposing)
         {
             if (Disposing)
             {
