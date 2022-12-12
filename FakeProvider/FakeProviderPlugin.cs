@@ -65,6 +65,7 @@ namespace FakeProvider
 
         public FakeProviderPlugin(Main game) : base(game)
         {
+            Enabled = true;
             Order = -1002; // TUI has -1000
             string[] args = Environment.GetCommandLineArgs();
 
@@ -72,6 +73,12 @@ namespace FakeProvider
 			FastWorldLoad = args.Any(x => (x.ToLower() == "-fastworldload"));
 
 			StatusTextField = typeof(Main).GetField("statusText", BindingFlags.NonPublic | BindingFlags.Static);
+
+			int serverTypeFlag = Array.IndexOf(args, "-type");
+			if (serverTypeFlag >= 0 && args.ElementAtOrDefault(serverTypeFlag + 1) == "8") // We're in Survival
+			{
+				Enabled = false;
+			}
 		}
 
         #endregion
@@ -79,6 +86,8 @@ namespace FakeProvider
 
         public override void Initialize()
         {
+			if (!Enabled)
+				return;
             NetSendBytes = (Func<RemoteClient, byte[], int, int, bool>)Delegate.CreateDelegate(
                 typeof(Func<RemoteClient, byte[], int, int, bool>),
                 ServerApi.Hooks,
