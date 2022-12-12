@@ -75,9 +75,13 @@ namespace FakeProvider
 			StatusTextField = typeof(Main).GetField("statusText", BindingFlags.NonPublic | BindingFlags.Static);
 
 			int serverTypeFlag = Array.IndexOf(args, "-type");
-			if (serverTypeFlag >= 0 && args.ElementAtOrDefault(serverTypeFlag + 1) == "8") // We're in Survival
+			if (serverTypeFlag >= 0)
 			{
-				Enabled = false;
+				string serverType = args.ElementAtOrDefault(serverTypeFlag + 1);
+				if (serverType == "8" || serverType == "13") // We're in Survival or CCTG
+                {
+                    Enabled = false;
+                }
 			}
 		}
 
