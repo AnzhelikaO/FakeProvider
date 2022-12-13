@@ -95,12 +95,6 @@ namespace FakeProvider
 
         #region operator[,]
 
-        ITile ModFramework.ICollection<ITile>.this[int X, int Y]
-        {
-            get => new TileReference(Data, X, Y);
-            set => new TileReference(Data, X, Y).CopyFrom(value);
-        }
-
         public ITile this[int X, int Y]
         {
             get => new TileReference(Data, X, Y);

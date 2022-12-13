@@ -14,6 +14,7 @@ namespace FakeProvider
 
         public const string VoidProviderName = "__void__";
 
+        // Automatically resizes on an attempt to find free index
         protected TileProvider[] _GlobalProvidersBuffer = new TileProvider[10];
         protected List<TileProvider> _GlobalProvidersOrder = new List<TileProvider>();
 
