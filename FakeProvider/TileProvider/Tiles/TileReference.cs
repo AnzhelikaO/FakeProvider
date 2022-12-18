@@ -5,7 +5,7 @@ using Terraria.DataStructures;
 #endregion
 namespace FakeProvider
 {
-	public sealed class TileReference : ITile
+	internal sealed class TileReference : ITile
 	{
 		#region Constants
 

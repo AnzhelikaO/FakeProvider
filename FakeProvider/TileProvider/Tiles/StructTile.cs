@@ -11,7 +11,7 @@ using Terraria.DataStructures;
 namespace FakeProvider
 {
 	[StructLayout(LayoutKind.Sequential, Size = 14, Pack = 1)]
-	public struct StructTile
+	internal struct StructTile
 	{
 		public byte bTileHeader;
 		public byte bTileHeader2;
