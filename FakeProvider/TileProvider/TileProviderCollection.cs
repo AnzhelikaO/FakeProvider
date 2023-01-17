@@ -362,6 +362,7 @@ namespace FakeProvider
                 while (providers.Count > 0)
                 {
                     TileProvider provider = providers.Dequeue();
+                    provider.ScanEntities();
                     provider.UpdateEntities();
                 }
             }
@@ -397,7 +398,10 @@ namespace FakeProvider
                     Intersect(provider, x, y, width, height,
                         out int x2, out int y2, out int width2, out int height2);
                     if (width2 > 0 && height2 > 0)
+                    {
+                        provider.ScanEntities();
                         provider.UpdateEntities();
+                    }
                 }
             }
         }
