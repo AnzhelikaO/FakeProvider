@@ -1,33 +1,16 @@
 ﻿#region Using
-using OTAPI;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using Terraria;
 using Terraria.IO;
-using Terraria.Social;
+using Terraria.Net.Sockets;
 using Terraria.Utilities;
 using TerrariaApi.Server;
-using System.Collections.Generic;
 using TShockAPI;
-using Terraria.GameContent.Events;
-using Terraria.DataStructures;
-using Terraria.GameContent.Tile_Entities;
-using Terraria.GameContent;
-using Terraria.GameContent.Creative;
-using Microsoft.Xna.Framework;
-using static Terraria.GameContent.Creative.CreativePowers;
-using Terraria.ID;
-using System.Runtime.CompilerServices;
-using Terraria.Net.Sockets;
-using System.Threading;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using static MonoMod.InlineRT.MonoModRule;
-using Google.Protobuf.WellKnownTypes;
-using ModFramework;
 #endregion
 namespace FakeProvider
 {
@@ -144,8 +127,12 @@ namespace FakeProvider
         private void OnLoadWorld(On.Terraria.IO.WorldFile.orig_LoadWorld orig, bool loadFromCloud)
         {
 			try
-			{
-				ReadWorldSize(loadFromCloud);
+            {
+                Dictionary<string, string> args = Terraria.Utils.ParseArguements(Environment.GetCommandLineArgs());
+				if (!args.TryGetValue("-autocreate", out string worldSize) || worldSize == "0")
+                {
+                    ReadWorldSize(loadFromCloud);
+                }
 				CreateCustomTileProvider();
 
 				orig(loadFromCloud);
