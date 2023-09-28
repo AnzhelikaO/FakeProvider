@@ -17,16 +17,16 @@ namespace FakeProvider.FakeGen
     {
         #region Properties
 
-        public UnsafeReadOnlyMemoryStream UnsafeStream => (UnsafeReadOnlyMemoryStream)BaseStream;
+        public UnsafeReadOnlyMemoryStream UnsafeStream;
         public byte* DataPtr { get => UnsafeStream.dataPtr; set => UnsafeStream.dataPtr = value; }
-
+        
         #endregion
 
         #region Constructor
 
         public UnsafeBinaryReader(UnsafeReadOnlyMemoryStream stream) : base(stream)
         {
-
+            UnsafeStream = stream;
         }
 
         #endregion
