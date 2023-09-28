@@ -10,11 +10,7 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="TShock" Version="5.0.0-beta" />
-    <PackageReference Include="TSAPI" Version="5.0.0-beta" />
-    <PackageReference Include="OTAPI.Upcoming" Version="3.1.8-alpha" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <PackageReference Include="TShock" Version="5.2.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="4.5.4" />
