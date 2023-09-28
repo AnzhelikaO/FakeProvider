@@ -30,7 +30,7 @@ namespace FakeProvider
         internal static Func<RemoteClient, byte[], int, int, bool> NetSendBytes;
 		public static string Debug;
 
-        public static bool FastWorldLoad { get; private set; }
+        public static bool CustomWorldLoad { get; private set; }
 
         internal static List<TileProvider> ProvidersToAdd = new List<TileProvider>();
         internal static bool ProvidersLoaded = false;
@@ -51,7 +51,7 @@ namespace FakeProvider
             string[] args = Environment.GetCommandLineArgs();
 
 			// WARNING: has not been heavily tested
-			FastWorldLoad = args.Any(x => (x.ToLower() == "-fastworldload"));
+			CustomWorldLoad = args.Any(x => (x.ToLower() == "-customworldload"));
 
 			StatusTextField = typeof(Main).GetField("statusText", BindingFlags.NonPublic | BindingFlags.Static);
 		}
@@ -133,9 +133,21 @@ namespace FakeProvider
                 {
                     ReadWorldSize(loadFromCloud);
                 }
+				if (args.TryGetValue("-customworldload", out string stage) && int.TryParse(stage, out int loadStages))
+                {
+					FakeGen.FakeGenManager.Stages = (FakeGen.LoadStage)loadStages;
+				}
 				CreateCustomTileProvider();
 
-				orig(loadFromCloud);
+				System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+				sw.Start();
+				if (CustomWorldLoad)
+					FakeGen.FakeGenManager.CustomLoadWorld(loadFromCloud, this);
+				else
+					orig(loadFromCloud);
+				sw.Stop();
+				ServerApi.LogWriter.PluginWriteLine(this, $"The world loaded in {sw.Elapsed}.",
+					System.Diagnostics.TraceLevel.Info);
 
 				lock (ProvidersToAdd)
 				{
