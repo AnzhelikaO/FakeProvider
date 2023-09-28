@@ -15,9 +15,13 @@ namespace FakeProvider.FakeGen
     /// </summary>
     public unsafe sealed class UnsafeBinaryReader : BinaryReader
     {
-        #region Properties
+        #region Data
 
         public UnsafeReadOnlyMemoryStream UnsafeStream;
+
+        #endregion
+        #region Properties
+
         public byte* DataPtr { get => UnsafeStream.dataPtr; set => UnsafeStream.dataPtr = value; }
         
         #endregion
