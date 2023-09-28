@@ -1,8 +1,8 @@
 ﻿#region Using
 
 using System;
-using System.Runtime.InteropServices;
 using System.IO;
+using System.Runtime.InteropServices;
 
 #endregion
 
@@ -26,7 +26,7 @@ namespace FakeProvider.FakeGen
 
         public override long Position
         {
-            get => (int)(dataPtr - (byte*)handle.AddrOfPinnedObject());
+            get => (dataPtr - (byte*)handle.AddrOfPinnedObject());
             set
             {
                 fixed (byte* ptr = &Data[value])
@@ -105,12 +105,14 @@ namespace FakeProvider.FakeGen
 
         #endregion
 
-        #region Read
+        #region Read(byte[] buffer, int offset, int count)
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             return 0;
         }
+        #endregion
+        #region Read(Span<byte> buffer)
         public override int Read(Span<byte> buffer)
         {
             return 0;
