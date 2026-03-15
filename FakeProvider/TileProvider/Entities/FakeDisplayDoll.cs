@@ -45,10 +45,10 @@ namespace FakeProvider
             this.RelativeX = X;
             this.RelativeY = Y;
             this.Position = new Point16(X, Y);
-            this.type = _myEntityID;
-            this._items = Items ?? new Item[8];
+            this.type = EntityTypeID;
+            this._equip = Items ?? new Item[8];
             for (int i = 0; i < 8; i++)
-                this._items[i] = this._items[i] ?? new Item();
+                this._equip[i] = this._equip[i] ?? new Item();
             this._dyes = Dyes ?? new Item[8];
             for (int i = 0; i < 8; i++)
                 this._dyes[i] = this._dyes[i] ?? new Item();
