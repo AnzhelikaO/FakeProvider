@@ -71,7 +71,7 @@ namespace FakeProvider
                 AllPlayers[i] = i;
 
 			On.Terraria.IO.WorldFile.LoadWorld += OnLoadWorld;
-			On.Terraria.IO.WorldFile.SaveWorld_bool_bool += OnSaveWorld;
+            On.Terraria.IO.WorldFile.SaveWorld += OnSaveWorld;
             ServerApi.Hooks.NetSendData.Register(this, OnSendData, Int32.MaxValue);
             ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
 
@@ -86,7 +86,7 @@ namespace FakeProvider
             if (Disposing)
             {
 				On.Terraria.IO.WorldFile.LoadWorld -= OnLoadWorld;
-				On.Terraria.IO.WorldFile.SaveWorld_bool_bool -= OnSaveWorld;
+                On.Terraria.IO.WorldFile.SaveWorld -= OnSaveWorld;
 				ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnServerLeave);
             }
@@ -96,11 +96,11 @@ namespace FakeProvider
         #endregion
         #region OnSaveWorld
 
-        private void OnSaveWorld(On.Terraria.IO.WorldFile.orig_SaveWorld_bool_bool orig, bool Cloud, bool ResetTime)
+        private void OnSaveWorld(On.Terraria.IO.WorldFile.orig_SaveWorld orig, bool ResetTime, bool useTemps, bool canBeSkipped)
         {
             if (FakeProviderAPI.World == null)
 			{
-				orig(Cloud, ResetTime);
+				orig(ResetTime, useTemps, canBeSkipped);
 				return;
 			}
 
@@ -108,7 +108,7 @@ namespace FakeProvider
             {
 				List<TileProvider> disabled = FakeProviderAPI.Tile.Disable();
 
-				orig(Cloud, ResetTime);
+				orig(ResetTime, useTemps, canBeSkipped);
 
                 FakeProviderAPI.Tile.Enable(disabled);
 
@@ -124,18 +124,18 @@ namespace FakeProvider
         #endregion
         #region OnLoadWorld
 
-        private void OnLoadWorld(On.Terraria.IO.WorldFile.orig_LoadWorld orig, bool loadFromCloud)
+        private void OnLoadWorld(On.Terraria.IO.WorldFile.orig_LoadWorld orig)
         {
 			try
             {
                 Dictionary<string, string> args = Terraria.Utils.ParseArguements(Environment.GetCommandLineArgs());
 				if (!args.TryGetValue("-autocreate", out string worldSize) || worldSize == "0")
                 {
-                    ReadWorldSize(loadFromCloud);
+                    ReadWorldSize(Main.ActiveWorldFileData.IsCloudSave);
                 }
 				CreateCustomTileProvider();
 
-				orig(loadFromCloud);
+				orig();
 
 				lock (ProvidersToAdd)
 				{

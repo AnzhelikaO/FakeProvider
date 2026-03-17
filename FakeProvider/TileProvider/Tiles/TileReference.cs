@@ -356,6 +356,18 @@ namespace FakeProvider
             this.inActive(false);
         }
 
+        public void ClearSlope()
+        {
+            this.slope(0);
+            this.halfBrick(false);
+        }
+
+        public void ClearTileAndPaint()
+        {
+            this.ClearTile();
+            this.ClearBlockPaintAndCoating();
+        }
+
 		#endregion
         #region ClearWallPaintAndCoating
 
@@ -612,6 +624,36 @@ namespace FakeProvider
 		public bool lava()
         {
             return (this.bTileHeader & 96) == 32;
+        }
+
+        public bool water()
+        {
+            return this.liquidType() == 0;
+        }
+
+        public bool anyWater()
+        {
+            return this.liquid > 0 && this.water();
+        }
+
+        public bool anyLava()
+        {
+            return this.liquid > 0 && this.lava();
+        }
+
+        public bool anyHoney()
+        {
+            return this.liquid > 0 && this.honey();
+        }
+
+        public bool anyShimmer()
+        {
+            return this.liquid > 0 && this.shimmer();
+        }
+
+        public bool anyWire()
+        {
+            return (this.sTileHeader & 896) != 0 || (this.bTileHeader & 128) > 0;
         }
 
         public void lava(bool lava)

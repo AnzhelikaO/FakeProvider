@@ -45,7 +45,7 @@ namespace FakeProvider
             this.RelativeX = X;
             this.RelativeY = Y;
             this.Position = new Point16(X, Y);
-            this.type = _myEntityID;
+            this.type = EntityTypeID;
             this.item = Item ?? new Item();
         }
 
