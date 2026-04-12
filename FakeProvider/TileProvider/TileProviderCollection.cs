@@ -87,6 +87,9 @@ namespace FakeProvider
         {
             get
             {
+                if (X < 0 || Y < 0 || X >= Width || Y >= Height)
+                    return VoidTile;
+
                 lock (Locker)
                 {
                     return _GlobalProvidersBuffer[ProviderIndexes[X, Y]].GetTileInWorld(X, Y);
@@ -94,6 +97,9 @@ namespace FakeProvider
             }
             set
             {
+                if (X < 0 || Y < 0 || X >= Width || Y >= Height)
+                    return;
+
                 lock (Locker)
                 {
                     _GlobalProvidersBuffer[ProviderIndexes[X, Y]].SetTileInWorld(X, Y, value);
