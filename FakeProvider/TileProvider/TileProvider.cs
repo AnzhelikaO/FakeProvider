@@ -695,15 +695,15 @@ namespace FakeProvider
                     return true;
 
                 bool applied = false;
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < 32000; i++)
                 {
                     if (Main.sign[i] != null && Main.sign[i].x == Entity.X && Main.sign[i].y == Entity.Y)
                         Main.sign[i] = null;
                     if (!applied && Main.sign[i] == null)
                     {
                         applied = true;
-                        Main.sign[i] = (FakeSign)Entity;
                         Entity.Index = i;
+                        Main.sign[i] = (FakeSign)Entity;
                     }
                 }
                 return applied;
@@ -716,15 +716,15 @@ namespace FakeProvider
                     return true;
 
                 bool applied = false;
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < 8000; i++)
                 {
                     if (Main.chest[i] != null && Main.chest[i].x == Entity.X && Main.chest[i].y == Entity.Y)
                         Main.chest[i] = null;
                     if (!applied && Main.chest[i] == null)
                     {
                         applied = true;
-                        Main.chest[i] = (FakeChest)Entity;
                         Entity.Index = i;
+                        Main.chest[i] = (FakeChest)Entity;
                     }
                 }
                 return applied;
