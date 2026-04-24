@@ -9,14 +9,20 @@ namespace FakeProvider
     {
         #region Data
 
-        // x and y fields are readonly in Terraria, so use reflection to update them.
+        // x, y and index fields are readonly in Terraria, so use reflection to update them.
+        private static readonly FieldInfo ChestIndexField = typeof(Chest)
+            .GetField("index", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         private static readonly FieldInfo XField = typeof(Chest)
             .GetField("x", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         private static readonly FieldInfo YField = typeof(Chest)
             .GetField("y", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         public TileProvider Provider { get; }
-        public int Index { get; set; }
+        public int Index
+        {
+            get => index;
+            set => ChestIndexField.SetValue(this, value);
+        }
         public int X
         {
             get => x;
