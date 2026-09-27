@@ -565,7 +565,8 @@ namespace FakeProvider
                 TileEntity.ByID.Remove(Entity.ID);
                 TileEntity.ByPosition.Remove(Entity.Position);
             }
-            FakeDisplayDoll fake = new FakeDisplayDoll(this, replace ? Entity.ID : -1, x, y, Entity.Equipment, Entity._dyes);
+            FakeDisplayDoll fake = new FakeDisplayDoll(this, replace ? Entity.ID : -1, x, y, Entity._equip, Entity._dyes,
+                Entity._misc, Entity._pose);
             lock (Locker)
                 _Entities.Add(fake);
             UpdateEntity(fake);

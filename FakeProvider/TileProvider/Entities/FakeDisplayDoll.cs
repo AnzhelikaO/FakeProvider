@@ -38,7 +38,8 @@ namespace FakeProvider
 
         #region Constructor
 
-        public FakeDisplayDoll(TileProvider Provider, int Index, int X, int Y, Item[] Items = null, Item[] Dyes = null)
+        public FakeDisplayDoll(TileProvider Provider, int Index, int X, int Y, Item[] Items = null, Item[] Dyes = null,
+            Item[] Misc = null, byte Pose = 0)
         {
             this.Provider = Provider;
             this.ID = Index;
@@ -46,12 +47,18 @@ namespace FakeProvider
             this.RelativeY = Y;
             this.Position = new Point16(X, Y);
             this.type = EntityTypeID;
-            this._equip = Items ?? new Item[8];
-            for (int i = 0; i < 8; i++)
-                this._equip[i] = this._equip[i] ?? new Item();
-            this._dyes = Dyes ?? new Item[8];
-            for (int i = 0; i < 8; i++)
-                this._dyes[i] = this._dyes[i] ?? new Item();
+            CopyItems(Items, _equip);
+            CopyItems(Dyes, _dyes);
+            CopyItems(Misc, _misc);
+            this._pose = Pose;
+        }
+
+        private static void CopyItems(Item[] source, Item[] destination)
+        {
+            if (source == null)
+                return;
+            for (int i = 0; i < destination.Length && i < source.Length; i++)
+                destination[i] = source[i] ?? new Item();
         }
 
         #endregion
