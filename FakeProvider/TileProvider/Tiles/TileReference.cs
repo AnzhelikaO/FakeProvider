@@ -23,7 +23,7 @@ namespace FakeProvider
 
 		#region Data
 
-		private StructTile[,] Data;
+		internal readonly StructTile[,] Data;
 		public int X { get; }
 		public int Y { get; }
 

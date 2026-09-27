@@ -56,6 +56,24 @@ namespace FakeProvider
         internal protected TileProvider Void { get; set; }
         public ITile VoidTile { get; protected set; }
 
+        /// <summary>
+		/// Separate tile provider for base world tiles to improve performance. Since it stays in place, we
+		/// don't need to wrap it in a lock and can cache TileReference wrappers.
+		/// </summary>
+        private TileProvider WorldProvider;
+        /// <summary> The provider index of the <see cref="WorldProvider"/>. </summary>
+        private int WorldIndex = -1;
+
+        private const int WorldTileCacheXBits = 9;
+        private const int WorldTileCacheYBits = 7;
+        /// <summary>
+        /// To prevent the usage of `new TileReference()` every time we access the same world tile at the same
+        /// position, we return a stored version from here. Benchmarks show that TileReference instatiation
+        /// is a substantial fraction of CPU time during world tile lookups.
+        /// </summary>
+        private readonly TileReference[] WorldTileCache =
+            new TileReference[1 << (WorldTileCacheXBits + WorldTileCacheYBits)];
+
         #endregion
 
         #region Constructor
@@ -90,6 +108,10 @@ namespace FakeProvider
                 if (X < 0 || Y < 0 || X >= Width || Y >= Height)
                     return VoidTile;
 
+                TileProvider world = WorldProvider;
+                if (world != null && ProviderIndexes[X, Y] == WorldIndex)
+                    return GetWorldTile(world, X, Y);
+
                 lock (Locker)
                 {
                     return _GlobalProvidersBuffer[ProviderIndexes[X, Y]].GetTileInWorld(X, Y);
@@ -105,6 +127,25 @@ namespace FakeProvider
                     _GlobalProvidersBuffer[ProviderIndexes[X, Y]].SetTileInWorld(X, Y, value);
                 }
             }
+        }
+
+        #endregion
+        #region GetWorldTile
+
+        private ITile GetWorldTile(TileProvider World, int X, int Y)
+        {
+            StructTile[,] data = World.Data;
+            X -= World.X;
+            Y -= World.Y;
+            // Divide the world into WorldTileCacheXBits by WorldTileCacheYBits chunks. Use the cache index
+            // based on the tile's position relative to the chunk they're in.
+            int slot = ((Y & ((1 << WorldTileCacheYBits) - 1)) << WorldTileCacheXBits)
+                | (X & ((1 << WorldTileCacheXBits) - 1));
+            TileReference tile = WorldTileCache[slot];
+            // Validate that the cached value matches the expected tile at this position.
+            if (tile == null || tile.X != X || tile.Y != Y || tile.Data != data)
+                WorldTileCache[slot] = tile = new TileReference(data, X, Y);
+            return tile;
         }
 
         #endregion
@@ -170,6 +211,11 @@ namespace FakeProvider
                             _GlobalProvidersBuffer[index] = Provider;
                             Provider.ProviderCollection = this;
                             Provider.Index = index;
+                            if (Provider.Name == FakeProviderAPI.WorldProviderName)
+                            {
+                                WorldIndex = index;
+                                WorldProvider = Provider;
+                            }
                             Provider.Enable(false);
                         }
                     }
@@ -215,6 +261,11 @@ namespace FakeProvider
                     _PersonalProviders.Remove(provider);
                 else if (contains = _GlobalProvidersOrder.Contains(provider))
                 {
+                    if (provider == WorldProvider)
+                    {
+                        WorldProvider = null;
+                        WorldIndex = -1;
+                    }
                     _GlobalProvidersBuffer[provider.Index] = null;
                     _GlobalProvidersOrder.Remove(provider);
                 }
